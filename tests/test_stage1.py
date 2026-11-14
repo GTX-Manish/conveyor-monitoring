@@ -101,6 +101,7 @@ def test_determinism():
 def test_noise_scale_changes_only_noise():
     a = generate(Config(seed=3, days=1))
     b = generate(config_from_dict({"seed": 3, "days": 1, "signals": {"noise_scale": 2.0}}))
+    assert a.zones["vibration_kurtosis"].isna().mean() < 0.02  # default messiness: about 1% missing
     ka, kb = a.zones["vibration_kurtosis"], b.zones["vibration_kurtosis"]
     assert 1.8 < kb.std() / ka.std() < 2.2
     pd.testing.assert_frame_equal(a.layout, b.layout)

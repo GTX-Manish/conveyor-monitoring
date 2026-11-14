@@ -15,6 +15,7 @@ from .hard_negatives import (DUSTY, HEAT_WAVE, HEAVY_LOAD, STARTUP, apply_hard_n
 from .healthy import BELT_SIGNALS, ZONE_SIGNALS, generate_healthy_belt, generate_healthy_zones
 from .labels import build_labels
 from .layout import build_layout
+from .messiness import inject_messiness, schedule_sensor_faults, sensor_faults_frame
 
 RUN_STATES = ["stopped", "ramp", "running"]
 STREAMS = ["layout", "conditions", "faults", "hard_negatives", "signals", "messiness"]
@@ -34,6 +35,8 @@ class Scenario:
     events: list = None
     hard_negatives: pd.DataFrame = None
     labels: pd.DataFrame = None
+    sensor_faults: pd.DataFrame = None
+    sensor_fault_events: list = None
 
 
 def make_streams(seed: int) -> dict:
@@ -66,6 +69,11 @@ def generate(cfg: Config) -> Scenario:
     hard_negs = hard_negs + startup_events(cond, hn.startup_minutes)
     labels = build_labels(events, hard_negative_mask(hard_negs, n_steps), cond.timestamp, len(layout), cfg)
 
+    # Messiness goes in last, on the public signals only: labels above are already fixed from clean truth.
+    belt_sig = {k: np.array(v, dtype=float) for k, v in belt_sig.items()}  # own copies, safe to edit
+    sensor_faults = schedule_sensor_faults(cfg.messiness, cfg.days, len(layout), ZONE_SIGNALS, rng["messiness"])
+    mess = inject_messiness(zone_sig, belt_sig, sensor_faults, cfg.messiness, rng["messiness"])
+
     T, Z = n_steps, len(layout)
     # categoricals are built from integer codes: far faster than from millions of strings
     state_codes = np.where(cond.base <= 0, 0, np.where(cond.base < 1, 1, 2)).astype(np.int8)
@@ -96,10 +104,13 @@ def generate(cfg: Config) -> Scenario:
         "fault_counts": {k: sum(e.type == k for e in events) for k in (IDLER, DRIVE_OVERHEAT)},
         "hard_negative_counts": {k: sum(e.type == k for e in hard_negs)
                                  for k in (HEAVY_LOAD, HEAT_WAVE, DUSTY, STARTUP)},
+        **mess,
         "generate_seconds": round(time.perf_counter() - t0, 3),
     }
     conditions = cond.to_frame()
     conditions["belt_distance_m"] = D
     return Scenario(zones, belt_wide, layout, layout_truth, conditions, meta,
                     faults=faults_frame(events, cond.timestamp), events=events,
-                    hard_negatives=hard_negatives_frame(hard_negs, cond.timestamp), labels=labels)
+                    hard_negatives=hard_negatives_frame(hard_negs, cond.timestamp), labels=labels,
+                    sensor_faults=sensor_faults_frame(sensor_faults, cond.timestamp),
+                    sensor_fault_events=sensor_faults)

@@ -34,3 +34,11 @@
   - A heat wave fades in and out over 3 h (`hard_negatives.heat_wave.edge_hours`) instead of stepping.
   - A heavy-load shift holds load at its drawn level, so load is flat for the length of the event.
   - Categorical columns are built from integer codes, which cut a 30-day generation to about 2 s.
+- **Stage 4**: messiness. About 1% of readings are dropped at random per signal (zone and belt-wide), whole-suite
+  outages silence one zone for 1 to 6 h, and stuck sensors freeze one signal in one zone for 2 to 48 h. All of it is
+  injected after the physics, the fault effects and the labels, so ground truth is unchanged (tested). Events go to
+  `truth/sensor_faults.parquet`; the measured missing rate goes to `truth/run_meta.json`. Choices of ours:
+  - Injection order is stuck, then outage, then random loss, so a stuck sensor still loses packets.
+  - A stuck sensor holds the last value it reported before the freeze; `sensor_faults.parquet` records it.
+  - Rows are never dropped: a missing reading is a NaN in its row, and `timestamp` and `run_state` are always present.
+  - Sensor faults may overlap each other and equipment faults; nothing prevents a stuck sensor in a failing zone.

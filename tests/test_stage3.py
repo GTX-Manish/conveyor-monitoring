@@ -9,6 +9,7 @@ from simulator.hard_negatives import (DUSTY, HEAT_WAVE, HEAVY_LOAD, STARTUP, har
                                       schedule_hard_negatives)
 
 Z, A = 120, 121
+NO_MESS = {"missing_rate": 0, "outages_per_30d": 0, "stuck_per_30d": 0}
 NO_FAULTS = {"idler_bearing": {"per_30d": 0}, "drive_overheat": {"per_30d": 0}}
 NO_HN = {HEAVY_LOAD: {"per_30d": 0}, HEAT_WAVE: {"per_30d": 0}, DUSTY: {"per_30d": 0}}
 DAYS = 4
@@ -17,7 +18,7 @@ ONE = 30 / DAYS  # per_30d rate that gives exactly one event in DAYS days
 
 def run(hard_negatives, faults=NO_FAULTS, seed=5, days=DAYS):
     return generate(config_from_dict({"seed": seed, "days": days, "faults": faults,
-                                      "hard_negatives": hard_negatives}))
+                                      "hard_negatives": hard_negatives, "messiness": NO_MESS}))
 
 
 @pytest.fixture(scope="module")

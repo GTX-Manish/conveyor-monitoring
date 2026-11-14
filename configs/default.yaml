@@ -145,3 +145,13 @@ hard_negatives:
 labels:
   early_below: 0.3
   horizon_hours: 24.0
+messiness:
+  missing_rate: 0.01
+  outages_per_30d: 6.0
+  outage_hours:
+  - 1.0
+  - 6.0
+  stuck_per_30d: 4.0
+  stuck_hours:
+  - 2.0
+  - 48.0

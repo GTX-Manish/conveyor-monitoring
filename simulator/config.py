@@ -200,6 +200,15 @@ class LabelsCfg:
 
 
 @dataclass
+class MessinessCfg:
+    missing_rate: float = 0.01
+    outages_per_30d: float = 6.0
+    outage_hours: tuple = (1.0, 6.0)
+    stuck_per_30d: float = 4.0
+    stuck_hours: tuple = (2.0, 48.0)
+
+
+@dataclass
 class Config:
     scenario: str = "scenario"
     seed: int = 1
@@ -212,6 +221,7 @@ class Config:
     faults: FaultsCfg = field(default_factory=FaultsCfg)
     hard_negatives: HardNegativesCfg = field(default_factory=HardNegativesCfg)
     labels: LabelsCfg = field(default_factory=LabelsCfg)
+    messiness: MessinessCfg = field(default_factory=MessinessCfg)
 
     def __post_init__(self):
         if self.step_seconds != 60:

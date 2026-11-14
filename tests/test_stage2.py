@@ -11,6 +11,7 @@ from simulator.generate import generate, make_streams
 from simulator.healthy import BELT_SIGNALS, ZONE_SIGNALS
 
 Z = 120
+NO_MESS = {"missing_rate": 0, "outages_per_30d": 0, "stuck_per_30d": 0}
 ZERO = {
     IDLER: {"temp_c": 0, "acoustic_db": 0, "vib_gain": 0, "kurtosis_add": 0, "current_a": 0},
     DRIVE_OVERHEAT: {"motor_temp_c": 0, "gearbox_temp_c": 0, "current_a": 0},
@@ -25,7 +26,7 @@ def one_fault(kind, zero=False, seed=11):
     """A 6-day scenario with exactly one fault of `kind`. `zero` gives the same schedule with no effect."""
     faults = {k: {"per_30d": 0} for k in ZERO}
     faults[kind] = {"per_30d": 5, **SHORT[kind], **(ZERO[kind] if zero else {})}  # 5 x 6/30 = exactly 1
-    return generate(config_from_dict({"seed": seed, "days": 6, "faults": faults}))
+    return generate(config_from_dict({"seed": seed, "days": 6, "faults": faults, "messiness": NO_MESS}))
 
 
 @pytest.fixture(scope="module", params=[IDLER, DRIVE_OVERHEAT])
