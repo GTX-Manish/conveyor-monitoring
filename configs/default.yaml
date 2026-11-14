@@ -88,3 +88,43 @@ signals:
   tension_speed_kn: 10.0
   tension_load_kn: 45.0
   tension_noise_kn: 1.5
+faults:
+  idler_bearing:
+    per_30d: 5.0
+    min_days: 3.0
+    max_days: 14.0
+    repair_hours: 2.0
+    temp_c: 25.0
+    temp_exp: 2.0
+    acoustic_db: 10.0
+    acoustic_exp: 1.5
+    vib_gain: 0.5
+    vib_exp: 2.0
+    kurtosis_add: 1.5
+    current_a: 1.5
+    current_exp: 3.0
+  belt_damage:
+    per_30d: 1.0
+    min_days: 2.0
+    max_days: 6.0
+    repair_hours: 4.0
+    kurtosis_add: 6.0
+    vib_gain: 0.4
+    acoustic_db: 4.0
+    return_side_factor: 0.5
+    tension_kn: 8.0
+    tension_exp: 3.0
+  drive_overheat:
+    per_30d: 1.0
+    min_hours: 6.0
+    max_hours: 48.0
+    repair_hours: 2.0
+    motor_temp_c: 35.0
+    gearbox_temp_c: 20.0
+    exp: 1.3
+    current_a: 6.0
+    current_exp: 2.0
+  progression_exponent: 2.5
+  min_start_hours: 24.0
+  min_end_margin_hours: 12.0
+  same_asset_gap_hours: 24.0

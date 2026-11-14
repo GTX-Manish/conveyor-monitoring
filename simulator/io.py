@@ -71,6 +71,7 @@ def write_scenario(scn, cfg: Config, out_root) -> Path:
     # config_used/run_meta live here because from stage 2 on they carry fault rates and counts.
     scn.layout_truth.to_parquet(tru / "layout_truth.parquet", index=False)
     scn.conditions.to_parquet(tru / "conditions.parquet", index=False)
+    scn.faults.to_parquet(tru / "faults.parquet", index=False)
     dump_config(cfg, tru / "config_used.yaml")
     (tru / "run_meta.json").write_text(json.dumps(scn.meta, indent=2))
     return root

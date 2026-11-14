@@ -92,9 +92,9 @@ def test_determinism():
     a = generate(Config(seed=7, days=2))
     b = generate(Config(seed=7, days=2))
     c = generate(Config(seed=8, days=2))
-    pd.testing.assert_frame_equal(a.zones, b.zones)
-    pd.testing.assert_frame_equal(a.belt_wide, b.belt_wide)
-    pd.testing.assert_frame_equal(a.layout, b.layout)
+    assert a.zones.equals(b.zones)
+    assert a.belt_wide.equals(b.belt_wide)
+    assert a.layout.equals(b.layout)
     assert not a.zones["bearing_temp_c"].equals(c.zones["bearing_temp_c"])
 
 

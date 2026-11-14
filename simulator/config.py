@@ -120,6 +120,61 @@ class SignalsCfg:
 
 
 @dataclass
+class IdlerBearingCfg:
+    per_30d: float = 5.0
+    min_days: float = 3.0
+    max_days: float = 14.0
+    repair_hours: float = 2.0
+    temp_c: float = 25.0
+    temp_exp: float = 2.0
+    acoustic_db: float = 10.0
+    acoustic_exp: float = 1.5
+    vib_gain: float = 0.5
+    vib_exp: float = 2.0
+    kurtosis_add: float = 1.5
+    current_a: float = 1.5
+    current_exp: float = 3.0
+
+
+@dataclass
+class BeltDamageCfg:
+    per_30d: float = 1.0
+    min_days: float = 2.0
+    max_days: float = 6.0
+    repair_hours: float = 4.0
+    kurtosis_add: float = 6.0
+    vib_gain: float = 0.4
+    acoustic_db: float = 4.0
+    return_side_factor: float = 0.5
+    tension_kn: float = 8.0
+    tension_exp: float = 3.0
+
+
+@dataclass
+class DriveOverheatCfg:
+    per_30d: float = 1.0
+    min_hours: float = 6.0
+    max_hours: float = 48.0
+    repair_hours: float = 2.0
+    motor_temp_c: float = 35.0
+    gearbox_temp_c: float = 20.0
+    exp: float = 1.3
+    current_a: float = 6.0
+    current_exp: float = 2.0
+
+
+@dataclass
+class FaultsCfg:
+    idler_bearing: IdlerBearingCfg = field(default_factory=IdlerBearingCfg)
+    belt_damage: BeltDamageCfg = field(default_factory=BeltDamageCfg)
+    drive_overheat: DriveOverheatCfg = field(default_factory=DriveOverheatCfg)
+    progression_exponent: float = 2.5
+    min_start_hours: float = 24.0
+    min_end_margin_hours: float = 12.0
+    same_asset_gap_hours: float = 24.0  # (assumption) minimum gap between two events on DRIVE or BELT
+
+
+@dataclass
 class Config:
     scenario: str = "scenario"
     seed: int = 1
@@ -129,6 +184,7 @@ class Config:
     layout: LayoutCfg = field(default_factory=LayoutCfg)
     conditions: ConditionsCfg = field(default_factory=ConditionsCfg)
     signals: SignalsCfg = field(default_factory=SignalsCfg)
+    faults: FaultsCfg = field(default_factory=FaultsCfg)
 
     def __post_init__(self):
         if self.step_seconds != 60:
