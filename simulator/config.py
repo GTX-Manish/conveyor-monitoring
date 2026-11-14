@@ -160,6 +160,46 @@ class FaultsCfg:
 
 
 @dataclass
+class HeavyLoadCfg:
+    per_30d: float = 4.0
+    min_hours: float = 6.0
+    max_hours: float = 12.0
+    load: tuple = (0.95, 1.0)
+
+
+@dataclass
+class HeatWaveCfg:
+    per_30d: float = 1.0
+    min_days: float = 1.0
+    max_days: float = 3.0
+    offset_c: tuple = (6.0, 10.0)
+    edge_hours: float = 3.0  # (assumption) the offset fades in and out, a heat wave is not a step
+
+
+@dataclass
+class DustyCfg:
+    per_30d: float = 2.0
+    min_hours: float = 4.0
+    max_hours: float = 24.0
+    dust: tuple = (0.8, 0.9)
+
+
+@dataclass
+class HardNegativesCfg:
+    heavy_load: HeavyLoadCfg = field(default_factory=HeavyLoadCfg)
+    heat_wave: HeatWaveCfg = field(default_factory=HeatWaveCfg)
+    dusty: DustyCfg = field(default_factory=DustyCfg)
+    startup_vib_gain: float = 1.3
+    startup_minutes: int = 10
+
+
+@dataclass
+class LabelsCfg:
+    early_below: float = 0.3      # stage 'early' for 0 < s < early_below, 'advanced' up to failure
+    horizon_hours: float = 24.0   # the "fails within" horizon
+
+
+@dataclass
 class Config:
     scenario: str = "scenario"
     seed: int = 1
@@ -170,6 +210,8 @@ class Config:
     conditions: ConditionsCfg = field(default_factory=ConditionsCfg)
     signals: SignalsCfg = field(default_factory=SignalsCfg)
     faults: FaultsCfg = field(default_factory=FaultsCfg)
+    hard_negatives: HardNegativesCfg = field(default_factory=HardNegativesCfg)
+    labels: LabelsCfg = field(default_factory=LabelsCfg)
 
     def __post_init__(self):
         if self.step_seconds != 60:

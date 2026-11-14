@@ -72,6 +72,8 @@ def write_scenario(scn, cfg: Config, out_root) -> Path:
     scn.layout_truth.to_parquet(tru / "layout_truth.parquet", index=False)
     scn.conditions.to_parquet(tru / "conditions.parquet", index=False)
     scn.faults.to_parquet(tru / "faults.parquet", index=False)
+    scn.hard_negatives.to_parquet(tru / "hard_negatives.parquet", index=False)
+    scn.labels.to_parquet(tru / "labels.parquet", index=False)
     dump_config(cfg, tru / "config_used.yaml")
     (tru / "run_meta.json").write_text(json.dumps(scn.meta, indent=2))
     return root

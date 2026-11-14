@@ -9,7 +9,8 @@ BELT_SIGNALS = ["throughput_tph", "motor_current_a", "motor_temp_c", "gearbox_te
                 "drive_speed_ms", "belt_speed_ms", "slip_pct", "tension_kn"]
 
 
-def generate_healthy_zones(cfg: SignalsCfg, cond: Conditions, layout_public, layout_truth, rng):
+def generate_healthy_zones(cfg: SignalsCfg, cond: Conditions, layout_public, layout_truth, rng,
+                           startup_mask=None, startup_vib_gain=1.0):
     """Return a dict signal -> (T, Z) float array."""
     ns = cfg.noise_scale
     T, Z = len(cond.speed), len(layout_public)
@@ -30,6 +31,9 @@ def generate_healthy_zones(cfg: SignalsCfg, cond: Conditions, layout_public, lay
     vib = (vib_scale * (speed * (cfg.vib_speed_lin + cfg.vib_speed_quad * speed) + cfg.vib_load * load * lf)
            * (1.0 + cfg.vib_dust_gain * dust) * np.exp(rng.normal(0.0, cfg.vib_log_noise * ns, (T, Z)))
            + cfg.vib_floor * ns * np.abs(rng.standard_normal((T, Z))))
+
+    if startup_mask is not None:  # start-up transient: a hard negative, not a fault
+        vib = vib * np.where(startup_mask, startup_vib_gain, 1.0)[:, None]
 
     kurt = cfg.kurt_base + rng.standard_normal((T, Z)) * cfg.kurt_noise * ns * (1.0 + cfg.kurt_dust_gain * dust)
 

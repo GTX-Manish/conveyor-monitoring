@@ -41,7 +41,7 @@ showing damage that matches. Beyond that demo, the README must show we thought h
   (split by whole scenario, hard negatives, a stress scenario, simple baselines to beat).
 - **Messy input.** Real sensors drop readings, go silent and freeze. The system must not read silence or a flat line as
   "all is well".
-- **The looping belt.** The brief hides a trap: the belt is a loop. A defect on the belt passes every sensor and every
+- **The looping belt.** The brief hides a trap: the belt is a loop. A defect on the belt passes every
   camera once per revolution (25 minutes at our size), so the same defect appears again and again. Vision detections
   must be located by **belt coordinate** and merged into one defect, not counted again each lap.
 
@@ -94,16 +94,25 @@ events with a timestamp and a belt coordinate.
 plus noise. Getting this right matters because a model that cannot separate a hot afternoon from a failing bearing is
 useless.
 
-**Three faults in version 1:**
+**Two faults in version 1:**
 
 | Fault | Where | What it looks like | Why it is in |
 |---|---|---|---|
 | Roller (idler bearing) wearing out | one zone | slow, accelerating rise in temperature against neighbours, with faint early changes in acoustic level and vibration | The best-documented failure, and the one that answers "where" |
 | Motor (drive) overheating | the drive | motor and gearbox temperature rise, motor current rises late | The drive cannot see idler faults, so this is a separate signature |
-| Belt tear or damage | a point on the belt | once-per-lap impact at every zone it passes, kurtosis spikes, tension dip at failure | The only fault that links sensors, images and the looping belt |
 
 Belt slipping on the drive pulley is dropped for now. It is cheap to add later because its signals already exist in
 the baseline.
+
+**Belt tear or damage is not a sensor fault.** It was planned as a third fault that would link sensors to images, and
+was removed on 2026-11-14. Public image datasets are unrelated photos of damage: they have no severity progression,
+no repeat views of one defect and no sensor context. Sensors and images would have agreed only because we wired them
+to agree. Belt damage is handled by the vision pipeline alone (section 6), and the README will say that sensors and
+images are not linked.
+
+**Visual defects for the camera.** The simulator places a few defects at fixed belt coordinates, with no effect on
+any sensor. Each comes into camera view once per lap, which gives the vision pipeline the looping-belt problem to
+solve.
 
 **Hard negatives.** Normal events that look like trouble (a heavy-load shift, a heat wave, a dusty spell, a start-up
 transient) appear in every scenario and are labelled as not faults. Without them the model never learns the
@@ -140,7 +149,9 @@ neighbour-deviation check).
 A public conveyor-belt image dataset (candidates: BeltCrack, CBCD, Roboflow sets) and a small pretrained CNN fine-tuned
 on CPU, or a detector if the dataset has box labels. Dataset choice and reasons go in the README. The looping-belt
 handling is the important part: detections get a belt coordinate, and detections of the same coordinate on later laps
-merge into one defect. Splice joints are known landmarks and must not be reported as damage.
+merge into one defect. Splice joints are known landmarks and must not be reported as damage. The simulator's visual
+defects (section 5) are each pinned to one dataset image and re-shown every lap, so de-duplication can be scored.
+They are not linked to any sensor signal.
 
 ### Dashboard
 Streamlit with Plotly. The main view is the 120 zones drawn as a loop, coloured by status (normal, abnormal,
@@ -170,7 +181,8 @@ would do differently), and the `ai_usage/` folder.
 | Ground truth in separate files | Honest scoring, and separates equipment faults from sensor faults |
 | 6 km loop, 50 m zones, 12 sections | See section 3 |
 | Gradient boosting for the sensor model | See section 6 |
-| Faults: roller, motor, belt damage; slip dropped | Belt damage links all three parts and the loop; slip is cheap to add later |
+| Faults: roller and motor; slip dropped | Slip is cheap to add later |
+| Belt damage is vision-only, not a sensor fault | No public dataset supports an honest sensor-to-image link; the loop problem is still shown through visual defects at belt coordinates |
 | Hard negatives and a fourth status | Honest scores, and a dashboard that says "I do not know" instead of "normal" |
 | Messiness limited to missing, outage, stuck, noise | These are the cases a dashboard must visibly handle |
 
@@ -182,3 +194,4 @@ would do differently), and the `ai_usage/` folder.
 - Numbers for fault effects are assumptions informed by a few papers, not measured values. They are listed in
   `SIMULATOR_SPEC.md` so they can be argued with.
 - Camera coverage is partial: three stations see only a short stretch of belt at a time, on one face.
+- Sensors and images are not linked. A defect the camera sees has no sensor signature in our data.

@@ -22,3 +22,15 @@
   Belt coordinates and `belt_distance_m` stay, because image capture events (Stage 5) still need them. Fault
   schedules for a given seed changed, because the belt-damage draws no longer happen. `SIMULATOR_SPEC.md` and
   `PROJECT_OVERVIEW.md` still describe the fault and have not been edited.
+- **Docs updated for the belt-damage removal**: `SIMULATOR_SPEC.md` and `PROJECT_OVERVIEW.md` now describe two sensor
+  faults, vision-only belt damage through "visual defects" at belt coordinates (Stage 5), and a 2 s capture interval
+  so every belt point is seen on every lap (the earlier 30 s value saw a defect on about 8% of laps).
+- **Stage 3**: hard negatives and labels. Heavy-load shifts, heat waves and dusty spells edit the operating conditions
+  before the physics runs; the start-up transient multiplies vibration for 10 minutes after every start, including
+  restarts after a repair. `truth/hard_negatives.parquet` and `truth/labels.parquet` are new. Choices of ours:
+  - `hours_to_failure` and `fails_within_24h` are set only while a fault is developing (from onset). Before onset
+    nothing in the data can predict the failure, so a positive label there would only be noise.
+  - `labels.parquet` also carries `severity` and `fault_id`, and counts start-up transients as hard-negative periods.
+  - A heat wave fades in and out over 3 h (`hard_negatives.heat_wave.edge_hours`) instead of stepping.
+  - A heavy-load shift holds load at its drawn level, so load is flat for the length of the event.
+  - Categorical columns are built from integer codes, which cut a 30-day generation to about 2 s.

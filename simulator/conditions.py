@@ -44,11 +44,33 @@ class Conditions:
     speed_noise: np.ndarray = None
     load_raw: np.ndarray = None
     dust_noise: np.ndarray = None
+    dust_floor: np.ndarray = None
 
     def with_base(self, base):
         """Same random draws, different duty-cycle factor (used to insert repair stops)."""
         return _derive(self.cfg, self.timestamp, np.asarray(base, dtype=float), self.speed_noise,
-                       self.load_raw, self.ambient_c, self.dust_noise)
+                       self.load_raw, self.ambient_c, self.dust_noise, self.dust_floor)
+
+    def edited(self, load_raw=None, ambient_c=None, dust_floor=None):
+        """Same random draws with some inputs replaced (used by hard negatives, before the physics)."""
+        return _derive(self.cfg, self.timestamp, self.base, self.speed_noise,
+                       self.load_raw if load_raw is None else load_raw,
+                       self.ambient_c if ambient_c is None else ambient_c, self.dust_noise,
+                       self.dust_floor if dust_floor is None else dust_floor)
+
+    def start_indices(self):
+        """Steps where the belt starts moving (planned starts and restarts after a repair)."""
+        moving = self.base > 0
+        return np.flatnonzero(moving & ~np.r_[moving[0], moving[:-1]])
+
+    def startup_mask(self, minutes: int):
+        """True for the first `minutes` steps after every start."""
+        starts = self.start_indices()
+        mask = np.zeros(len(self.base), dtype=bool)
+        for k in range(int(minutes)):  # a handful of offsets, not a loop over time
+            idx = starts + k
+            mask[idx[idx < len(mask)]] = True
+        return mask & (self.base > 0)
 
     def to_frame(self):
         return pd.DataFrame({"timestamp": self.timestamp, "speed": self.speed, "load": self.load,
@@ -84,10 +106,13 @@ def build_conditions(cfg: ConditionsCfg, start: str, n_steps: int, rng: np.rando
     return _derive(cfg, ts, base, speed_noise, load_raw, ambient, dust_noise)
 
 
-def _derive(cfg, ts, base, speed_noise, load_raw, ambient, dust_noise) -> Conditions:
+def _derive(cfg, ts, base, speed_noise, load_raw, ambient, dust_noise, dust_floor=None) -> Conditions:
     run_state = np.where(base <= 0, "stopped", np.where(base < 1, "ramp", "running"))
     speed = np.where(base <= 0, 0.0, base * (1.0 + speed_noise))
     load = load_raw * speed
     dust = np.clip(cfg.dust_base + cfg.dust_running_gain * base + dust_noise, 0.0, 1.0)
+    if dust_floor is not None:
+        dust = np.maximum(dust, dust_floor)
     return Conditions(ts, run_state, base, speed, load, ambient, dust, cfg.max_throughput_tph * load,
-                      cfg=cfg, speed_noise=speed_noise, load_raw=load_raw, dust_noise=dust_noise)
+                      cfg=cfg, speed_noise=speed_noise, load_raw=load_raw, dust_noise=dust_noise,
+                      dust_floor=dust_floor)

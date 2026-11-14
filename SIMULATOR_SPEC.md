@@ -89,8 +89,8 @@ out is a descent back). About 4 curves of 2 zones each (radius 300 to 800 m), mi
 random biases: bearing temperature (sd 0.8 C), vibration scale (about 5%, times 1.25 in loading zones), lateral offset
 (sd 3 mm).
 
-**Section boundaries are fixed stretches of the ground path.** Belt damage (section 7.3) lives on the belt, in its own
-coordinate system (section 6), and passes through the sections.
+**Section boundaries are fixed stretches of the ground path.** Visual defects (section 9) live on the belt, in its own
+coordinate system (section 6), and pass through the sections.
 
 ## 5. Operating conditions and healthy signals (stage 1)
 
@@ -156,7 +156,7 @@ peak.
 
 Known simplification: belt speed is almost constant while running (jitter only), so speed effects are small.
 
-## 6. Belt coordinates (new, needed for belt damage and images)
+## 6. Belt coordinates (needed for image events)
 
 The belt is a loop and things ride on it. Define a **belt coordinate** `c` in `[0, 6000)` metres, fixed to the belt
 material. Reference point `c = 0` sits at ground position 0 at the start of the scenario.
@@ -170,10 +170,10 @@ material. Reference point `c = 0` sits at ground position 0 at the start of the 
 - **Splice joints** ride the belt at `c = 0, 500, 1000, ...` (12 joints). They are landmarks the vision pipeline must
   not report as damage. Emit them in image events (section 9).
 
-Why: this is the one structure that makes a belt defect repeat once per lap at every sensor, which the brief hides and
+Why: this is the one structure that makes a belt defect repeat once per lap at every camera, which the brief hides and
 the README must reason about.
 
-## 7. Faults (version 1: three faults)
+## 7. Faults (version 1: two faults)
 
 ### 7.1 Common rules
 
@@ -214,28 +214,14 @@ s(t) = 0                                          before onset and after repair_
 The order of appearance is set by the exponents and amplitudes, all in `faults.idler_bearing` config.
 **The drive cannot see idler faults** (Bristol): do not touch `motor_temp_c` or `gearbox_temp_c`.
 
-### 7.3 Belt tear or damage (belt damage)
+### 7.3 Belt tear or damage (removed)
 
-- **Where:** a point on the belt, belt coordinate `c` uniform in `[0, 6000)`. **Counts:** 1 per 30 days **(assumption)**.
-- **Duration:** uniform 2 to 6 days. **Repair:** 4 h.
-- **Lap signature:** the damaged belt point passes each zone once per lap. In the step where the defect crosses a
-  zone, that zone's reading for that minute is perturbed:
+Removed on 2026-11-14; it was built in Stage 2 and then taken out. It was a sensor fault at a point on the belt
+(once-per-lap impacts at every zone, tension dip near failure), meant to link sensors to camera images.
 
-| Signal (crossing minute only) | Added effect | Why |
-|---|---|---|
-| `vibration_kurtosis` | `+ 6 x s` | A single impact in the window is the definition of impulsive |
-| `vibration_rms_mm_s` | `x (1 + 0.4 x s)` | Impact raises the minute's RMS a little |
-| `acoustic_db` | `+ 4 x s` | Slap |
-
-  Impacts are weaker on the return side: multiply by 0.5 for zones 61 to 120 **(assumption)**.
-- **How to find the crossing minute:** for each step, let `p_prev` and `p_now` be the ground positions of the defect
-  at the previous and current step. A zone is "crossed" if its start boundary lies in the arc
-  `(p_prev, p_now]` (mod 6000), or it contains `p_now`. At full speed the belt moves 240 m per minute, so one step
-  crosses about 5 zones, and each zone is crossed in exactly one step of each 25-minute lap. Vectorise this.
-- **Belt-wide effects:** `tension_kn` gets a small dip near failure: `- 8 kN x s^3` **(assumption)**.
-- **Why this fault matters:** it creates a periodic once-per-lap pattern at every sensor, and the same defect appears
-  in the camera images lap after lap (section 9).
-- **Label:** belt-level (asset `BELT`), with its current ground position stored per time step for the dashboard.
+Why removed: public image datasets are unrelated photos of damage. They have no severity progression, no repeat views
+of one defect and no sensor context, so sensors and images would have agreed only because we wired them to agree.
+Belt damage is now handled by vision alone, through the visual defects in section 9. There is no `BELT` asset.
 
 ### 7.4 Drive overheating (motor)
 
@@ -279,17 +265,25 @@ The simulator does not make images. It makes **capture events** that the vision 
 
 - Three stations on the carrying face at ground positions **50 m, 1500 m and 2950 m** (start at loading, middle, end at
   unloading). Config `images.station_positions_m`.
-- Each running station emits one capture every `images.capture_interval_s` = **30 s** of sim time **(assumption)**.
-  Field of view `images.fov_m` = **10 m** **(assumption)**.
+- **Visual defects.** Place `images.defects_per_30d` = **3** defects **(assumption)** at belt coordinates uniform in
+  `[0, 6000)`, each with an `appear_time` (it exists from then until the scenario ends). They have **no effect on any
+  sensor signal** and are not equipment faults: no severity, no failure, no repair stop. They exist so the vision
+  pipeline has the same defect coming into view lap after lap. Ground truth goes to `visual_defects.parquet`:
+  `defect_id`, `belt_coordinate_m`, `appear_time`.
+- Field of view `images.fov_m` = **10 m** **(assumption)**. Each running station emits one capture every
+  `images.capture_interval_s` = **2 s** of sim time **(assumption, to confirm in Stage 5)**. At 4 m/s the belt moves
+  8 m between captures, so consecutive views overlap and every belt point is seen on every lap. The earlier value of
+  30 s left 120 m between views, so a defect would have been seen on only about 8% of laps.
+- Captures are finer than the one-minute sensor step, so belt travel is interpolated inside each minute.
 - Per capture, record: `capture_id`, `timestamp`, `station`, `belt_coordinate_m` (centre of the view, from the formula
   in section 6), `fov_m`, `splice_in_view` (true if a splice joint coordinate is inside the view),
-  `fault_id_in_view` (the belt-damage `fault_id` if its coordinate is inside the view, else null),
-  `damage_severity` (that fault's current `s`, else 0).
-- Why this design: a camera sees a short stretch, so a defect is caught in only a few frames per lap; the same
+  `defect_id_in_view` (the visual defect's id if its coordinate is inside the view, else null).
+- Why this design: a camera sees a short stretch, so a defect is caught in one or two frames per lap; the same
   coordinate reappears every lap. That is exactly the duplicate-detection and belt-coordinate problem the vision
-  pipeline must solve. **State-matched pairing:** the vision pipeline will choose a damaged image when
-  `fault_id_in_view` is set and a clean image otherwise, so sensors and vision agree.
-- Output: `image_events.parquet`.
+  pipeline must solve. **Pairing:** each visual defect is pinned to one damaged image from the dataset, shown whenever
+  `defect_id_in_view` is set; a clean image is shown otherwise.
+- Output: `image_events.parquet`. Volume at 2 s is about 2.9 million rows per 30 days; if that is too heavy, write
+  only the captures with a splice or a defect in view, plus a count of the rest.
 
 ## 10. Messiness (data defects)
 
@@ -313,15 +307,18 @@ Rules:
 
 ## 11. Outputs
 
-Per scenario, in `data/<scenario_name>/`:
+Per scenario, in `data/<scenario_name>/`. As built, the folder is split in two: `public/` holds what the pipeline may
+read and `truth/` holds everything else. `config_used.yaml`, `run_meta.json`, `conditions.parquet` and the per-zone
+random biases are in `truth/`; the pipeline gets `public/manifest.json`. See `docs/CHANGELOG.md` for why.
 
 | File | Contents | Pipeline may read? |
 |---|---|---|
 | `zones.parquet` | one row per (timestamp, zone): timestamp, splice_section, zone_in_section, global_zone, position_m, run, run_state, the five signals | yes (after messiness) |
 | `belt_wide.parquet` | one row per timestamp: run_state, throughput, motor current, motor temp, gearbox temp, drive speed, belt speed, slip_pct, tension | yes (after messiness) |
-| `image_events.parquet` | capture events (section 9) | yes, except `fault_id_in_view` and `damage_severity`, which are ground truth |
+| `image_events.parquet` | capture events (section 9) | yes, except `defect_id_in_view`, which is ground truth and is written to a separate truth file |
+| `visual_defects.parquet` | visual defects (section 9) | **no (ground truth)** |
 | `layout.parquet` | per-zone static table | yes |
-| `faults.parquet` | `fault_id`, `type`, `asset` (zone number, `DRIVE` or `BELT`), `belt_coordinate_m` (belt damage only), `onset_time`, `failure_time`, `repair_end`, key parameters | **no (ground truth)** |
+| `faults.parquet` | `fault_id`, `type`, `asset` (zone number or `DRIVE`), `onset_time`, `failure_time`, `repair_end`, key parameters | **no (ground truth)** |
 | `labels.parquet` | per (timestamp, asset): `stage` (`normal`, `early` for `0 < s < 0.3`, `advanced` for `0.3 <= s < 1`, `failed`), `hours_to_failure`, `fails_within_24h`, `is_hard_negative_period` | **no (ground truth)** |
 | `hard_negatives.parquet` | section 8 | **no** |
 | `sensor_faults.parquet` | section 10 | **no** |
@@ -346,9 +343,9 @@ README.
 6. conditions     = apply_repair_stops(conditions, faults)       (belt stops during repair; speed 0)
 7. belt coords    = cumulative distance D(t)
 8. healthy        = generate_healthy(conditions)                 (zones, belt-wide)
-9. effects        = apply_fault_effects(zones, belt_wide, faults, D)
+9. effects        = apply_fault_effects(zones, belt_wide, faults)
 10. labels        = build_labels(faults, hard_negatives)         (from clean truth, before messiness)
-11. image events  = build_image_events(conditions, faults, D)
+11. image events  = build_image_events(conditions, visual_defects, D)
 12. messiness     = inject_messiness(zones, belt_wide)           (missing, outages, stuck) -> sensor_faults
 13. write files, config_used.yaml, run_meta.json
 ```
@@ -378,8 +375,6 @@ tests and a sanity plot, using six random streams from the start (section 12). F
 - a seeded run with one idler fault shows the rising temperature, acoustic and vibration in that zone only, in the
   plot, with early effects below one noise sigma at `s = 0.1`;
 - a drive fault raises motor and gearbox temperature and nothing else belt-wide at first;
-- a belt-damage run shows a kurtosis spike in every zone once per 25 min of running, at the right time for that
-  zone (check one zone against the formula in section 6);
 - repair stops appear as `stopped` periods in the run state, and signals are healthy again afterwards;
 - tests: events never overlap on one asset, never start in the first 24 h, always finish 12 h before the end; severity
   is 0 outside events, 1 at failure; the idler fault never changes drive temperatures.
@@ -393,8 +388,8 @@ stuck counts and durations match the config, flat lines are exactly constant in 
 lists each one.
 
 **Stage 5: image events and replay.** `simulator/images.py`, `simulator/stream.py` (yields readings in timestamp order,
-optionally with a speed factor, for live mode). Finished when a belt-damage coordinate shows up in
-`fault_id_in_view` roughly once per lap per station while in view, and the stream replays a scenario in order.
+optionally with a speed factor, for live mode). Finished when a visual defect's coordinate shows up in
+`defect_id_in_view` once per lap per station, and the stream replays a scenario in order.
 
 **Stage 6: scenario set.** `configs/` and a script that writes the scenario set (section 14). Finished when all
 scenarios generate and `run_meta.json` shows the fault counts per scenario.
@@ -412,9 +407,8 @@ Why not 90-day scenarios: the 6 km belt doubled the volume, and 12 of them would
 get scored, not days, and 12 shorter scenarios give more independent events per split than a few long ones. If you
 prefer the earlier 90-day plan, only the `days` value and the fault counts change.
 
-Fault counts at default rates per 30 days: 5 idler, 1 drive, 1 belt damage. Across 8 training scenarios that is about
-40 idler, 8 drive and 8 belt events; across the 2 test scenarios about 10, 2 and 2. The drive and belt-damage counts are
-small, which the README must state.
+Fault counts at default rates per 30 days: 5 idler, 1 drive. Across 8 training scenarios that is about 40 idler and
+8 drive events; across the 2 test scenarios about 10 and 2. The drive count is small, which the README must state.
 
 Dev loop: 14 days, one seed, `python -m simulator.run --days 14 --seed 1`.
 
@@ -425,8 +419,6 @@ faults:
   idler_bearing: {per_30d: 5, min_days: 3, max_days: 14, repair_hours: 2,
                   temp_c: 25, temp_exp: 2.0, acoustic_db: 10, acoustic_exp: 1.5,
                   vib_gain: 0.5, vib_exp: 2.0, kurtosis_add: 1.5, current_a: 1.5, current_exp: 3.0}
-  belt_damage:   {per_30d: 1, min_days: 2, max_days: 6, repair_hours: 4,
-                  kurtosis_add: 6, vib_gain: 0.4, acoustic_db: 4, return_side_factor: 0.5, tension_kn: 8}
   drive_overheat: {per_30d: 1, min_hours: 6, max_hours: 48, repair_hours: 2,
                    motor_temp_c: 35, gearbox_temp_c: 20, exp: 1.3, current_a: 6}
   progression_exponent: 2.5
@@ -446,8 +438,9 @@ messiness:
   stuck_hours: [2, 48]
 images:
   station_positions_m: [50, 1500, 2950]
-  capture_interval_s: 30
+  capture_interval_s: 2
   fov_m: 10
+  defects_per_30d: 3
 ```
 
 ## 16. Rules for the build
@@ -468,4 +461,5 @@ images:
 - The scenario set uses 30-day scenarios instead of the earlier 90-day plan.
 - Cameras image only the carrying face; the return face is a README note on what we skipped.
 - Splice sections are fixed ground-path stretches; splice joints ride the belt as landmarks for vision.
+- Belt damage is vision-only. Visual defects have no sensor signature, so sensors and images are not linked.
 - Vibration stays as summary features (RMS, kurtosis), not raw waveforms.
