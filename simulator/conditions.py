@@ -76,18 +76,25 @@ class Conditions:
                              "ambient_c": self.ambient_c, "dust": self.dust})
 
 
-def build_conditions(cfg: ConditionsCfg, start: str, n_steps: int, rng: np.random.Generator) -> Conditions:
-    ts = pd.date_range(start, periods=n_steps, freq="min")
+def _clock(start: str, n_steps: int):
     start_ts = pd.Timestamp(start)
-    minute_of_day = (start_ts.hour * 60 + start_ts.minute + np.arange(n_steps)) % 1440
-    hour = minute_of_day / 60.0
-    day_index = start_ts.day_of_year + (start_ts.hour * 60 + start_ts.minute + np.arange(n_steps)) // 1440
+    minutes = start_ts.hour * 60 + start_ts.minute + np.arange(n_steps)
+    return start_ts, minutes % 1440, start_ts.day_of_year + minutes // 1440
 
-    # Duty cycle
+
+def duty_cycle_base(cfg: ConditionsCfg, start: str, n_steps: int):
+    """Planned duty-cycle factor 0..1 from the clock alone (no randomness): daily run window with ramps."""
+    _, minute_of_day, _ = _clock(start, n_steps)
     window = cfg.run_hours * 60.0
     m = (minute_of_day - cfg.day_start_hour * 60.0) % 1440
-    inside = m < window
-    base = np.where(inside, np.clip(np.minimum(m, window - m) / cfg.ramp_minutes, 0.0, 1.0), 0.0)
+    return np.where(m < window, np.clip(np.minimum(m, window - m) / cfg.ramp_minutes, 0.0, 1.0), 0.0)
+
+
+def build_conditions(cfg: ConditionsCfg, start: str, n_steps: int, rng: np.random.Generator) -> Conditions:
+    ts = pd.date_range(start, periods=n_steps, freq="min")
+    _, minute_of_day, day_index = _clock(start, n_steps)
+    hour = minute_of_day / 60.0
+    base = duty_cycle_base(cfg, start, n_steps)
     speed_noise = ar1(rng, n_steps, cfg.speed_ar_phi, cfg.speed_ar_sd)
 
     # Load

@@ -51,7 +51,7 @@ def check_public_columns(name: str, df: pd.DataFrame) -> None:
             raise LeakageError(f"public table {name!r} column {col!r} contains forbidden token(s) {hit}")
 
 
-def write_scenario(scn, cfg: Config, out_root) -> Path:
+def write_scenario(scn, cfg: Config, out_root, manifest_extra=None) -> Path:
     root = Path(out_root) / cfg.scenario
     pub, tru = root / PUBLIC_DIR, root / TRUTH_DIR
     pub.mkdir(parents=True, exist_ok=True)
@@ -64,7 +64,7 @@ def write_scenario(scn, cfg: Config, out_root) -> Path:
     # Public manifest: only what a real plant would know about its own data feed.
     manifest = {"scenario": cfg.scenario, "start": cfg.start, "step_seconds": cfg.step_seconds,
                 "n_timestamps": scn.meta["n_timestamps"], "n_zones": scn.meta["n_zones"],
-                "files": sorted(f"{n}.parquet" for n in PUBLIC_COLUMNS)}
+                "files": sorted(f"{n}.parquet" for n in PUBLIC_COLUMNS), **(manifest_extra or {})}
     (pub / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
     # Truth: hidden simulator parameters, conditions (analysis only), exact config and run metadata.

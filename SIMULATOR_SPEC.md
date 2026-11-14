@@ -1,5 +1,16 @@
 # Simulator Build Spec (for Claude Code)
 
+> **Status note (2026-11-14). `docs/BUILD_PLAN.md` wins where it differs from this file.**
+> - Stages 0 to 4 and Stage 6 (scenario set) are built. Anything below that says nothing is built is superseded.
+> - Python 3.12 (this file says 3.11+).
+> - Two sensor faults only: idler bearing and drive overheating. Belt damage (section 7.3) is removed.
+> - Section 9 (image events, Stage 5) is **not built yet**: vision is deferred while the image dataset downloads,
+>   with placeholders in the backend and dashboard. Replay is a separate process, not part of the simulator.
+> - Section 6 (belt coordinates): the code is kept, unused for now.
+> - Section 14 fault counts: 40 idler and 8 drive events in training, 10 and 2 in validation, 10 and 2 in test,
+>   8 and 2 in stress (`docs/scenario_set_report.md`).
+
+
 Read `PROJECT_OVERVIEW.md` first for context. This file is the full build spec for the simulator. Build exactly what is
 listed, in the order given in section 13, and stop at each "finished when" test.
 

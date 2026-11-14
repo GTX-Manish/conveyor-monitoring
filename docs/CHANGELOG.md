@@ -47,3 +47,15 @@
   unchanged, except that an empty `faults` table now has timestamp-typed time columns.
 - **Build plan** (`docs/BUILD_PLAN.md`) added, with two corrections from the user: vision is deferred with placeholders
   (not dropped), and thresholds target at most 1 to 2 false alerts in 20 (not 1 false alarm per zone per month).
+- **Python 3.12**: the environment was rebuilt on Python 3.12.16 (it was 3.14.4) so LightGBM wheels install; versions
+  are pinned in `requirements.txt` and `.python-version`. All earlier tests pass unchanged.
+- **Stage 6**: scenario set. `python -m simulator.scenario_set` builds 13 thirty-day scenarios (8 train, 2 validation,
+  2 test, 1 stress) and the 14-day demo from `configs/scenarios/*.yaml`, one process per scenario, skipping any whose
+  config hash is unchanged. `scripts/find_demo_seed.py` picked seed 1015 for the demo from schedules alone. Outputs:
+  `data/scenario_set.json`, `docs/scenario_set_report.md`, `docs/stage6_scenario_set.png`. Notes:
+  - **`--workers 2` is allowed but slower here.** Measured: about 5 s per scenario with one worker, about 115 s each
+    with two. The default is one worker; the full set took about 7 minutes.
+  - Peak memory is about 775 MB per scenario, against the 3 GB limit.
+  - Three demo rules were made stricter than the plan so the demo shows them: the stuck sensor needs 2 h of running
+    time, the outage must come after day 1 (after the history preload), and both sit on a healthy zone.
+  - `SIMULATOR_SPEC.md` carries a status note listing what the build plan supersedes.

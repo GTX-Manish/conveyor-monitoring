@@ -12,7 +12,12 @@ from simulator.io import (PUBLIC_COLUMNS, LeakageError, check_public_columns, lo
                           write_scenario)
 
 REPO = Path(__file__).resolve().parents[1]
-PIPELINE_DIRS = ["backend", "model", "vision", "dashboard"]
+# Live-path and model code. Folders that do not exist yet are skipped.
+PIPELINE_DIRS = ["backend", "replayer", "frontend/src", "common", "model", "vision", "scripts"]
+# The only files outside simulator/ that may read ground truth (BUILD_PLAN.md section 2).
+TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py"}
+OTHER_TRUTH_FILES = ["layout_truth", "faults.parquet", "hard_negatives.parquet", "sensor_faults.parquet",
+                     "conditions.parquet"]
 
 
 @pytest.fixture(scope="module")
@@ -70,12 +75,26 @@ def test_load_public_never_needs_truth(written, tmp_path):
 
 
 def test_pipeline_code_never_touches_truth():
-    """Static guard for later stages: pipeline packages may not reference truth files or simulator internals."""
+    """Static guard: live-path and model code may not reference truth files or simulator internals."""
     pattern = re.compile(r"""truth|layout_truth|labels\.parquet|faults\.parquet|hard_negatives\.parquet|"""
                          r"""sensor_faults\.parquet|conditions\.parquet|simulator\.generate""")
     offenders = []
     for d in PIPELINE_DIRS:
-        for path in (REPO / d).rglob("*.py") if (REPO / d).is_dir() else []:
+        if not (REPO / d).is_dir():
+            continue
+        for path in (REPO / d).rglob("*"):
+            rel = str(path.relative_to(REPO))
+            if path.suffix not in {".py", ".ts", ".tsx"} or rel in TRUTH_READERS:
+                continue
             if pattern.search(path.read_text()):
-                offenders.append(str(path.relative_to(REPO)))
+                offenders.append(rel)
     assert not offenders, f"pipeline code references ground truth: {offenders}"
+
+
+def test_model_data_script_reads_labels_only():
+    """Training needs labels; it must not read any other truth table (conditions are never a model input)."""
+    path = REPO / "scripts" / "make_model_data.py"
+    if not path.exists():
+        pytest.skip("scripts/make_model_data.py is not built yet")
+    text = path.read_text()
+    assert not [name for name in OTHER_TRUTH_FILES if name in text]
