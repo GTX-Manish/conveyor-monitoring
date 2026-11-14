@@ -144,10 +144,9 @@ def faults_frame(events, timestamps) -> pd.DataFrame:
         "fault_id": [e.fault_id for e in events],
         "type": [e.type for e in events],
         "asset": [e.asset for e in events],
-        "onset_time": [ts[e.onset] for e in events],
-        "failure_time": [ts[e.failure] for e in events],
-        "repair_end": [ts[e.repair_end] for e in events],
+        "onset_time": ts[[e.onset for e in events]],
+        "failure_time": ts[[e.failure for e in events]],
+        "repair_end": ts[[e.repair_end for e in events]],
         "duration_hours": [(e.failure - e.onset) / 60.0 for e in events],
         "repair_hours": [(e.repair_end - e.failure) / 60.0 for e in events],
-    }).astype({"onset_time": "datetime64[us]", "failure_time": "datetime64[us]", "repair_end": "datetime64[us]"}
-              if events else {})
+    })

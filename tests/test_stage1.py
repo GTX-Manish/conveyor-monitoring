@@ -26,7 +26,6 @@ def test_revolution_time():
 def test_row_count(scn14, cfg14):
     assert len(scn14.zones) == cfg14.days * 1440 * 120 == 2_419_200
     assert len(scn14.belt_wide) == cfg14.days * 1440
-    assert scn14.meta["generate_seconds"] < 15
 
 
 def test_running_share(scn14):

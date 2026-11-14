@@ -42,3 +42,8 @@
   - A stuck sensor holds the last value it reported before the freeze; `sensor_faults.parquet` records it.
   - Rows are never dropped: a missing reading is a NaN in its row, and `timestamp` and `run_state` are always present.
   - Sensor faults may overlap each other and equipment faults; nothing prevents a stuck sensor in a failing zone.
+- **Simplicity audit** (`docs/SIMPLICITY_AUDIT.md`): removed a wall-clock assertion that failed on a busy machine, and
+  tidied stage leftovers (unused `Conditions.run_state`, optional `Scenario` fields, an unneeded `__all__`). Output is
+  unchanged, except that an empty `faults` table now has timestamp-typed time columns.
+- **Build plan** (`docs/BUILD_PLAN.md`) added, with two corrections from the user: vision is deferred with placeholders
+  (not dropped), and thresholds target at most 1 to 2 false alerts in 20 (not 1 false alarm per zone per month).

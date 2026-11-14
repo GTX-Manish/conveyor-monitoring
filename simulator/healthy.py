@@ -75,6 +75,7 @@ def generate_healthy_belt(cfg: SignalsCfg, cond: Conditions, layout_public, belt
     tension = (cfg.tension_base_kn + cfg.tension_speed_kn * speed + cfg.tension_load_kn * load
                + rng.normal(0.0, cfg.tension_noise_kn * ns, T))
 
-    return {"throughput_tph": cond.throughput_tph, "motor_current_a": current, "motor_temp_c": motor_temp,
+    # throughput is copied: these arrays are edited in place later (fault effects, messiness)
+    return {"throughput_tph": cond.throughput_tph.copy(), "motor_current_a": current, "motor_temp_c": motor_temp,
             "gearbox_temp_c": gearbox_temp, "drive_speed_ms": drive_speed, "belt_speed_ms": belt_speed,
             "slip_pct": slip_pct, "tension_kn": tension}

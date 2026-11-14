@@ -270,7 +270,3 @@ def dump_config(cfg: Config, path) -> None:
 
 def config_to_dict(cfg: Config) -> dict:
     return _plain(cfg)
-
-
-__all__ = ["Config", "LayoutCfg", "ConditionsCfg", "SignalsCfg", "config_from_dict",
-           "load_config", "dump_config", "config_to_dict"]

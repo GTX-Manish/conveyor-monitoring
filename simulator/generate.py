@@ -1,4 +1,4 @@
-"""Seed -> tables. Follows the generation order in SIMULATOR_SPEC.md section 12 (stage 1 parts only)."""
+"""Seed -> tables. Follows the generation order in SIMULATOR_SPEC.md section 12."""
 import time
 from dataclasses import dataclass
 
@@ -31,12 +31,12 @@ class Scenario:
     layout_truth: pd.DataFrame
     conditions: pd.DataFrame
     meta: dict
-    faults: pd.DataFrame = None
-    events: list = None
-    hard_negatives: pd.DataFrame = None
-    labels: pd.DataFrame = None
-    sensor_faults: pd.DataFrame = None
-    sensor_fault_events: list = None
+    faults: pd.DataFrame
+    events: list               # FaultEvent objects behind `faults`
+    hard_negatives: pd.DataFrame
+    labels: pd.DataFrame
+    sensor_faults: pd.DataFrame
+    sensor_fault_events: list  # SensorFault objects behind `sensor_faults`
 
 
 def make_streams(seed: int) -> dict:
@@ -70,7 +70,6 @@ def generate(cfg: Config) -> Scenario:
     labels = build_labels(events, hard_negative_mask(hard_negs, n_steps), cond.timestamp, len(layout), cfg)
 
     # Messiness goes in last, on the public signals only: labels above are already fixed from clean truth.
-    belt_sig = {k: np.array(v, dtype=float) for k, v in belt_sig.items()}  # own copies, safe to edit
     sensor_faults = schedule_sensor_faults(cfg.messiness, cfg.days, len(layout), ZONE_SIGNALS, rng["messiness"])
     mess = inject_messiness(zone_sig, belt_sig, sensor_faults, cfg.messiness, rng["messiness"])
 

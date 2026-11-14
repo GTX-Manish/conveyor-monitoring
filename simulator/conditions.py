@@ -32,8 +32,7 @@ def lag(target, tau_min, step_min=1.0):
 @dataclass
 class Conditions:
     timestamp: pd.DatetimeIndex
-    run_state: np.ndarray      # 'stopped' | 'ramp' | 'running'
-    base: np.ndarray           # duty-cycle ramp factor 0..1
+    base: np.ndarray           # duty-cycle ramp factor 0..1 (0 stopped, below 1 ramp, 1 running)
     speed: np.ndarray          # speed fraction, 0 when stopped
     load: np.ndarray           # load_raw * speed
     ambient_c: np.ndarray
@@ -107,12 +106,11 @@ def build_conditions(cfg: ConditionsCfg, start: str, n_steps: int, rng: np.rando
 
 
 def _derive(cfg, ts, base, speed_noise, load_raw, ambient, dust_noise, dust_floor=None) -> Conditions:
-    run_state = np.where(base <= 0, "stopped", np.where(base < 1, "ramp", "running"))
-    speed = np.where(base <= 0, 0.0, base * (1.0 + speed_noise))
+    speed =np.where(base <= 0, 0.0, base * (1.0 + speed_noise))
     load = load_raw * speed
     dust = np.clip(cfg.dust_base + cfg.dust_running_gain * base + dust_noise, 0.0, 1.0)
     if dust_floor is not None:
         dust = np.maximum(dust, dust_floor)
-    return Conditions(ts, run_state, base, speed, load, ambient, dust, cfg.max_throughput_tph * load,
+    return Conditions(ts, base, speed, load, ambient, dust, cfg.max_throughput_tph * load,
                       cfg=cfg, speed_noise=speed_noise, load_raw=load_raw, dust_noise=dust_noise,
                       dust_floor=dust_floor)
