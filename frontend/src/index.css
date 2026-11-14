@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Colours are written against roles; light and dark values swap here and nowhere else.
+   Status colours are fixed and always come with a glyph or a label, never colour alone. */
+:root {
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --surface-2: #f3f2ef;
+  --border: #dddbd5;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7b7a75;
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --st-normal: #0ca30c;
+  --st-normal-quiet: color-mix(in srgb, #0ca30c 45%, var(--surface-1));
+  --st-abnormal: #fab219;
+  --st-failure: #d03b3b;
+  --st-serious: #ec835a;
+  --st-nodata: #8d8c86;
+  --grid: #e7e5e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --surface-2: #242423;
+    --border: #3a3a37;
+    --text-primary: #f0efec;
+    --text-secondary: #c3c2b7;
+    --text-muted: #96958c;
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --st-nodata: #7d7c76;
+    --grid: #30302e;
+  }
+}
+body { background: var(--surface-1); color: var(--text-primary); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+.tabular { font-variant-numeric: tabular-nums; }

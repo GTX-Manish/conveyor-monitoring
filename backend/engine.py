@@ -1,6 +1,7 @@
 """The single writer: validates ingested batches, stores them, tracks sensor health and runs live scoring.
 
-Everything that changes state goes through one queue and one thread (SQLite has one writer), in this order:
+Everything that changes state goes through `Engine.submit`, one item at a time under one lock (SQLite has one
+writer), in this order:
   1. validate rows (reject, de-duplicate, range-check) and store them, counting what was wrong;
   2. advance the watermark, so the steps below see minutes in time order even if batches arrive out of order;
   3. per minute: update sensor health (stuck, no data);
@@ -10,7 +11,6 @@ Steps 3 and 4 use model/features.py and model/alerting.py, the same code the off
 import json
 import logging
 import math
-import queue
 import sqlite3
 import threading
 import time
@@ -38,7 +38,11 @@ def connect(path, read_only: bool = False) -> sqlite3.Connection:
         con = sqlite3.connect(f"file:{path}?mode=ro", uri=True, check_same_thread=False, timeout=5)
     else:
         con = sqlite3.connect(str(path), check_same_thread=False, timeout=5, isolation_level=None)
-        for pragma in ("journal_mode=WAL", "synchronous=NORMAL", "temp_store=MEMORY", "cache_size=-65536"):
+        # synchronous=OFF: this database is deleted and rebuilt on every start, so surviving a power cut is
+        # worth nothing, while waiting for the disk on every checkpoint cut ingest from about 150 to 24
+        # batches per second on a busy disk (measured). A system of record would use NORMAL.
+        for pragma in ("journal_mode=WAL", "synchronous=OFF", "wal_autocheckpoint=4000", "temp_store=MEMORY",
+                       "cache_size=-65536"):
             con.execute(f"PRAGMA {pragma}")
     con.row_factory = sqlite3.Row
     return con
@@ -77,6 +81,7 @@ class Engine:
         self.settings, self.models, self.scenario = settings, models, scenario
         self.db_path = Path(db_path)
         self.ranges = {k: tuple(v) for k, v in settings["ingest"]["ranges"].items()}
+        self.zone_ranges = [(sig, *self.ranges[sig]) for sig in ZONE_SIGNALS]
         self.grace_s = int(settings["ingest"]["grace_minutes"] * STEP)
         self.commit_every = int(settings["ingest"]["commit_every_batches"])
         self.stuck_after = int(settings["data_quality"]["stuck_after_identical"])
@@ -89,8 +94,6 @@ class Engine:
                        "is_unloading": np.array([bool(r["is_unloading"]) for r in self.layout_rows])}
 
         self.lock = threading.RLock()            # guards the in-memory state read by the API
-        self.queue: queue.Queue = queue.Queue(maxsize=5000)
-        self.thread = None
         # ingest state
         self.seen = {}                           # ts -> bool (Z,) zones already stored for that minute
         self.belt_seen = set()
@@ -98,9 +101,11 @@ class Engine:
         self.max_ts = None
         self.next_ts = None                      # next minute to process, in order
         self.watermark = None                    # last processed minute
+        self.start_ts = None                     # first minute of the run
         self.totals = dict.fromkeys(("batches", "rows", "null_values", "rejected_rows", "out_of_range",
                                      "duplicates", "late_rows"), 0)
         self.pending_commits = 0
+        self.timing = {"busy_s": 0.0}             # seconds spent processing
         # data quality state
         S = len(ZONE_SIGNALS)
         self.last_val = np.full((N_ZONES, S), np.nan)
@@ -160,41 +165,38 @@ class Engine:
         self.con.executemany("INSERT INTO meta VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
                              [(k, str(v)) for k, v in values.items()])
 
-    # ------------------------------------------------------------------ queue and thread
+    # ------------------------------------------------------------------ the single writer
     def start(self) -> None:
-        self.thread = threading.Thread(target=self._run, name="engine", daemon=True)
-        self.thread.start()
+        pass
 
     def stop(self) -> None:
-        if self.thread:
-            self.queue.put(("stop", None))
-            self.thread.join(timeout=30)
-            self.thread = None
-        self.con.close()
+        with self.lock:
+            self._commit()
+            self.con.close()
 
     def submit(self, kind: str, payload) -> None:
-        self.queue.put((kind, payload))
+        """Process one item now, holding the writer lock. Every change to the database goes through here.
 
-    def drain(self) -> None:
-        """Block until everything submitted so far has been processed and committed (tests, shutdown)."""
-        self.queue.join()
-
-    def _run(self) -> None:
-        while True:
-            kind, payload = self.queue.get()
+        Why not a queue and a worker thread: measured on the 2-core development machine, a worker thread
+        competing with the web server for Python's interpreter lock ran about 7 times slower than the same
+        work done directly in the request (24 against 180 batches per second). The caller waiting for the
+        work is also the back-pressure: the replayer cannot send faster than the engine can take.
+        """
+        t0 = time.perf_counter()
+        with self.lock:
             try:
-                if kind == "stop":
-                    with self.lock:
-                        self._commit()
-                    return
-                with self.lock:
-                    self.handle(kind, payload)
-                    if self.pending_commits >= self.commit_every or self.queue.empty():
-                        self._commit()
-            except Exception:  # keep the writer alive; one bad batch must not stop the system
+                self.handle(kind, payload)
+                if self.pending_commits >= self.commit_every or kind != "ingest":
+                    self._commit()
+            except Exception:  # one bad batch must not stop the system
                 log.exception("failed to process a %s item", kind)
             finally:
-                self.queue.task_done()
+                self.timing["busy_s"] += time.perf_counter() - t0
+
+    def drain(self) -> None:
+        """Commit what has been processed (tests, shutdown)."""
+        with self.lock:
+            self._commit()
 
     def handle(self, kind: str, payload) -> None:
         """Process one item now (the engine thread calls this; tests may call it directly)."""
@@ -238,29 +240,60 @@ class Engine:
         rows = body.get("batch") or []
         counts["rows"] = len(rows)
         store, sim_ts = [], None
+        parsed = {}    # a batch is one minute, so nearly every row carries the same timestamp
+        live = {}      # ts -> (zone indexes, value rows, run state) for minutes not yet processed
+        ranges, seen_by_ts, watermark = self.zone_ranges, self.seen, self.watermark
+        nulls = bad = 0
         for r in rows:
-            ts = parse_ts(r.get("ts")) if isinstance(r, dict) else None
-            rs = parse_run_state(r.get("run_state")) if ts is not None else None
-            zone = r.get("zone_id") if ts is not None else None
-            if rs is None or isinstance(zone, bool) or not isinstance(zone, int) or not 1 <= zone <= N_ZONES:
+            if r.__class__ is not dict:
                 counts["rejected_rows"] += 1
                 continue
-            seen = self.seen.get(ts)
+            raw = r.get("ts")
+            ts = parsed.get(raw, 0) if raw.__class__ in (int, str) else None
+            if ts == 0:
+                ts = parsed[raw] = parse_ts(raw)
+            rs = r.get("run_state")
+            if rs.__class__ is not int or not 0 <= rs <= 2:
+                rs = parse_run_state(rs)
+            zone = r.get("zone_id")
+            if ts is None or rs is None or zone.__class__ is not int or not 1 <= zone <= N_ZONES:
+                counts["rejected_rows"] += 1
+                continue
+            seen = seen_by_ts.get(ts)
             if seen is None:
-                seen = self.seen[ts] = np.zeros(N_ZONES, dtype=bool)
+                seen = seen_by_ts[ts] = np.zeros(N_ZONES, dtype=bool)
             if seen[zone - 1]:
                 counts["duplicates"] += 1    # the first row for (ts, zone) wins
                 continue
             seen[zone - 1] = True
-            vals = [self._clean(s, r.get(s), counts) for s in ZONE_SIGNALS]
+            vals = []
+            for sig, lo, hi in ranges:
+                v = r.get(sig)
+                if v is None:
+                    nulls += 1
+                elif (v.__class__ is float or v.__class__ is int) and lo <= v <= hi:
+                    pass
+                else:                        # not a number, NaN, infinity or outside the physical range
+                    bad += 1
+                    v = None
+                vals.append(v)
             store.append((ts, zone, rs, *vals))
-            sim_ts = ts if sim_ts is None else max(sim_ts, ts)
-            if self.watermark is not None and ts <= self.watermark:
+            if sim_ts is None or ts > sim_ts:
+                sim_ts = ts
+            if watermark is not None and ts <= watermark:
                 counts["late_rows"] += 1     # stored, but too late for health tracking and scoring
             else:
-                rec = self._minute(ts)
-                rec["z"][:, zone - 1] = [np.nan if v is None else v for v in vals]
-                rec["run_state"] = rs
+                group = live.get(ts)
+                if group is None:
+                    group = live[ts] = ([], [], rs)
+                group[0].append(zone - 1)
+                group[1].append(vals)
+        counts["null_values"] += nulls
+        counts["out_of_range"] += bad
+        for ts, (idx, values, rs) in live.items():
+            rec = self._minute(ts)
+            rec["z"][:, idx] = np.array(values, dtype=np.float64).T      # None becomes NaN
+            rec["run_state"] = rs
         if store:
             self.con.executemany("INSERT INTO readings VALUES (?,?,?,?,?,?,?,?)", store)
 
@@ -302,7 +335,7 @@ class Engine:
         if self.max_ts is None:
             return
         if self.next_ts is None:
-            self.next_ts = min(self.buffers)
+            self.next_ts = self.start_ts = min(self.buffers)
         edge = self.max_ts if flush else self.max_ts - self.grace_s
         while self.next_ts <= self.max_ts:
             seen = self.seen.get(self.next_ts)
@@ -418,7 +451,7 @@ class Engine:
         zone_vals = {s: np.stack([m["z"][i] for m in mins])[None] for i, s in enumerate(ZONE_SIGNALS)}
         belt_vals = {s: np.array([m["belt"][i] for m in mins])[None] for i, s in enumerate(BELT_SIGNALS)}
         run_state = np.array([m["run_state"] for m in mins])[None]
-        self.table = append_windows(self.table, window_aggregates(zone_vals, belt_vals, run_state))
+        self.table = append_windows(self.table, window_aggregates(zone_vals, belt_vals, run_state, self.layout))
         self.n_windows += 1
         if self.models is None or len(self.table["run_share"]) < HISTORY_WINDOWS:
             return   # the model needs 24 h of history behind every score
@@ -506,14 +539,15 @@ class Engine:
                     "p_fail_24h": round(float(self.p_fail[i]), 4) if scoring else None,
                     "est_hours_to_failure": round(float(self.est_hours[i]), 1)
                     if shown and np.isfinite(self.est_hours[i]) else None})
-            return {"sim_ts": self.watermark, "scored_ts": self.scored_ts, "scoring": scoring,
+            return {"sim_ts": self.watermark, "start_ts": self.start_ts, "scored_ts": self.scored_ts,
+                    "scoring": scoring,
                     "model_version": self.models.version if self.models else None,
                     "windows_of_history": min(self.n_windows, HISTORY_WINDOWS),
                     "windows_needed": HISTORY_WINDOWS, "replay": dict(self.replay), "assets": assets}
 
     def ingest_totals(self) -> dict:
         with self.lock:
-            return dict(self.totals)
+            return {**self.totals, **{k: round(v, 1) for k, v in self.timing.items()}}
 
 
 def _clock(ts) -> str:

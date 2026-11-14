@@ -60,7 +60,7 @@ def window_labels(scenario_dir: Path, n_windows: int) -> dict:
 
 def build(scenario_dir: Path, out_dir: Path, name: str) -> dict:
     zone_vals, belt_vals, run_state, facts, window_end = public_blocks(scenario_dir)
-    table = window_aggregates(zone_vals, belt_vals, run_state)
+    table = window_aggregates(zone_vals, belt_vals, run_state, facts)
     del zone_vals, belt_vals
     feats = rolling_features(table, facts)
     W = len(window_end)

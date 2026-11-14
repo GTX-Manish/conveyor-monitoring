@@ -1,4 +1,4 @@
-"""HTTP API. Reads go to SQLite through short read-only connections; every write goes through the engine queue.
+"""HTTP API. Reads go to SQLite through short read-only connections; every write goes through Engine.submit.
 
     python -m backend.app            # settings from configs/app.yaml
 """
@@ -87,10 +87,12 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
 
     # ---------------------------------------------------------------- write side
     @app.post("/api/ingest")
-    def ingest(body: IngestBody):
+    async def ingest(body: IngestBody):
+        # Processed here, on the server's own thread, before the reply is sent: the sender cannot outrun the
+        # engine, and no second thread competes for the interpreter (see Engine.submit).
         e = eng()
-        e.submit("ingest", body.model_dump())
-        return {"queued": True, "replay": e.replay}
+        e.submit("ingest", {"batch": body.batch, "belt": body.belt})
+        return {"accepted": True, "replay": e.replay}
 
     @app.post("/api/replay")
     def set_replay(body: ReplayBody):
@@ -122,7 +124,7 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     def get_replay():
         e = eng()
         return {"state": e.replay["state"], "speed": e.replay["speed"], "position_ts": e.watermark,
-                "max_speed": settings["replay"]["max_speed"], "queue": e.queue.qsize()}
+                "max_speed": settings["replay"]["max_speed"]}
 
     @app.get("/api/layout")
     def layout():
@@ -204,7 +206,7 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     @app.get("/api/ingest/stats")
     def ingest_stats():
         e = eng()
-        return {"totals": e.ingest_totals(), "watermark_ts": e.watermark, "queue": e.queue.qsize(),
+        return {"totals": e.ingest_totals(), "watermark_ts": e.watermark,
                 "recent": query("SELECT * FROM ingest_log ORDER BY batch_id DESC LIMIT 20")}
 
     # ---------------------------------------------------------------- vision placeholders

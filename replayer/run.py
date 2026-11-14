@@ -39,10 +39,6 @@ def load_public(scenario_dir: Path):
     return ts, codes, z, b
 
 
-def clean(v):
-    return None if np.isnan(v) else round(float(v), 4)
-
-
 class Injector:
     """Seeded input faults. Counts are of what was actually sent, so they must equal the backend's counts."""
 
@@ -56,12 +52,12 @@ class Injector:
         if not self.enabled:
             return rows
         cfg, rng = self.cfg, self.rng
-        for row in rows:   # out-of-range first, so a duplicated row carries the same bad value
-            if rng.random() < cfg["out_of_range_value_rate"] * len(ZONE_SIGNALS):
-                sig = ZONE_SIGNALS[int(rng.integers(len(ZONE_SIGNALS)))]
-                if row[sig] is not None:
-                    row[sig] = OUT_OF_RANGE[sig]
-                    self.counts["out_of_range_values"] += 1
+        # out-of-range first, so a duplicated row carries the same bad value
+        for i in np.flatnonzero(rng.random(len(rows)) < cfg["out_of_range_value_rate"] * len(ZONE_SIGNALS)):
+            sig = ZONE_SIGNALS[int(rng.integers(len(ZONE_SIGNALS)))]
+            if rows[i][sig] is not None:
+                rows[i][sig] = OUT_OF_RANGE[sig]
+                self.counts["out_of_range_values"] += 1
         dup = np.flatnonzero(rng.random(len(rows)) < cfg["duplicate_row_rate"])
         rows = rows + [dict(rows[i]) for i in dup]
         self.counts["duplicate_rows"] += len(dup)
@@ -74,24 +70,37 @@ class Injector:
         return rows
 
 
-def batches(ts, codes, z, b, injector: Injector):
+def as_json_lists(a) -> list:
+    """Float array -> nested lists rounded to 4 decimals with None for NaN (what goes on the wire)."""
+    obj = np.round(a, 4).astype(object)
+    obj[np.isnan(a)] = None
+    return obj.tolist()
+
+
+def batches(ts, codes, z, b, injector: Injector, chunk: int = 720):
     """Yield (minute_index, sim_ts, body), with every Nth batch swapped with the next when injecting."""
     swap = int(injector.cfg["swap_every_batches"]) if injector.enabled else 0
+    zone_ids = list(range(1, N_ZONES + 1))
+    s0, s1, s2, s3, s4 = ZONE_SIGNALS
     held = None
-    for i in range(len(ts)):
-        t, rs = int(ts[i]), int(codes[i])
-        rows = [{"ts": t, "zone_id": zone + 1, "run_state": rs, **{s: clean(z[s][i, zone]) for s in ZONE_SIGNALS}}
-                for zone in range(N_ZONES)]
-        body = {"batch": injector.apply(rows, t, i),
-                "belt": {"ts": t, "run_state": rs, **{s: clean(b[s][i]) for s in BELT_SIGNALS}}}
-        if swap and (i + 1) % swap == 0 and i + 1 < len(ts):
-            held = (i, t, body)          # send the next minute first, then this one
-            continue
-        yield i, t, body
-        if held is not None:
-            injector.counts["swapped_batches"] += 1
-            yield held
-            held = None
+    for start in range(0, len(ts), chunk):       # convert half a day at a time: cheap and small in memory
+        stop = min(start + chunk, len(ts))
+        zl = [as_json_lists(z[s][start:stop]) for s in ZONE_SIGNALS]
+        bl = {s: as_json_lists(b[s][start:stop]) for s in BELT_SIGNALS}
+        for k in range(stop - start):
+            i, t, rs = start + k, int(ts[start + k]), int(codes[start + k])
+            rows = [{"ts": t, "zone_id": zid, "run_state": rs, s0: v0, s1: v1, s2: v2, s3: v3, s4: v4}
+                    for zid, v0, v1, v2, v3, v4 in zip(zone_ids, zl[0][k], zl[1][k], zl[2][k], zl[3][k], zl[4][k])]
+            body = {"batch": injector.apply(rows, t, i),
+                    "belt": {"ts": t, "run_state": rs, **{s: bl[s][k] for s in BELT_SIGNALS}}}
+            if swap and (i + 1) % swap == 0 and i + 1 < len(ts):
+                held = (i, t, body)              # send the next minute first, then this one
+                continue
+            yield i, t, body
+            if held is not None:
+                injector.counts["swapped_batches"] += 1
+                yield held
+                held = None
 
 
 def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bool, max_minutes=None,
@@ -131,8 +140,6 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
                 t_wall, t_sim = time.time(), sim_ts
             state = {**state, **reply}
             sent += 1
-            while i < preload and sent % 200 == 0 and client.get("/api/replay").json()["queue"] > 1500:
-                time.sleep(0.2)                                  # let the backend keep up during the preload
         client.post("/api/replay", json={"action": "finished"})
     finally:
         if own:

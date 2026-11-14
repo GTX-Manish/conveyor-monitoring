@@ -327,7 +327,7 @@ def test_live_features_equal_training_features(scenario, tmp_path):
     from scripts.make_model_data import public_blocks
 
     zone_vals, belt_vals, run_state, facts, _ = public_blocks(scenario / "feat")
-    trained = rolling_features(window_aggregates(zone_vals, belt_vals, run_state), facts)
+    trained = rolling_features(window_aggregates(zone_vals, belt_vals, run_state, facts), facts)
 
     models = StubModels()
     e = Engine(tmp_path / "f.sqlite", load_layout(scenario / "feat"), SETTINGS, models=models, scenario="feat")

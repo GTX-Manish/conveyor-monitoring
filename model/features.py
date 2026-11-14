@@ -32,13 +32,17 @@ DRIVE_LEVELS = ["motor_current_a", "tension_kn", "slip_pct", "throughput_tph", "
 
 
 # ---------------------------------------------------------------- stage 1
-def window_aggregates(zone_vals: dict, belt_vals: dict, run_state) -> dict:
+def window_aggregates(zone_vals: dict, belt_vals: dict, run_state, layout: dict) -> dict:
     """Aggregate complete 10-minute windows.
 
     zone_vals: signal -> (W, 10, Z) floats with NaN for missing; belt_vals: signal -> (W, 10);
-    run_state: (W, 10) integer codes. Returns the window table: a dict of (W, Z) and (W,) float32 arrays.
+    run_state: (W, 10) integer codes; layout: 'is_carry' as (Z,) booleans.
+    Returns the window table: a dict of (W, Z) and (W,) arrays. Everything that depends on one window alone
+    is computed here (including each zone's deviation from its peers), so live scoring computes it once per
+    window and stage 2 only has to roll over the table.
     """
     out = {}
+    is_carry = np.asarray(layout["is_carry"], dtype=bool)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", RuntimeWarning)  # all-NaN windows are expected (outages, stops)
         for sig in ZONE_SIGNALS:
@@ -57,6 +61,22 @@ def window_aggregates(zone_vals: dict, belt_vals: dict, run_state) -> dict:
             out[f"b_{sig}_max"] = np.nanmax(x, axis=1).astype(np.float32)
             out[f"b_{sig}_nmiss"] = np.isnan(x).sum(axis=1).astype(np.float32)
     out["run_share"] = (np.asarray(run_state) == RUNNING).mean(axis=1).astype(np.float32)
+
+    # Deviation of each zone from the median of the zones on its run, in running windows only.
+    running = (out["run_share"].astype(np.float64) >= RUNNING_SHARE)[:, None]
+    for sig in ZONE_SIGNALS:
+        mean = out[f"z_{sig}_mean"].astype(np.float64)
+        peak = out[f"z_{sig}_max"].astype(np.float64)
+        std = out[f"z_{sig}_std"].astype(np.float64)
+        if sig in LOG_SIGNALS:
+            mean, peak = np.log(np.maximum(mean, 1e-3)), np.log(np.maximum(peak, 1e-3))
+        ref = _run_median(mean, is_carry)
+        out[f"z_{sig}_dev"] = np.where(running, mean - ref, np.nan)
+        out[f"z_{sig}_peak_dev"] = np.where(running, peak - _run_median(peak, is_carry), np.nan)
+        out[f"z_{sig}_spread"] = np.where(running, std - _run_median(std, is_carry), np.nan)
+        if sig == "bearing_temp_c":
+            out["z_temp_reference"] = ref
+    out["ambient_proxy"] = nan_median(out["z_bearing_temp_c_mean"].astype(np.float64))
     return out
 
 
@@ -87,13 +107,24 @@ def roll_max(x, k: int):
     return np.where(np.isinf(out), np.nan, out)
 
 
+def nan_median(x):
+    """Median of the valid values in each row of a 2-D array; NaN for a row with none.
+
+    Same result as np.nanmedian(x, axis=1), about ten times faster, which matters for live scoring.
+    """
+    s = np.sort(x, axis=1)                       # NaNs sort to the end
+    n = (~np.isnan(x)).sum(axis=1)
+    rows = np.arange(len(x))
+    lo, hi = np.maximum((n - 1) // 2, 0), n // 2
+    hi = np.minimum(hi, x.shape[1] - 1)
+    return np.where(n > 0, 0.5 * (s[rows, lo] + s[rows, hi]), np.nan)
+
+
 def _run_median(x, is_carry):
     """Per-window median over the zones on the same run. x: (W, Z) -> (W, Z) of each zone's reference."""
     ref = np.empty_like(x, dtype=np.float64)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        for mask in (is_carry, ~is_carry):
-            ref[:, mask] = np.nanmedian(x[:, mask], axis=1)[:, None]
+    for mask in (is_carry, ~is_carry):
+        ref[:, mask] = nan_median(x[:, mask])[:, None]
     return ref
 
 
@@ -137,22 +168,11 @@ def rolling_features(table: dict, layout: dict) -> dict:
     running = run_share >= RUNNING_SHARE
     cols = []
 
-    temp_ref = None
     for sig in ZONE_SIGNALS:
-        mean = table[f"z_{sig}_mean"].astype(np.float64)
-        peak = table[f"z_{sig}_max"].astype(np.float64)
-        std = table[f"z_{sig}_std"].astype(np.float64)
-        if sig in LOG_SIGNALS:
-            mean, peak = np.log(np.maximum(mean, 1e-3)), np.log(np.maximum(peak, 1e-3))
-        ref = _run_median(mean, is_carry)
-        if sig == "bearing_temp_c":
-            temp_ref = ref
-        dev = np.where(running[:, None], mean - ref, np.nan)          # deviation from the zone's peers
-        peak_dev = np.where(running[:, None], peak - _run_median(peak, is_carry), np.nan)
-        spread = np.where(running[:, None], std - _run_median(std, is_carry), np.nan)
+        dev = table[f"z_{sig}_dev"]                                   # deviation from the zone's peers
         d1, d6, d24 = (roll_mean(dev, k) for k in ROLLS.values())
         cols += [dev, d1, d6, d24, d1 - d24, d6 - d24, d6 - _neighbour_mean(d6),
-                 roll_max(peak_dev, ROLLS["1h"]), roll_mean(spread, ROLLS["1h"])]
+                 roll_max(table[f"z_{sig}_peak_dev"], ROLLS["1h"]), roll_mean(table[f"z_{sig}_spread"], ROLLS["1h"])]
 
     n_missing = sum(table[f"z_{s}_nmiss"].astype(np.float64) for s in ZONE_SIGNALS) / (WINDOW_MIN * len(ZONE_SIGNALS))
     any_flat = np.maximum.reduce([table[f"z_{s}_flat"] for s in ZONE_SIGNALS]).astype(np.float64)
@@ -161,14 +181,12 @@ def rolling_features(table: dict, layout: dict) -> dict:
     cols += [n_missing, roll_mean(n_missing, ROLLS["6h"]), any_flat,
              wide(run_share), wide(roll_mean(run_share, ROLLS["1h"])), wide(roll_mean(run_share, ROLLS["24h"])),
              across(is_carry), across(layout["is_loading"]), across(layout["is_unloading"]),
-             wide(table["b_throughput_tph_mean"]), wide(table["b_belt_speed_ms_mean"]), temp_ref]
+             wide(table["b_throughput_tph_mean"]), wide(table["b_belt_speed_ms_mean"]), table["z_temp_reference"]]
     zone = np.stack(cols, axis=-1).astype(np.float32)
 
     # Drive: its temperatures are compared with the median bearing temperature of all zones, which follows the
     # weather the same way, so a hot day is not mistaken for a hot motor.
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", RuntimeWarning)
-        ambient_proxy = np.nanmedian(table["z_bearing_temp_c_mean"].astype(np.float64), axis=1)
+    ambient_proxy = table["ambient_proxy"]
     dcols, temp_dev_1h = [], {}
     for sig in DRIVE_TEMPS:
         dev = np.where(running, table[f"b_{sig}_mean"].astype(np.float64) - ambient_proxy, np.nan)
