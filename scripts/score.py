@@ -105,7 +105,8 @@ def report(runs: dict, path: Path) -> None:
              "asset between the fault's onset and its failure. An alert is false when it opens while the asset's real "
              "stage is `normal`.",
              f"- Thresholds are tuned on the validation scenarios for a precision of at least {TARGET_PRECISION:.0%} "
-             "(at most 1 to 2 false alerts in 20), choosing the threshold that detects the most events, then frozen. "
+             "(at most 1 to 2 false alerts in 20). Among thresholds that meet it and detect the most events, the most "
+             "cautious (highest) one that keeps at least 75% of the best lead time is taken, then frozen. "
              "Test and stress are scored once.",
              "- Precision here is detected events / (detected events + false alerts). Several alerts on one fault "
              "count once, so it is stricter than the false share of all alerts.",

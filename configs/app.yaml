@@ -1,0 +1,45 @@
+# Application settings for the backend and the replayer. Numbers marked (assumption) are our own choices.
+server:
+  host: 127.0.0.1
+  port: 8000
+  db_path: data/app.sqlite          # deleted and recreated on every start
+  scenario: demo_01
+  data_dir: data
+  cors_origins: ["http://localhost:5173", "http://127.0.0.1:5173"]   # the Vite dev server only
+
+replay:
+  preload_hours: 24                 # history posted unthrottled before the replay starts (the model needs 24 h)
+  default_speed: 1.0                # simulated hours per real second
+  max_speed: 3.0                    # higher is refused, to protect the request rate
+
+ingest:
+  grace_minutes: 2                  # (assumption) how long to wait for a late batch before moving on
+  commit_every_batches: 30
+  # (assumption) physical limits; a value outside them is stored as NULL and counted
+  ranges:
+    vibration_rms_mm_s: [0, 50]
+    vibration_kurtosis: [0, 100]
+    bearing_temp_c: [-40, 200]
+    acoustic_db: [0, 140]
+    belt_offset_mm: [-500, 500]
+    throughput_tph: [0, 20000]
+    motor_current_a: [0, 5000]
+    motor_temp_c: [-40, 300]
+    gearbox_temp_c: [-40, 300]
+    drive_speed_ms: [0, 20]
+    belt_speed_ms: [0, 20]
+    slip_pct: [-100, 100]
+    tension_kn: [0, 5000]
+
+data_quality:
+  stuck_after_identical: 15         # identical values in a row, counted while the belt is running
+  no_data_after_minutes: 5          # minutes with all five signals of a suite missing
+  alert_severity: 0.5               # data-quality alerts are always 'medium'
+
+# Faults the REPLAYER adds on the way in (the simulator only produces missing values). Seeded. (assumption)
+inject:
+  seed: 7
+  duplicate_row_rate: 0.0005
+  out_of_range_value_rate: 0.0002
+  unknown_zone_rows_per_day: 1
+  swap_every_batches: 200

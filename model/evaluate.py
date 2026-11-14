@@ -11,6 +11,7 @@ from .features import WINDOW_MIN
 
 NORMAL, EARLY, ADVANCED, FAILED = 0, 1, 2, 3
 TARGET_PRECISION = 0.9     # at most 1 to 2 false alerts in 20 (user's requirement)
+LEAD_KEEP = 0.75           # (assumption) warning time we refuse to give up when choosing a cautious threshold
 HOURS = WINDOW_MIN / 60.0
 
 
@@ -76,21 +77,23 @@ def pooled(parts: list) -> dict:
     return tot
 
 
-def tune_threshold(scenarios: list, candidates, target: float = TARGET_PRECISION) -> dict:
-    """Pick the threshold that detects the most events with precision >= target on the given scenarios.
+def tune_threshold(scenarios: list, candidates, target: float = TARGET_PRECISION, lead_keep: float = LEAD_KEEP) -> dict:
+    """Pick the most cautious threshold that still does the job on the given scenarios.
 
-    scenarios: list of dicts with prob, run_share, stage, fault_id, months. Ties go to the longer lead time,
-    then to the higher (more cautious) threshold. If no threshold reaches the target, the most precise one is
-    returned and `met_target` is False, so the caller can say so.
+    scenarios: list of dicts with prob, run_share, stage, fault_id, months. Among thresholds with precision >=
+    target, keep those that detect the most events and give at least `lead_keep` of the best median lead time,
+    then take the HIGHEST. Why the highest: when many thresholds are perfect on validation, validation cannot
+    choose between them, and a low threshold is the first to break on noisier data. If no threshold reaches the
+    target, the most precise one is returned and `met_target` is False, so the caller can say so.
     """
-    rows = []
-    for t in candidates:
-        r = pooled([score(s["prob"], t, s["run_share"], s["stage"], s["fault_id"], months=s["months"])
-                    for s in scenarios])
-        rows.append(r)
+    rows = [pooled([score(s["prob"], t, s["run_share"], s["stage"], s["fault_id"], months=s["months"])
+                    for s in scenarios]) for t in candidates]
     ok = [r for r in rows if r["detected"] > 0 and r["precision"] >= target]
     if ok:
-        best = max(ok, key=lambda r: (r["detected"], round(r["median_lead_hours"], 1), r["threshold"]))
+        most = max(r["detected"] for r in ok)
+        ok = [r for r in ok if r["detected"] == most]
+        best_lead = max(r["median_lead_hours"] for r in ok)
+        best = max((r for r in ok if r["median_lead_hours"] >= lead_keep * best_lead), key=lambda r: r["threshold"])
         return {**best, "met_target": True, "sweep": rows}
     with_alerts = [r for r in rows if r["detected"] > 0] or rows
     best = max(with_alerts, key=lambda r: (np.nan_to_num(r["precision"]), r["detected"], r["threshold"]))

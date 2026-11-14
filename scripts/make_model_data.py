@@ -93,18 +93,18 @@ def main(argv=None):
     args = ap.parse_args(argv)
     data = Path(args.data)
     rows = json.loads((data / "scenario_set.json").read_text())["scenarios"]
-    index = {}
+    path = data / "model" / "index.json"
+    index = json.loads(path.read_text()) if path.exists() else {}
     for r in rows:
         if args.only and r["name"] not in args.only:
             continue
         t0 = time.perf_counter()
         info = build(data / r["name"], data / "model", r["name"])
         index[r["name"]] = {**info, "split": r["split"]}
+        path.write_text(json.dumps(index, indent=2))   # after every scenario, so an interrupted run loses little
         print(f"{r['name']}: {info['zone_rows']:,} zone rows, {info['advanced_rows']:,} advanced, "
-              f"{info['fail24_rows']:,} within 24 h, {time.perf_counter() - t0:.1f} s", f"window {WINDOW_MIN} min")
-    path = data / "model" / "index.json"
-    old = json.loads(path.read_text()) if path.exists() else {}
-    path.write_text(json.dumps({**old, **index}, indent=2))
+              f"{info['fail24_rows']:,} within 24 h, {time.perf_counter() - t0:.1f} s (window {WINDOW_MIN} min)",
+              flush=True)
     return 0
 
 

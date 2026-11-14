@@ -1,0 +1,1028 @@
+{
+  "1": {
+    "zone": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.999,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 24,
+            "true_alerts": 24,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 124.58333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 24,
+            "true_alerts": 24,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 97.58333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 23,
+            "true_alerts": 23,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 116.41666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.35,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 12,
+            "true_alerts": 12,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.35,
+            "detection_rate": 1.0,
+            "median_lead_hours": 24.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 20,
+            "true_alerts": 20,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.35,
+            "detection_rate": 1.0,
+            "median_lead_hours": 26.666666666666664,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 14,
+            "true_alerts": 14,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.35,
+            "detection_rate": 1.0,
+            "median_lead_hours": 24.083333333333332,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed bearing-temperature limit": {
+          "threshold": 65.37341262817392,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 8,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.8,
+            "median_lead_hours": 11.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 9,
+            "alerts": 13,
+            "true_alerts": 13,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.9,
+            "median_lead_hours": 14.041666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 7,
+            "alerts": 7,
+            "true_alerts": 7,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.875,
+            "median_lead_hours": 7.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Deviation from neighbouring zones": {
+          "threshold": 2.9690560483931576,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 11,
+            "true_alerts": 11,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 76.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 63.24999999999999,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 8,
+            "true_alerts": 8,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 67.33333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 3.861737418434867,
+        "test": 3.342853984693946,
+        "stress": 4.1011381413457055
+      }
+    },
+    "drive": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.75,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.75,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.166666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.75,
+            "detection_rate": 1.0,
+            "median_lead_hours": 7.083333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.75,
+            "detection_rate": 1.0,
+            "median_lead_hours": 9.166666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.93,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 4.333333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.666666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 9.75,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed motor-temperature limit": {
+          "threshold": 99.0346455383298,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 1,
+            "alerts": 1,
+            "true_alerts": 1,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.5,
+            "median_lead_hours": 5.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 4.118863147991114,
+        "test": 1.5719411421497522,
+        "stress": 2.3872867594810057
+      }
+    }
+  },
+  "2": {
+    "zone": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.999,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 23,
+            "true_alerts": 23,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 133.91666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 20,
+            "true_alerts": 20,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 107.16666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 19,
+            "true_alerts": 19,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 118.58333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.3,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 16,
+            "true_alerts": 16,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.3,
+            "detection_rate": 1.0,
+            "median_lead_hours": 24.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 16,
+            "true_alerts": 16,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.3,
+            "detection_rate": 1.0,
+            "median_lead_hours": 28.833333333333332,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 11,
+            "true_alerts": 11,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.3,
+            "detection_rate": 1.0,
+            "median_lead_hours": 24.166666666666664,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed bearing-temperature limit": {
+          "threshold": 65.37341262817392,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 8,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.8,
+            "median_lead_hours": 11.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 9,
+            "alerts": 13,
+            "true_alerts": 13,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.9,
+            "median_lead_hours": 14.041666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 7,
+            "alerts": 7,
+            "true_alerts": 7,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.875,
+            "median_lead_hours": 7.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Deviation from neighbouring zones": {
+          "threshold": 2.9690560483931576,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 11,
+            "true_alerts": 11,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 76.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 63.24999999999999,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 8,
+            "true_alerts": 8,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 67.33333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 3.9910219243305676,
+        "test": 3.4885942634462737,
+        "stress": 3.963082685013503
+      }
+    },
+    "drive": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.85,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 4.416666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.916666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 9.083333333333332,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.94,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.94,
+            "detection_rate": 1.0,
+            "median_lead_hours": 4.333333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.94,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.666666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.94,
+            "detection_rate": 1.0,
+            "median_lead_hours": 9.75,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed motor-temperature limit": {
+          "threshold": 99.0346455383298,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 1,
+            "alerts": 1,
+            "true_alerts": 1,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.5,
+            "median_lead_hours": 5.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 4.065052054187522,
+        "test": 1.8530686782317307,
+        "stress": 2.331579139398233
+      }
+    }
+  },
+  "3": {
+    "zone": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.999,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 28,
+            "true_alerts": 28,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 129.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 31,
+            "true_alerts": 31,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 103.75,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 21,
+            "true_alerts": 21,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.999,
+            "detection_rate": 1.0,
+            "median_lead_hours": 116.75,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.55,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 13,
+            "true_alerts": 13,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.55,
+            "detection_rate": 1.0,
+            "median_lead_hours": 23.666666666666664,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 12,
+            "true_alerts": 12,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.55,
+            "detection_rate": 1.0,
+            "median_lead_hours": 26.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 16,
+            "true_alerts": 16,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.55,
+            "detection_rate": 1.0,
+            "median_lead_hours": 24.166666666666664,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed bearing-temperature limit": {
+          "threshold": 65.37341262817392,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 8,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.8,
+            "median_lead_hours": 11.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 9,
+            "alerts": 13,
+            "true_alerts": 13,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.9,
+            "median_lead_hours": 14.041666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 7,
+            "alerts": 7,
+            "true_alerts": 7,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 65.37341262817392,
+            "detection_rate": 0.875,
+            "median_lead_hours": 7.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Deviation from neighbouring zones": {
+          "threshold": 2.9690560483931576,
+          "met_target": true,
+          "validation": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 11,
+            "true_alerts": 11,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 76.5,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 10,
+            "detected": 10,
+            "alerts": 10,
+            "true_alerts": 10,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 63.24999999999999,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 8,
+            "detected": 8,
+            "alerts": 8,
+            "true_alerts": 8,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 2.9690560483931576,
+            "detection_rate": 1.0,
+            "median_lead_hours": 67.33333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 3.7052349622134866,
+        "test": 3.507536963929617,
+        "stress": 3.933805271955955
+      }
+    },
+    "drive": {
+      "methods": {
+        "LightGBM `abnormal` model": {
+          "threshold": 0.85,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.25,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.666666666666666,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.85,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "LightGBM `fails within 24 h` model": {
+          "threshold": 0.93,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 4.333333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 2,
+            "true_alerts": 2,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 6.833333333333333,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 2,
+            "alerts": 3,
+            "true_alerts": 3,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 0.93,
+            "detection_rate": 1.0,
+            "median_lead_hours": 10.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        },
+        "Fixed motor-temperature limit": {
+          "threshold": 99.0346455383298,
+          "met_target": true,
+          "validation": {
+            "events": 2,
+            "detected": 1,
+            "alerts": 1,
+            "true_alerts": 1,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.5,
+            "median_lead_hours": 5.0,
+            "false_alert_share": 0.0,
+            "precision": 1.0,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "test": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          },
+          "stress": {
+            "events": 2,
+            "detected": 0,
+            "alerts": 0,
+            "true_alerts": 0,
+            "false_alerts": 0,
+            "false_alerts_in_hard_negative_periods": 0,
+            "threshold": 99.0346455383298,
+            "detection_rate": 0.0,
+            "median_lead_hours": NaN,
+            "false_alert_share": 0.0,
+            "precision": NaN,
+            "false_alerts_per_asset_per_month": 0.0
+          }
+        }
+      },
+      "eta_median_abs_error_hours": {
+        "validation": 3.8786666343455485,
+        "test": 1.9807092595604363,
+        "stress": 2.5522785856912975
+      }
+    }
+  }
+}

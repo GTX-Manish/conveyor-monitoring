@@ -56,22 +56,26 @@ def training_rows(data_dir: Path, names: list, group: str, seed: int) -> pd.Data
 
 def fit_group(df: pd.DataFrame, group: str, seed: int) -> dict:
     feats = zone_feature_names() if group == "zone" else drive_feature_names()
-    common = dict(PARAMS[group], random_state=seed, n_jobs=2, verbose=-1)
+    p = PARAMS[group]
+    common = dict(num_leaves=p["num_leaves"], min_data_in_leaf=p["min_child_samples"],
+                  learning_rate=p["learning_rate"], bagging_fraction=p["subsample"],
+                  bagging_freq=p["subsample_freq"], feature_fraction=p["colsample_bytree"],
+                  lambda_l2=p["reg_lambda"], seed=seed, num_threads=2, verbose=-1)
     stage = df["stage"].to_numpy()
+    x = df[feats].to_numpy(dtype=np.float32)
+
+    def fit(mask, y, **objective):
+        data = lgb.Dataset(x[mask], label=np.asarray(y)[mask], feature_name=feats)
+        return lgb.train({**common, **objective}, data, num_boost_round=p["n_estimators"])
 
     def classifier(mask, y):
         pos = int(y[mask].sum())
         weight = min((mask.sum() - pos) / max(pos, 1), MAX_POS_WEIGHT)
-        m = lgb.LGBMClassifier(objective="binary", scale_pos_weight=weight, **common)
-        m.fit(df.loc[mask, feats], y[mask])
-        return m.booster_
+        return fit(mask, y.astype(np.float32), objective="binary", scale_pos_weight=weight)
 
-    abn = classifier(np.isin(stage, (NORMAL, ADVANCED)), (stage == ADVANCED))
-    clf = classifier(stage != FAILED, df["fails_within_24h"].to_numpy(dtype=bool))
-    adv = stage == ADVANCED
-    reg = lgb.LGBMRegressor(objective="l1", **common)
-    reg.fit(df.loc[adv, feats], df.loc[adv, "hours_to_failure"])
-    return {"abnormal": abn, "classifier": clf, "regressor": reg.booster_}
+    return {"abnormal": classifier(np.isin(stage, (NORMAL, ADVANCED)), stage == ADVANCED),
+            "classifier": classifier(stage != FAILED, df["fails_within_24h"].to_numpy(dtype=bool)),
+            "regressor": fit(stage == ADVANCED, df["hours_to_failure"].to_numpy(dtype=np.float32), objective="l1")}
 
 
 def grids(df: pd.DataFrame, boosters: dict, group: str) -> dict:
@@ -105,7 +109,7 @@ def tune(val_grids: list) -> dict:
                                fault_id=g["fault_id"], months=g["months"]) for g in val_grids], candidates())
     fail = tune_threshold([dict(prob=g["p_fail_24h"], run_share=g["run_share"], stage=g["stage"],
                                 fault_id=g["fault_id"], months=g["months"]) for g in val_grids], candidates())
-    return {"abnormal": abn["threshold"], "predicted_failure": max(fail["threshold"], abn["threshold"]),
+    return {"abnormal": abn["threshold"], "predicted_failure": fail["threshold"],
             "abnormal_met_target": abn["met_target"], "predicted_failure_met_target": fail["met_target"],
             "abnormal_validation": {k: v for k, v in abn.items() if k != "sweep"},
             "predicted_failure_validation": {k: v for k, v in fail.items() if k != "sweep"},
