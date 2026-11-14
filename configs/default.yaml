@@ -103,17 +103,6 @@ faults:
     kurtosis_add: 1.5
     current_a: 1.5
     current_exp: 3.0
-  belt_damage:
-    per_30d: 1.0
-    min_days: 2.0
-    max_days: 6.0
-    repair_hours: 4.0
-    kurtosis_add: 6.0
-    vib_gain: 0.4
-    acoustic_db: 4.0
-    return_side_factor: 0.5
-    tension_kn: 8.0
-    tension_exp: 3.0
   drive_overheat:
     per_30d: 1.0
     min_hours: 6.0

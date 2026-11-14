@@ -9,11 +9,10 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 
-from .belt_coords import zone_crossings
 from .conditions import lag
 from .config import Config, FaultsCfg
 
-IDLER, BELT_DAMAGE, DRIVE_OVERHEAT = "idler_bearing", "belt_damage", "drive_overheat"
+IDLER, DRIVE_OVERHEAT = "idler_bearing", "drive_overheat"
 SNAP_SLACK_MIN = 12 * 60  # room for moving a failure out of the daily stopped window
 
 
@@ -21,9 +20,8 @@ SNAP_SLACK_MIN = 12 * 60  # room for moving a failure out of the daily stopped w
 class FaultEvent:
     fault_id: str
     type: str
-    asset: str                 # zone number as text, 'DRIVE' or 'BELT'
+    asset: str                 # zone number as text, or 'DRIVE'
     zone: int                  # 1-based zone for idler faults, else 0
-    belt_coordinate_m: float   # belt damage only, else NaN
     onset: int                 # step indices
     failure: int
     repair_end: int
@@ -57,7 +55,7 @@ def _place(n, dur_lo_min, dur_hi_min, repair_min, n_steps, cfg, rng, gap_min=Non
     return out
 
 
-def schedule_faults(cfg: FaultsCfg, days: int, n_zones: int, belt_length_m: float, rng) -> list:
+def schedule_faults(cfg: FaultsCfg, days: int, n_zones: int, rng) -> list:
     """Draw fault events. Failure times are provisional until `apply_repair_stops` snaps them."""
     n_steps = days * 1440
     gap = int(cfg.same_asset_gap_hours * 60)
@@ -68,19 +66,14 @@ def schedule_faults(cfg: FaultsCfg, days: int, n_zones: int, belt_length_m: floa
     slots = _place(n, c.min_days * 1440, c.max_days * 1440, int(c.repair_hours * 60), n_steps, cfg, rng)
     zones = rng.choice(np.arange(1, n_zones + 1), size=len(slots), replace=False)  # distinct zones: no overlap
     for (o, f, e), z in zip(slots, zones):
-        raw.append((IDLER, str(int(z)), int(z), np.nan, o, f, e))
-
-    c = cfg.belt_damage
-    n = _count(c.per_30d, days, rng)
-    for o, f, e in _place(n, c.min_days * 1440, c.max_days * 1440, int(c.repair_hours * 60), n_steps, cfg, rng, gap):
-        raw.append((BELT_DAMAGE, "BELT", 0, float(rng.uniform(0.0, belt_length_m)), o, f, e))
+        raw.append((IDLER, str(int(z)), int(z), o, f, e))
 
     c = cfg.drive_overheat
     n = _count(c.per_30d, days, rng)
     for o, f, e in _place(n, c.min_hours * 60, c.max_hours * 60, int(c.repair_hours * 60), n_steps, cfg, rng, gap):
-        raw.append((DRIVE_OVERHEAT, "DRIVE", 0, np.nan, o, f, e))
+        raw.append((DRIVE_OVERHEAT, "DRIVE", 0, o, f, e))
 
-    raw.sort(key=lambda r: (r[4], r[0], r[1]))
+    raw.sort(key=lambda r: (r[3], r[0], r[1]))
     return [FaultEvent(f"F{i + 1:03d}", *r) for i, r in enumerate(raw)]
 
 
@@ -115,12 +108,11 @@ def severity(ev: FaultEvent, n_steps: int, exponent: float):
     return s
 
 
-def apply_fault_effects(zone_sig, belt_sig, events, cond, D, layout, cfg: Config) -> None:
+def apply_fault_effects(zone_sig, belt_sig, events, cond, cfg: Config) -> None:
     """Add fault effects to the healthy signals in place. Per-event loop; vectorised over time."""
     fc, sc = cfg.faults, cfg.signals
-    n_steps, n_zones = zone_sig["bearing_temp_c"].shape
+    n_steps = zone_sig["bearing_temp_c"].shape[0]
     speed = cond.speed
-    is_carry = layout["run"].to_numpy() == "carry"
 
     for ev in events:
         s = severity(ev, n_steps, fc.progression_exponent)
@@ -145,16 +137,6 @@ def apply_fault_effects(zone_sig, belt_sig, events, cond, D, layout, cfg: Config
             belt_sig["gearbox_temp_c"][live] += lag(c.gearbox_temp_c * rise, sc.gearbox_temp_tau_min)
             belt_sig["motor_current_a"][live] += c.current_a * sl ** c.current_exp * sp
 
-        elif ev.type == BELT_DAMAGE:
-            c = fc.belt_damage
-            rows, zones = zone_crossings(ev.belt_coordinate_m, D, np.arange(ev.onset, ev.failure),
-                                         cfg.layout.zone_spacing_m, n_zones)
-            hit = s[rows] * np.where(is_carry[zones], 1.0, c.return_side_factor)
-            zone_sig["vibration_kurtosis"][rows, zones] += c.kurtosis_add * hit
-            zone_sig["vibration_rms_mm_s"][rows, zones] *= 1.0 + c.vib_gain * hit
-            zone_sig["acoustic_db"][rows, zones] += c.acoustic_db * hit
-            belt_sig["tension_kn"][live] -= c.tension_kn * sl ** c.tension_exp * sp
-
 
 def faults_frame(events, timestamps) -> pd.DataFrame:
     ts = pd.DatetimeIndex(timestamps)
@@ -162,7 +144,6 @@ def faults_frame(events, timestamps) -> pd.DataFrame:
         "fault_id": [e.fault_id for e in events],
         "type": [e.type for e in events],
         "asset": [e.asset for e in events],
-        "belt_coordinate_m": [e.belt_coordinate_m for e in events],
         "onset_time": [ts[e.onset] for e in events],
         "failure_time": [ts[e.failure] for e in events],
         "repair_end": [ts[e.repair_end] for e in events],

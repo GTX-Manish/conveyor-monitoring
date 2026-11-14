@@ -137,20 +137,6 @@ class IdlerBearingCfg:
 
 
 @dataclass
-class BeltDamageCfg:
-    per_30d: float = 1.0
-    min_days: float = 2.0
-    max_days: float = 6.0
-    repair_hours: float = 4.0
-    kurtosis_add: float = 6.0
-    vib_gain: float = 0.4
-    acoustic_db: float = 4.0
-    return_side_factor: float = 0.5
-    tension_kn: float = 8.0
-    tension_exp: float = 3.0
-
-
-@dataclass
 class DriveOverheatCfg:
     per_30d: float = 1.0
     min_hours: float = 6.0
@@ -166,12 +152,11 @@ class DriveOverheatCfg:
 @dataclass
 class FaultsCfg:
     idler_bearing: IdlerBearingCfg = field(default_factory=IdlerBearingCfg)
-    belt_damage: BeltDamageCfg = field(default_factory=BeltDamageCfg)
     drive_overheat: DriveOverheatCfg = field(default_factory=DriveOverheatCfg)
     progression_exponent: float = 2.5
     min_start_hours: float = 24.0
     min_end_margin_hours: float = 12.0
-    same_asset_gap_hours: float = 24.0  # (assumption) minimum gap between two events on DRIVE or BELT
+    same_asset_gap_hours: float = 24.0  # (assumption) minimum gap between two events on the drive
 
 
 @dataclass

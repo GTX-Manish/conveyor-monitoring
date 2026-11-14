@@ -3,7 +3,7 @@ import pytest
 from simulator.config import config_from_dict
 from simulator.generate import generate
 
-NO_FAULTS = {"idler_bearing": {"per_30d": 0}, "belt_damage": {"per_30d": 0}, "drive_overheat": {"per_30d": 0}}
+NO_FAULTS = {"idler_bearing": {"per_30d": 0}, "drive_overheat": {"per_30d": 0}}
 
 
 @pytest.fixture(scope="session")

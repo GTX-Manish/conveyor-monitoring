@@ -13,9 +13,12 @@
   - Belt travel D(t) is integrated from the clean `belt_speed_ms` signal (generated first), so the public belt speed
     is consistent with the true belt position.
   - A failure drawn inside a stop moves to the next running minute, because an asset fails while it is working.
-  - A zone is "crossed" by belt damage when the defect passes the zone's start boundary. The spec's extra clause
-    ("or it contains the defect") is dropped: it would hit a zone on several steps during slow ramps.
   - Temperature effects pass through the same thermal lag as the healthy signal, so they do not vanish the instant
     the belt stops. Every effect is scaled by speed, so a stopped belt shows no fault signature.
   - Event counts for scenarios that are not a multiple of 30 days use the fractional part as a probability.
-  - Two events on the drive or on the belt keep at least 24 h apart (`faults.same_asset_gap_hours`).
+  - Two events on the drive keep at least 24 h apart (`faults.same_asset_gap_hours`).
+- **Belt damage removed** (requested after Stage 2): the belt cut / splice defect fault is gone from the config, the
+  scheduler, the effects, the tests and the plot. Version 1 now has two faults: idler bearing and drive overheat.
+  Belt coordinates and `belt_distance_m` stay, because image capture events (Stage 5) still need them. Fault
+  schedules for a given seed changed, because the belt-damage draws no longer happen. `SIMULATOR_SPEC.md` and
+  `PROJECT_OVERVIEW.md` still describe the fault and have not been edited.

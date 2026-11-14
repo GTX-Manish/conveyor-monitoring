@@ -6,20 +6,17 @@ import pytest
 from simulator.belt_coords import belt_coordinate, ground_position
 from simulator.conditions import build_conditions
 from simulator.config import Config, config_from_dict
-from simulator.faults import (BELT_DAMAGE, DRIVE_OVERHEAT, IDLER, apply_repair_stops, schedule_faults,
-                              severity)
+from simulator.faults import DRIVE_OVERHEAT, IDLER, apply_repair_stops, schedule_faults, severity
 from simulator.generate import generate, make_streams
 from simulator.healthy import BELT_SIGNALS, ZONE_SIGNALS
 
 Z = 120
 ZERO = {
     IDLER: {"temp_c": 0, "acoustic_db": 0, "vib_gain": 0, "kurtosis_add": 0, "current_a": 0},
-    BELT_DAMAGE: {"kurtosis_add": 0, "vib_gain": 0, "acoustic_db": 0, "tension_kn": 0},
     DRIVE_OVERHEAT: {"motor_temp_c": 0, "gearbox_temp_c": 0, "current_a": 0},
 }
 SHORT = {
     IDLER: {"min_days": 1, "max_days": 2},
-    BELT_DAMAGE: {"min_days": 1, "max_days": 2},
     DRIVE_OVERHEAT: {"min_hours": 24, "max_hours": 48},
 }
 
@@ -31,7 +28,7 @@ def one_fault(kind, zero=False, seed=11):
     return generate(config_from_dict({"seed": seed, "days": 6, "faults": faults}))
 
 
-@pytest.fixture(scope="module", params=[IDLER, BELT_DAMAGE, DRIVE_OVERHEAT])
+@pytest.fixture(scope="module", params=[IDLER, DRIVE_OVERHEAT])
 def pair(request):
     return request.param, one_fault(request.param), one_fault(request.param, zero=True)
 
@@ -52,10 +49,10 @@ def test_schedule_rules(seed):
     n = cfg.days * 1440
     rng = make_streams(seed)
     cond = build_conditions(cfg.conditions, cfg.start, n, rng["conditions"])
-    events = schedule_faults(cfg.faults, cfg.days, Z, cfg.layout.belt_length_m, rng["faults"])
+    events = schedule_faults(cfg.faults, cfg.days, Z, rng["faults"])
     base = apply_repair_stops(events, cond.base, cfg.conditions.ramp_minutes)
 
-    assert [sum(e.type == k for e in events) for k in (IDLER, BELT_DAMAGE, DRIVE_OVERHEAT)] == [5, 1, 1]
+    assert [sum(e.type == k for e in events) for k in (IDLER, DRIVE_OVERHEAT)] == [5, 1]
     by_asset = {}
     for e in events:
         assert e.onset >= 24 * 60                       # never in the first 24 h
@@ -157,7 +154,7 @@ def test_drive_effects(pair):
     assert d["motor_temp_c"][(s > 0.25) & (s < 0.3)].max() > 3
 
 
-# ---- belt damage and belt coordinates ---------------------------------------------------------------
+# ---- belt coordinates ---------------------------------------------------------------
 
 def test_coordinate_round_trip():
     D = np.cumsum(np.full(500, 240.0))
@@ -167,50 +164,11 @@ def test_coordinate_round_trip():
     assert np.isclose(p[24], (c + 6000.0) % 6000.0)  # 25 steps of 240 m = one lap, back where it started
 
 
-def test_belt_damage_lap_signature(pair):
-    kind, scn, twin = pair
-    if kind != BELT_DAMAGE:
-        pytest.skip("belt damage only")
-    ev, s = scn.events[0], sev(scn)
-    c, L, spacing = ev.belt_coordinate_m, 6000.0, 50.0
-    D = scn.conditions["belt_distance_m"].to_numpy()
-    hits = (zmat(scn, "vibration_kurtosis") - zmat(twin, "vibration_kurtosis")) > 0
-    assert not hits[:ev.onset].any() and not hits[ev.failure:].any()
-
-    strong = s > 0.01  # below this the bump is smaller than float32 resolution
-    t = np.arange(len(D))
-    p_now = ground_position(c, D, L)
-    p_prev = np.r_[c % L, p_now[:-1]]
-    step = np.r_[D[0], np.diff(D)]
-    for z in (0, 29, 59, 60, 119):
-        # independent check against the section 6 formula: zone start lies in the arc (p_prev, p_now]
-        b = z * spacing
-        ahead = (b - p_prev) % L
-        expected = (step > 0) & (ahead > 0) & (ahead <= step) & (t >= ev.onset) & (t < ev.failure)
-        assert (hits[strong, z] == expected[strong]).all(), f"zone {z + 1}"
-        when = np.flatnonzero(hits[:, z] & strong)
-        assert len(when) > 20
-        laps = np.diff(D[when]) / L
-        assert np.allclose(laps, 1.0, atol=0.05)  # once per lap, counted in distance
-        running_gap = np.diff(when)[np.diff(when) < 60]
-        assert set(running_gap) <= {24, 25, 26}   # 25 min at 4 m/s, give or take speed jitter and slip
-
-    # impacts are weaker on the return side, and tension dips only near failure
-    k = zmat(scn, "vibration_kurtosis") - zmat(twin, "vibration_kurtosis")
-    late = s > 0.8
-    carry, ret = k[late][:, :60], k[late][:, 60:]
-    assert np.isclose(ret[ret > 0].mean() / carry[carry > 0].mean(), 0.5, atol=0.05)
-    dip = twin.belt_wide["tension_kn"].to_numpy() - scn.belt_wide["tension_kn"].to_numpy()
-    assert dip[s < 0.3].max() < 0.3 and 6 < dip.max() <= 8.1
-    for col in ["motor_temp_c", "gearbox_temp_c", "motor_current_a"]:
-        assert scn.belt_wide[col].equals(twin.belt_wide[col])
-
-
 # ---- determinism and ground truth -------------------------------------------------------------------
 
 def test_fault_run_is_deterministic(pair):
     kind, scn, _ = pair
-    if kind != BELT_DAMAGE:
+    if kind != DRIVE_OVERHEAT:
         pytest.skip("one fault type is enough; keeps the suite fast")
     again = one_fault(kind)
     assert scn.zones.equals(again.zones)
