@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  Alert, IngestStats, Layout, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, alertText, assetName, count, get, hours,
+  Alert, IngestStats, Layout, Outcome, Outcomes, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, alertText, assetName, count, get, hours,
   pct, simTime,
 } from "./api";
 import { StatusChip } from "./Detail";
@@ -190,4 +190,76 @@ export function VisionTab() {
       </p>
     </div>
   );
+}
+
+
+const OUTCOME_LABEL: Record<Outcome["kind"], string> = {
+  confirmed: "Alert open at failure", missed: "Missed", false_alarm: "False alarm", early_warning: "Warned, but the alert had closed",
+};
+const OUTCOME_VAR: Record<Outcome["kind"], string> = {
+  confirmed: "var(--st-normal)", missed: "var(--st-failure)", false_alarm: "var(--st-abnormal)", early_warning: "var(--st-nodata)",
+};
+
+/** What the model said, set against what the repair records later showed. */
+export function TrackRecordTab({ origin, onSelect }: { origin: number | null; onSelect: (asset: string) => void }) {
+  const q = useQuery({ queryKey: ["outcomes"], queryFn: () => get<Outcomes>("/api/outcomes"), refetchInterval: 4000 });
+  const s = q.data?.summary;
+  const rows = q.data?.outcomes ?? [];
+  const tiles: [string, string, string][] = s ? [
+    ["Failures with an alert open", `${s.warned} of ${s.failures}`, "the alert was open when the part failed"],
+    ["Warned, but the alert had closed", String(s.early_warnings), "it opened earlier and lapsed before the failure"],
+    ["Failures missed", String(s.missed), "no alert at any point"],
+    ["False alarms", String(s.false_alarms), "an alert closed and no failure followed"],
+    ["Failure calls that came true", `${s.failure_calls_came_true} of ${s.failure_calls}`, "the part failed within 24 h of the call"],
+  ] : [];
+  return (
+    <div className="space-y-4">
+      <dl className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+        {tiles.map(([label, value, note]) => (
+          <div key={label} className="rounded-lg border border-line p-3">
+            <dt className="text-xs text-ink3">{label}</dt>
+            <dd className="tabular text-2xl font-semibold leading-tight">{value}</dd>
+            <dd className="text-xs text-ink3">{note}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="text-xs text-ink3">
+        A prediction can only be checked after the fact. When a repair ends, a repair record arrives (in a plant, a closed
+        work order) saying which part failed and when. Each record is compared here with what the model had said. The model
+        never sees these records. The demo is one curated scenario; the full evaluation is in the project's evaluation report.
+      </p>
+      {rows.length === 0 ? (
+        <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">
+          Nothing to check yet. Cases appear here once a part has failed and been repaired, or an alert has closed.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {rows.map((o) => (
+            <li key={o.outcome_id} onClick={() => onSelect(o.asset)} className="cursor-pointer rounded-lg border border-line p-3 text-sm hover:bg-raised">
+              <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                <span className="font-medium">{assetName(o.asset)}{o.position_m != null ? ` (${o.position_m.toFixed(0)} m)` : ""}</span>
+                <span className="flex items-center gap-1.5 text-xs">
+                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: OUTCOME_VAR[o.kind] }} />{OUTCOME_LABEL[o.kind]}
+                </span>
+              </div>
+              <p className="mt-1 text-ink2">{outcomeSentence(o, origin)}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function outcomeSentence(o: Outcome, origin: number | null): string {
+  const failed = o.failed_ts != null ? `Failed on ${simTime(o.failed_ts, origin)}.` : "";
+  if (o.kind === "missed") return `${failed} No alert was open: the model did not see this coming.`;
+  if (o.kind === "false_alarm")
+    return `An alert opened on ${simTime(o.alert_created_ts, origin)} and closed on ${simTime(o.resolved_ts, origin)}. No failure has followed${o.call_ts != null ? ", although a failure was predicted" : ""}.`;
+  const warned = o.kind === "early_warning"
+    ? `${failed} An alert first opened ${hours(o.lead_hours)} earlier but had closed again by the time the part failed.`
+    : `${failed} The first alert came ${hours(o.lead_hours)} earlier and an alert was open when it failed.`;
+  if (o.call_ts == null) return `${warned} No failure call was made before it failed.`;
+  const verdict = o.within_24h ? "The call came true within 24 h." : "The call was early: the part lasted longer than 24 h.";
+  return `${warned} A failure was predicted ${hours(o.call_lead_hours)} before it happened, with ${hours(o.eta_at_call)} estimated at the time (off by ${hours(o.eta_error_hours)}). ${verdict}`;
 }

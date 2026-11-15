@@ -43,3 +43,8 @@ inject:
   out_of_range_value_rate: 0.0002
   unknown_zone_rows_per_day: 1
   swap_every_batches: 200
+
+# Scoring past predictions against repair records (which arrive only after a repair).
+outcomes:
+  relabel_days: 14                  # (assumption) a lapsed alert counts as an early warning if the part fails within this
+  future_grace_minutes: 2           # a repair record dated later than the data received so far is refused

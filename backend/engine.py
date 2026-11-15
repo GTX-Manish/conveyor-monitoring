@@ -19,8 +19,8 @@ from pathlib import Path
 
 import numpy as np
 
-from common.ids import ASSETS, BELT_SIGNALS, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
-from model.alerting import ACTIVE_RUN_SHARE, Debouncer, severity, severity_label
+from common.ids import ASSETS, BELT_SIGNALS, DRIVE, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
+from model.alerting import ACTIVE_RUN_SHARE, HOLD_P_FAIL, Debouncer, severity, severity_label
 from model.explain import reasons
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
@@ -207,6 +207,8 @@ class Engine:
             self.set_replay(**payload)
         elif kind == "flush":
             self.advance(flush=True)
+        elif kind == "work_order":
+            self.work_order(payload)
 
     # ------------------------------------------------------------------ replay state
     def set_replay(self, state=None, speed=None) -> None:
@@ -464,7 +466,8 @@ class Engine:
             self.p_abnormal = np.concatenate([zp["p_abnormal"], dp["p_abnormal"]])
             self.p_fail = np.concatenate([zp["p_fail_24h"], dp["p_fail_24h"]])
             self.est_hours = np.concatenate([zp["est_hours"], dp["est_hours"]])
-        opened, closed = self.debouncer.step(self.p_abnormal >= self.thr_abnormal, active)
+        opened, closed = self.debouncer.step(self.p_abnormal >= self.thr_abnormal, active,
+                                             hold=self.p_fail >= HOLD_P_FAIL)
         self.scored_ts = ts
         status = self.model_status()
         self.con.executemany(
@@ -487,8 +490,12 @@ class Engine:
         is_zone = i < N_ZONES
         kind, asset = MODEL_ALERT[is_zone], ASSETS[i]
         if closed:
+            row = self.con.execute("SELECT alert_id, created_ts FROM alerts WHERE type=? AND asset=? AND state='open'",
+                                   (kind, asset)).fetchone()
             self.con.execute("UPDATE alerts SET state='closed', closed_ts=?, updated_ts=? "
                              "WHERE type=? AND asset=? AND state='open'", (ts, ts, kind, asset))
+            if row is not None:
+                self._alert_closed(asset, row["alert_id"], row["created_ts"], ts)
             return
         p_fail = float(self.p_fail[i])
         eta = float(self.est_hours[i]) if p_fail >= self.thr_fail[i] else None
@@ -521,6 +528,72 @@ class Engine:
                 "UPDATE alerts SET severity=?, severity_label=?, predicted_failure_ts=?, eta_hours=?, message=?,"
                 " evidence=?, updated_ts=? WHERE type=? AND asset=? AND state='open'",
                 (sev, severity_label(sev), fail_ts, eta, message, evidence, ts, kind, asset))
+
+    # ------------------------------------------------------------------ step 5: were the predictions right?
+    # Repair records arrive after the fact. They are compared with what the model said earlier; nothing here
+    # feeds back into features, scores or alerts.
+    def _first_call(self, asset: str, start_ts: int, end_ts: int):
+        """The first 'predicted failure' on an asset between two times: (ts, estimated hours) or None."""
+        return self.con.execute(
+            "SELECT ts, est_hours_to_failure FROM predictions WHERE asset=? AND status='predicted_failure' "
+            "AND ts>=? AND ts<=? ORDER BY ts LIMIT 1", (asset, start_ts, end_ts)).fetchone()
+
+    def work_order(self, order: dict) -> bool:
+        """Store one repair record and score the prediction it settles. Returns False if it was refused."""
+        asset, failed, repaired = order.get("asset"), order.get("failed_ts"), order.get("repaired_ts")
+        grace = int(self.settings["outcomes"]["future_grace_minutes"] * STEP)
+        if (asset not in ASSETS or not isinstance(failed, int) or not isinstance(repaired, int) or failed > repaired
+                or self.watermark is None or repaired > self.watermark + grace):
+            self.totals["work_orders_refused"] = self.totals.get("work_orders_refused", 0) + 1
+            return False                     # unknown asset, or dated after the data received so far
+        now = self.watermark
+        zone = None if asset == DRIVE else ASSETS.index(asset) + 1
+        cur = self.con.execute("INSERT OR IGNORE INTO work_orders (asset, zone_id, kind, failed_ts, repaired_ts,"
+                               " received_ts) VALUES (?,?,?,?,?,?)",
+                               (asset, zone, str(order.get("kind", "")), failed, repaired, now))
+        if cur.rowcount == 0:
+            return False                     # already recorded
+        order_id = cur.lastrowid
+        alert = self.con.execute(
+            "SELECT alert_id, created_ts FROM alerts WHERE source='model' AND asset=? AND created_ts<=? "
+            "AND (closed_ts IS NULL OR closed_ts>=?) ORDER BY created_ts LIMIT 1", (asset, failed, failed)).fetchone()
+        # Alerts on this asset that closed before the failure were not false alarms after all: the part did
+        # fail. They are folded into this failure's row, so each failure has exactly one row.
+        window = int(self.settings["outcomes"]["relabel_days"] * 86400)
+        lapsed = self.con.execute(
+            "SELECT outcome_id, alert_id, alert_created_ts FROM outcomes WHERE asset=? AND kind='false_alarm' "
+            "AND alert_created_ts>=? AND alert_created_ts<=? ORDER BY alert_created_ts", (asset, failed - window, failed)
+        ).fetchall()
+        if alert is None and not lapsed:
+            self.con.execute("INSERT INTO outcomes (asset, kind, order_id, failed_ts, resolved_ts) VALUES (?,?,?,?,?)",
+                             (asset, "missed", order_id, failed, now))
+            return True
+        kind = "confirmed" if alert is not None else "early_warning"   # early_warning: warned, but the alert had closed
+        first_ts = min([r["alert_created_ts"] for r in lapsed] + ([alert["created_ts"]] if alert is not None else []))
+        alert_id = alert["alert_id"] if alert is not None else lapsed[-1]["alert_id"]
+        call = self._first_call(asset, first_ts, failed)
+        call_lead = (failed - call["ts"]) / 3600.0 if call else None
+        eta = call["est_hours_to_failure"] if call else None
+        self.con.executemany("DELETE FROM outcomes WHERE outcome_id=?", [(r["outcome_id"],) for r in lapsed])
+        self.con.execute(
+            "INSERT INTO outcomes (asset, kind, alert_id, order_id, alert_created_ts, call_ts, failed_ts,"
+            " lead_hours, call_lead_hours, within_24h, eta_at_call, eta_error_hours, resolved_ts)"
+            " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (asset, kind, alert_id, order_id, first_ts, call["ts"] if call else None, failed,
+             (failed - first_ts) / 3600.0, call_lead, None if call is None else int(call_lead <= 24.0), eta,
+             None if eta is None else abs(eta - call_lead), now))
+        return True
+
+    def _alert_closed(self, asset: str, alert_id: int, created_ts: int, ts: int) -> None:
+        """A model alert closed. If no failure was recorded during its life, it counts as a false alarm."""
+        if self.con.execute("SELECT 1 FROM work_orders WHERE asset=? AND failed_ts>=? LIMIT 1",
+                            (asset, created_ts)).fetchone():
+            return
+        call = self._first_call(asset, created_ts, ts)
+        self.con.execute("INSERT INTO outcomes (asset, kind, alert_id, alert_created_ts, call_ts, eta_at_call,"
+                         " resolved_ts) VALUES (?,?,?,?,?,?,?)",
+                         (asset, "false_alarm", alert_id, created_ts, call["ts"] if call else None,
+                          call["est_hours_to_failure"] if call else None, ts))
 
     # ------------------------------------------------------------------ read side (called by the API)
     def status(self) -> dict:

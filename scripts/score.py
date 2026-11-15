@@ -15,12 +15,13 @@ import numpy as np
 import pandas as pd
 
 from common.ids import N_ZONES
-from model.evaluate import ADVANCED, TARGET_PRECISION, pooled, score, tune_threshold
+from model.alerting import HOLD_P_FAIL
+from model.evaluate import ADVANCED, TARGET_PRECISION, pooled, pooled_calls, row_metrics, score, score_calls, tune_threshold
 from model.predict import ARTIFACTS
 from model.train import grids, save, train
 
 SPLITS = ("validation", "test", "stress")
-COLUMNS = ["events", "detected", "detection_rate", "median_lead_hours", "alerts", "false_alerts",
+COLUMNS = ["events", "detected", "open_at_failure", "detection_rate", "median_lead_hours", "alerts", "false_alerts",
            "false_alert_share", "precision", "false_alerts_per_asset_per_month",
            "false_alerts_in_hard_negative_periods"]
 
@@ -38,8 +39,10 @@ def baseline_scores(df: pd.DataFrame, group: str) -> dict:
 def evaluate_method(scenario_grids: dict, key, splits: dict) -> dict:
     """Tune on validation, freeze, score every split. key: grid name or a function grid -> (W, A) scores."""
     get = (lambda g: g[key]) if isinstance(key, str) else key
-    val = [dict(prob=get(g), run_share=g["run_share"], stage=g["stage"], fault_id=g["fault_id"], months=g["months"])
-           for n, g in scenario_grids.items() if n in splits["validation"]]
+    # the model's alerts are held open while failure within 24 h is likely; the baselines have no such score
+    hold = (lambda g: g["p_fail_24h"] >= HOLD_P_FAIL) if isinstance(key, str) else (lambda g: None)
+    val = [dict(prob=get(g), run_share=g["run_share"], stage=g["stage"], fault_id=g["fault_id"], months=g["months"],
+                hold=hold(g)) for n, g in scenario_grids.items() if n in splits["validation"]]
     values = np.concatenate([v["prob"].ravel() for v in val])
     values = values[np.isfinite(values)]
     if isinstance(key, str):
@@ -52,7 +55,7 @@ def evaluate_method(scenario_grids: dict, key, splits: dict) -> dict:
     out = {"threshold": tuned["threshold"], "met_target": tuned["met_target"]}
     for split in SPLITS:
         parts = [score(get(g), tuned["threshold"], g["run_share"], g["stage"], g["fault_id"], g["hard_negative"],
-                       g["months"]) for n, g in scenario_grids.items() if n in splits[split]]
+                       g["months"], hold=hold(g)) for n, g in scenario_grids.items() if n in splits[split]]
         out[split] = pooled(parts) if parts else None
     return out
 
@@ -76,14 +79,25 @@ def run_seed(data: Path, seed: int, save_artifacts: bool) -> dict:
         names = [n for s in SPLITS for n in result["splits"][s]]
         frames = {n: pd.read_parquet(data / "model" / f"{n}_{group}.parquet") for n in names}
         g = {n: grids(df, result["boosters"][group], group) for n, df in frames.items()}
-        methods = {"LightGBM `abnormal` model": evaluate_method(g, "p_abnormal", result["splits"]),
-                   "LightGBM `fails within 24 h` model": evaluate_method(g, "p_fail_24h", result["splits"])}
+        methods = {"LightGBM `abnormal` model": evaluate_method(g, "p_abnormal", result["splits"])}
         base = {n: baseline_scores(df, group) for n, df in frames.items()}
         for name in next(iter(base.values())):
             for n in g:
                 g[n][name] = base[n][name]
             methods[name] = evaluate_method(g, (lambda grid, name=name: grid[name]), result["splits"])
-        out[group] = {"methods": methods,
+        thr = result["thresholds"][group]
+        calls, rows = {}, {}
+        for split in SPLITS:
+            part = [g[n] for n in result["splits"][split]]
+            calls[split] = pooled_calls([score_calls(
+                x["p_abnormal"], thr["abnormal"], x["p_fail_24h"], thr["predicted_failure"], x["run_share"],
+                x["stage"], x["fault_id"], x["hours_to_failure"], x["est_hours"]) for x in part]) if part else None
+            rows[split] = row_metrics(np.concatenate([x["p_fail_24h"].ravel() for x in part]), thr["predicted_failure"],
+                                      np.concatenate([x["stage"].ravel() for x in part]),
+                                      np.concatenate([x["hours_to_failure"].ravel() for x in part])) if part else None
+        out[group] = {"methods": methods, "failure_calls": calls, "window_metrics": rows,
+                      "failure_call_threshold": thr["predicted_failure"],
+                      "failure_call_target_met": thr["predicted_failure_met_target"],
                       "eta_median_abs_error_hours": {s: regressor_error(g, result["splits"][s]) for s in SPLITS}}
     return out
 
@@ -111,17 +125,21 @@ def report(runs: dict, path: Path) -> None:
              "- Precision here is detected events / (detected events + false alerts). Several alerts on one fault "
              "count once, so it is stricter than the false share of all alerts.",
              "- The same alert rules apply to every method: open after 2 windows above the threshold, close after 6 "
-             "below, hold while the belt is stopped.", ""]
+             "below, hold while the belt is stopped. The model's alerts also stay open while its probability of "
+             "failing within 24 h is above 50%; this can keep an alert open but can never open one.",
+             "- **Alert still open at failure** counts the faults where an alert was open in the last window before "
+             "the part failed. An alert that opened and then lapsed is counted as detected but not here.", ""]
     for group, title in (("zone", "Idler bearing faults (zone model, 120 zones)"),
                          ("drive", "Drive overheating (drive model, 1 asset)")):
         lines += [f"## {title}", ""]
         for split in SPLITS:
             lines += [f"### {split.capitalize()} scenarios" + (" (thresholds tuned here)" if split == "validation" else ""),
                       "",
-                      "| Method | Threshold | Target met on validation | Events | Detected | Detection rate | "
+                      "| Method | Threshold | Target met on validation | Events | Detected | "
+                      "Alert still open at failure | Detection rate | "
                       "Median lead time (h) | Alerts | False alerts | False share of alerts | Precision | "
                       "False alerts per asset per month | False alerts in hard-negative periods |",
-                      "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+                      "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
             for method, m in first[group]["methods"].items():
                 r = m[split]
                 if r is None:
@@ -132,6 +150,36 @@ def report(runs: dict, path: Path) -> None:
         e = first[group]["eta_median_abs_error_hours"]
         lines += ["Median absolute error of the hours-to-failure estimate on advanced-stage windows: "
                   + ", ".join(f"{s} {fmt(e[s], 1)} h" for s in SPLITS) + ".", ""]
+        met = first[group]["failure_call_target_met"]
+        lines += ["### Does a failure call come true?", "",
+                  "A failure call is made when an alert is open and the probability of failing within 24 h reaches "
+                  f"its threshold ({fmt(first[group]['failure_call_threshold'], 3)}). It **came true** if the part "
+                  "failed within 24 h of the call, was **early** if the part failed later than that, and was "
+                  "**false** if the part was healthy. The threshold was tuned on validation so that at least "
+                  f"{TARGET_PRECISION:.0%} of calls come true; that target was "
+                  + ("met there." if met else "**not met** there, and the best available threshold is used."), "",
+                  "| Split | Faults | Calls made | Came true within 24 h | Early (failed later) | False | "
+                  "Share that came true | Faults called in time | Median hours from call to failure | "
+                  "Median error of the time estimate at the call (h) |", "|---|---|---|---|---|---|---|---|---|---|"]
+        for split in SPLITS:
+            c = first[group]["failure_calls"][split]
+            if c is None:
+                continue
+            lines.append(f"| {split} | {c['events']} | {c['calls']} | {c['came_true']} | {c['early']} | {c['false']} | "
+                         f"{fmt(c['share_came_true'])} | {c['events_called_in_time']} of {c['events']} | "
+                         f"{fmt(c['median_hours_call_to_failure'], 1)} | {fmt(c['median_eta_error_hours'], 1)} |")
+        lines += ["", "Window-level numbers for the 24-hour classifier at the same threshold. Plain accuracy is not "
+                  "reported: over 99% of windows are negative, so a model that never calls a failure would score "
+                  "above 99%.", "",
+                  "| Split | Windows | Truly within 24 h of failure | Precision | Recall | Average precision |",
+                  "|---|---|---|---|---|---|"]
+        for split in SPLITS:
+            r = first[group]["window_metrics"][split]
+            if r is None:
+                continue
+            lines.append(f"| {split} | {r['windows']:,} | {r['positive_windows']:,} ({100 * r['positive_share']:.2f}%) | "
+                         f"{fmt(r['precision'])} | {fmt(r['recall'])} | {fmt(r['average_precision'])} |")
+        lines.append("")
         if len(seeds) > 1:
             lines += [f"### Spread over training seeds {', '.join(map(str, seeds))} (`abnormal` model)", "",
                       "| Split | Detection rate (mean, min to max) | Median lead time h (mean, min to max) | "

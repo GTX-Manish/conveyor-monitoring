@@ -21,6 +21,8 @@ import yaml
 
 from common.ids import BELT_SIGNALS, N_ZONES, RUN_STATES, ZONE_SIGNALS
 
+from .work_orders import WorkOrderFeed, load_work_orders
+
 REPO = Path(__file__).resolve().parents[1]
 OUT_OF_RANGE = {"vibration_rms_mm_s": 999.0, "vibration_kurtosis": -5.0, "bearing_temp_c": 1500.0,
                 "acoustic_db": -20.0, "belt_offset_mm": 9999.0}
@@ -104,12 +106,14 @@ def batches(ts, codes, z, b, injector: Injector, chunk: int = 720):
 
 
 def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bool, max_minutes=None,
-        speed=None, client=None, log=print) -> dict:
+        speed=None, client=None, log=print, work_orders: bool = False) -> dict:
     scenario_dir = Path(data_dir) / scenario
     ts, codes, z, b = load_public(scenario_dir)
     if max_minutes:
         ts, codes = ts[:max_minutes], codes[:max_minutes]
     injector = Injector(settings["inject"], inject)
+    feed = WorkOrderFeed(load_work_orders(scenario_dir) if work_orders else [])
+    orders_sent = 0
     preload = int(settings["replay"]["preload_hours"] * 60)
     own = client is None
     client = client or httpx.Client(base_url=base_url, timeout=30.0)
@@ -140,11 +144,16 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
                 t_wall, t_sim = time.time(), sim_ts
             state = {**state, **reply}
             sent += 1
+            due = feed.due(sim_ts)               # repair records, only once their repair has ended
+            if due:
+                client.post("/api/work_orders", json={"orders": due})
+                orders_sent += len(due)
         client.post("/api/replay", json={"action": "finished"})
     finally:
         if own:
             client.close()
-    summary = {"scenario": scenario, "batches_sent": sent, "inject_faults": inject, **injector.counts}
+    summary = {"scenario": scenario, "batches_sent": sent, "inject_faults": inject, **injector.counts,
+               "work_orders_sent": orders_sent}
     (scenario_dir / "replayer_injected.json").write_text(json.dumps(summary, indent=2))
     log(f"replay finished: {sent} batches in {time.time() - started:.0f} s; {injector.counts}")
     return summary
@@ -157,10 +166,13 @@ def main(argv=None):
     ap.add_argument("--url", default=f"http://{settings['server']['host']}:{settings['server']['port']}")
     ap.add_argument("--data", default=str(REPO / settings["server"]["data_dir"]))
     ap.add_argument("--inject-faults", action="store_true")
+    ap.add_argument("--work-orders", action="store_true",
+                    help="send a repair record after each repair, so the backend can score its past predictions")
     ap.add_argument("--speed", type=float, help="simulated hours per real second")
     ap.add_argument("--max-minutes", type=int)
     args = ap.parse_args(argv)
-    run(args.scenario, args.url, Path(args.data), settings, args.inject_faults, args.max_minutes, args.speed)
+    run(args.scenario, args.url, Path(args.data), settings, args.inject_faults, args.max_minutes, args.speed,
+        work_orders=args.work_orders)
     return 0
 
 

@@ -22,7 +22,8 @@ import pandas as pd
 
 from common.ids import ASSETS, DRIVE, N_ZONES
 
-from .evaluate import ADVANCED, FAILED, NORMAL, TARGET_PRECISION, tune_threshold
+from .alerting import HOLD_P_FAIL
+from .evaluate import ADVANCED, FAILED, NORMAL, TARGET_PRECISION, tune_call_threshold, tune_threshold
 from .features import WINDOW_MIN, drive_feature_names, zone_feature_names
 from .predict import ARTIFACTS, KINDS
 
@@ -105,15 +106,20 @@ def candidates() -> np.ndarray:
 
 
 def tune(val_grids: list) -> dict:
-    """Thresholds from the validation scenarios, frozen afterwards."""
+    """Thresholds from the validation scenarios, frozen afterwards.
+
+    `abnormal` opens the alert. `predicted_failure` is the failure call inside an open alert; it is tuned on
+    whether the part really failed within 24 hours of the call.
+    """
     abn = tune_threshold([dict(prob=g["p_abnormal"], run_share=g["run_share"], stage=g["stage"],
-                               fault_id=g["fault_id"], months=g["months"]) for g in val_grids], candidates())
-    fail = tune_threshold([dict(prob=g["p_fail_24h"], run_share=g["run_share"], stage=g["stage"],
-                                fault_id=g["fault_id"], months=g["months"]) for g in val_grids], candidates())
+                               fault_id=g["fault_id"], months=g["months"], hold=g["p_fail_24h"] >= HOLD_P_FAIL)
+                          for g in val_grids], candidates())
+    fail = tune_call_threshold(val_grids, abn["threshold"], candidates())
+    drop = ("sweep", "hours_list", "eta_error_list")
     return {"abnormal": abn["threshold"], "predicted_failure": fail["threshold"],
             "abnormal_met_target": abn["met_target"], "predicted_failure_met_target": fail["met_target"],
-            "abnormal_validation": {k: v for k, v in abn.items() if k != "sweep"},
-            "predicted_failure_validation": {k: v for k, v in fail.items() if k != "sweep"},
+            "abnormal_validation": {k: v for k, v in abn.items() if k not in drop},
+            "predicted_failure_validation": {k: v for k, v in fail.items() if k not in drop},
             "abnormal_sweep": abn["sweep"]}
 
 
@@ -135,7 +141,9 @@ def train(data_dir: Path, seed: int = 1, log=print) -> dict:
         log(f"{group}: {rows:,} training rows, {time.perf_counter() - t0:.0f} s; abnormal threshold "
             f"{t['abnormal']} (precision {t['abnormal_validation']['precision']:.2f}, "
             f"{t['abnormal_validation']['detected']}/{t['abnormal_validation']['events']} events on validation, "
-            f"target met: {t['abnormal_met_target']})")
+            f"target met: {t['abnormal_met_target']}); failure-call threshold {t['predicted_failure']} "
+            f"({t['predicted_failure_validation']['came_true']} of {t['predicted_failure_validation']['calls']} calls "
+            f"came true within 24 h on validation, target met: {t['predicted_failure_met_target']})")
     return out
 
 

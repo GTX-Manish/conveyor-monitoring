@@ -60,7 +60,7 @@ def main(argv=None):
     try:
         health = wait_for_health(url)
         print(f"backend ready ({health['model_version'] or 'no model'}). Dashboard: {url}", flush=True)
-        cmd = [sys.executable, "-m", "replayer.run", "--scenario", server["scenario"], "--url", url]
+        cmd = [sys.executable, "-m", "replayer.run", "--scenario", server["scenario"], "--url", url, "--work-orders"]
         if not args.no_inject:
             cmd.append("--inject-faults")
         if args.speed:

@@ -3,17 +3,17 @@ import { useCallback, useState } from "react";
 import { Alert, IngestStats, Layout, SEVERITY_VAR, SensorHealth, StatusReply, assetName, get, hours, post, simTime } from "./api";
 import { Detail } from "./Detail";
 import { RacetrackMap } from "./RacetrackMap";
-import { ALERT_TITLE, AnomaliesTab, DataHealthTab, PredictionsTab, VisionTab } from "./Tabs";
+import { ALERT_TITLE, AnomaliesTab, DataHealthTab, PredictionsTab, TrackRecordTab, VisionTab } from "./Tabs";
 import { STEPS, Tour } from "./Tour";
 
 export type Selection = { kind: "zone"; zone: number } | { kind: "section"; section: number } | { kind: "drive" } | null;
 
 // One tab per question a user has. Only one is on screen at a time.
-export const TABS = ["Overview", "Alerts", "Predictions", "Zone details", "Data health", "Vision"] as const;
+export const TABS = ["Overview", "Alerts", "Predictions", "Track record", "Zone details", "Data health", "Vision"] as const;
 export type TabName = (typeof TABS)[number];
 const TAB_HINT: Record<TabName, string> = {
   Overview: "Is anything wrong?", Alerts: "What exactly is wrong?", Predictions: "What will fail, and when?",
-  "Zone details": "Show me one zone", "Data health": "Can I trust the sensors?", Vision: "Belt surface cameras",
+  "Track record": "Were the predictions right?", "Zone details": "Show me one zone", "Data health": "Can I trust the sensors?", Vision: "Belt surface cameras",
 };
 const TOUR_SEEN = "conveyor-tour-seen";
 
@@ -86,6 +86,7 @@ export default function App() {
           onSelect={select} onSelectAsset={selectAsset} onSeeAll={() => setTab("Alerts")} />}
         {tab === "Alerts" && <AnomaliesTab alerts={alerts.data?.alerts ?? []} origin={origin} onSelect={selectAsset} />}
         {tab === "Predictions" && <PredictionsTab status={s} layout={layout.data} origin={origin} onSelect={selectAsset} />}
+        {tab === "Track record" && <TrackRecordTab origin={origin} onSelect={selectAsset} />}
         {tab === "Zone details" && <Detail layout={layout.data} status={s} alerts={open} selection={selection} onSelect={setSelection} origin={origin} />}
         {tab === "Data health" && <DataHealthTab stats={stats.data} health={health.data} origin={origin} onSelect={selectAsset} />}
         {tab === "Vision" && <VisionTab />}

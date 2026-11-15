@@ -59,6 +59,10 @@ class IngestBody(BaseModel):
     belt: Optional[dict] = None
 
 
+class WorkOrdersBody(BaseModel):
+    orders: list[dict] = Field(default_factory=list)   # {asset, kind, failed_ts, repaired_ts}, sent after a repair
+
+
 class ReplayBody(BaseModel):
     action: Optional[str] = None      # 'play' | 'pause' | 'finished'
     speed: Optional[float] = None     # simulated hours per real second
@@ -98,6 +102,14 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         e = eng()
         e.submit("ingest", {"batch": body.batch, "belt": body.belt})
         return {"accepted": True, "replay": e.replay}
+
+    @app.post("/api/work_orders")
+    async def work_orders(body: WorkOrdersBody):
+        """Repair records. Used only to score past predictions; the model never sees them."""
+        e = eng()
+        for order in body.orders:
+            e.submit("work_order", order)
+        return {"received": len(body.orders)}
 
     @app.post("/api/replay")
     def set_replay(body: ReplayBody):
@@ -207,6 +219,21 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
                                  "h.last_seen_ts, h.last_value FROM sensor_health h JOIN zones z USING (zone_id) "
                                  "WHERE h.state <> 'ok' ORDER BY h.since_ts DESC"),
                 "events": query("SELECT * FROM quality_events ORDER BY start_ts DESC LIMIT 100")}
+
+    @app.get("/api/outcomes")
+    def outcomes():
+        """What the model said against what happened, for every case that has been settled."""
+        rows = query("SELECT o.*, w.kind AS fault_kind, w.repaired_ts, z.section, z.position_m FROM outcomes o "
+                     "LEFT JOIN work_orders w USING (order_id) LEFT JOIN zones z ON z.zone_id = w.zone_id "
+                     "ORDER BY COALESCE(o.failed_ts, o.resolved_ts) DESC")
+        n = lambda kind: sum(r["kind"] == kind for r in rows)  # noqa: E731
+        called = [r for r in rows if r["call_ts"] is not None]
+        return {"outcomes": rows,
+                "summary": {"failures": n("confirmed") + n("early_warning") + n("missed"), "warned": n("confirmed"),
+                            "missed": n("missed"),
+                            "false_alarms": n("false_alarm"), "early_warnings": n("early_warning"),
+                            "failure_calls": len(called),
+                            "failure_calls_came_true": sum(bool(r["within_24h"]) for r in called)}}
 
     @app.get("/api/ingest/stats")
     def ingest_stats():

@@ -40,3 +40,16 @@ CREATE TABLE captures (capture_id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, stat
 CREATE TABLE vision_detections (detection_id INTEGER PRIMARY KEY AUTOINCREMENT, capture_id INTEGER NOT NULL,
   ts INTEGER NOT NULL, label TEXT NOT NULL, score REAL NOT NULL, belt_coordinate_m REAL, ground_position_m REAL,
   bbox TEXT, defect_id INTEGER);
+
+-- Repair records arrive after a repair (in a plant: closed work orders). They are used only to score past
+-- predictions; the model never reads them.
+CREATE TABLE work_orders (order_id INTEGER PRIMARY KEY AUTOINCREMENT, asset TEXT NOT NULL, zone_id INTEGER,
+  kind TEXT NOT NULL, failed_ts INTEGER NOT NULL, repaired_ts INTEGER NOT NULL, received_ts INTEGER NOT NULL,
+  UNIQUE (asset, failed_ts));
+-- One row per resolved case. kind: 'confirmed' (an alert was open when the part failed), 'missed' (it failed
+-- with no alert open), 'false_alarm' (an alert closed and no failure followed), 'early_warning' (an alert
+-- lapsed, and the part did fail later).
+CREATE TABLE outcomes (outcome_id INTEGER PRIMARY KEY AUTOINCREMENT, asset TEXT NOT NULL, kind TEXT NOT NULL,
+  alert_id INTEGER, order_id INTEGER, alert_created_ts INTEGER, call_ts INTEGER, failed_ts INTEGER,
+  lead_hours REAL, call_lead_hours REAL, within_24h INTEGER, eta_at_call REAL, eta_error_hours REAL,
+  resolved_ts INTEGER NOT NULL);

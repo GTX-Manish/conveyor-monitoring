@@ -42,6 +42,8 @@ sensor suspect", and a data-health view of messy input being handled.
   code) must never read it. Exactly four scripts may read `truth/`: `simulator/scenario_set.py`, `scripts/find_demo_seed.py`,
   `scripts/score.py`, `scripts/make_model_data.py` (reads `labels.parquet` only, because training needs labels). `conditions.parquet`
   is never a model input.
+  **Added 2026-11-15 (user's decision):** a fifth reader, `replayer/work_orders.py`, sends repair records (asset, fault
+  kind, failure time, repair end) to the backend only after each repair ends, so past predictions can be scored live.
 - No per-minute Python loops over time; vectorise. Determinism: one seed and config give identical tables.
 - Look at every plot you make before moving on. Commit after each stage; one line per stage in `docs/CHANGELOG.md`.
 - **Do not rename keys in `configs/default.yaml`.** Why: scenario configs and 66 tests depend on them; a tidy-up has no grading value.

@@ -14,7 +14,8 @@ REPO = Path(__file__).resolve().parents[1]
 # Live-path and model code. Folders that do not exist yet are skipped.
 PIPELINE_DIRS = ["backend", "replayer", "frontend/src", "common", "model", "vision", "scripts"]
 # The only files outside simulator/ that may read ground truth (BUILD_PLAN.md section 2).
-TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py"}
+TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py",
+                 "replayer/work_orders.py"}   # repair records, released only after each repair (see its docstring)
 OTHER_TRUTH_FILES = ["layout_truth", "faults.parquet", "hard_negatives.parquet", "sensor_faults.parquet",
                      "conditions.parquet"]
 
@@ -97,3 +98,28 @@ def test_model_data_script_reads_labels_only():
         pytest.skip("scripts/make_model_data.py is not built yet")
     text = path.read_text()
     assert not [name for name in OTHER_TRUTH_FILES if name in text]
+
+
+def test_work_orders_read_only_what_a_maintenance_system_knows(written):
+    """The repair feed may know which asset failed and when, never when the fault started, and never early."""
+    from replayer import work_orders as wo
+    text = (REPO / "replayer" / "work_orders.py").read_text()
+    assert wo.COLUMNS == ["asset", "type", "failure_time", "repair_end"]
+    for forbidden in ("onset", "labels.parquet", "hard_negatives", "sensor_faults", "conditions", "layout_truth",
+                      "severity", "stage"):
+        assert forbidden not in text, forbidden
+    orders = [{"asset": "Z005", "kind": "idler_bearing", "failed_ts": 1000, "repaired_ts": 8200},
+              {"asset": "DRIVE", "kind": "drive_overheat", "failed_ts": 500, "repaired_ts": 7700}]
+    feed = wo.WorkOrderFeed(orders)
+    assert feed.due(7699) == []                                  # nothing before a repair has ended
+    assert [o["asset"] for o in feed.due(7700)] == ["DRIVE"]     # exactly at the end of the repair
+    assert feed.due(8199) == [] and [o["asset"] for o in feed.due(9000)] == ["Z005"] and feed.due(10**9) == []
+    _, root = written
+    for order in wo.load_work_orders(root):
+        assert set(order) == {"asset", "kind", "failed_ts", "repaired_ts"}
+
+
+def test_only_the_repair_feed_and_scoring_touch_work_orders():
+    """Repair records must never reach the features or the model."""
+    for name in ("model/features.py", "model/predict.py", "model/train.py", "model/alerting.py", "model/explain.py"):
+        assert "work_order" not in (REPO / name).read_text(), name

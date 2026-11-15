@@ -237,6 +237,33 @@ def test_severity_bands():
     assert severity(0.9, 48.0) == pytest.approx(0.54)
 
 
+def test_failure_calls_are_scored_on_what_happened_next():
+    from model.evaluate import row_metrics, score_calls
+    W = 400                                             # three assets, 10-minute windows
+    stage = np.zeros((W, 3), dtype=np.int8)
+    htf = np.full((W, 3), np.nan)
+    fault = np.full((W, 3), "", dtype=object)
+    for a, (onset, failure, fid) in enumerate([(50, 300, "F1"), (50, 300, "F2")]):
+        stage[onset:failure, a], fault[onset:failure, a] = 2, fid
+        htf[onset:failure, a] = (failure - np.arange(onset, failure)) / 6.0
+        stage[failure:failure + 12, a], htf[failure:failure + 12, a], fault[failure:failure + 12, a] = 3, 0.0, fid
+    p_abn, p_fail = np.zeros((W, 3)), np.zeros((W, 3))
+    p_abn[60:300, 0], p_fail[240:300, 0] = 1.0, 0.9     # call 10 h before failure: came true
+    p_abn[60:300, 1], p_fail[100:300, 1] = 1.0, 0.9     # call 33 h before failure: early
+    p_abn[60:120, 2], p_fail[70:120, 2] = 1.0, 0.9      # healthy part: false
+    est = np.full((W, 3), 12.0)
+    r = score_calls(p_abn, 0.5, p_fail, 0.8, np.ones(W), stage, fault, htf, est)
+    assert (r["calls"], r["came_true"], r["early"], r["false"]) == (3, 1, 1, 1)
+    assert r["events"] == 2 and r["events_called"] == 2 and r["events_called_in_time"] == 1
+    assert r["share_came_true"] == pytest.approx(1 / 3)
+    assert sorted(r["hours_list"]) == pytest.approx([10.0, 200 / 6])
+    assert r["median_eta_error_hours"] == pytest.approx(np.median([2.0, 200 / 6 - 12]))
+    assert score_calls(p_abn, 0.5, p_fail, 0.95, np.ones(W), stage, fault, htf)["calls"] == 0
+    m = row_metrics(p_fail, 0.8, stage, htf)
+    assert m["positive_windows"] == 2 * 144 and m["tp"] == 60 + 144 and m["fp"] == 56 + 50
+    assert m["recall"] == pytest.approx(204 / 288) and 0 < m["average_precision"] <= 1
+
+
 def test_reasons_are_plain_sentences():
     from model.explain import explain, reasons
     assert explain("bearing_temp_c__dev6h", 9.83) == (
@@ -307,6 +334,13 @@ def test_model_alert_lifecycle_and_status_rule(tmp_path):
         assert rows(e, "SELECT COUNT(*) n FROM alerts WHERE source='model'")[0]["n"] == 3
 
         models.p_abnormal[:] = 0.0
+        t = run_windows(e, t, 6)                        # zone 21 still has a 95% failure score: its alert is held
+        assert [a["asset"] for a in rows(e, "SELECT asset FROM alerts WHERE source='model' AND state='open'")] == ["Z021"]
+        models.p_abnormal[[10, 120]] = 0.9
+        t = run_windows(e, t, 2)                        # the other two reopen; the hold never opened anything
+        assert rows(e, "SELECT COUNT(*) n FROM alerts WHERE source='model'")[0]["n"] == 5
+        models.p_abnormal[:] = 0.0
+        models.p_fail[:] = 0.0
         t = run_windows(e, t, 5)
         assert rows(e, "SELECT COUNT(*) n FROM alerts WHERE source='model' AND state='open'")[0]["n"] == 3
         t = run_windows(e, t, 1)                        # the sixth window below closes them
@@ -318,6 +352,65 @@ def test_model_alert_lifecycle_and_status_rule(tmp_path):
                           " created_ts, updated_ts) VALUES ('sensor_stuck','x','Z031',0,'low','m','open',0,0)")
     finally:
         e.con.close()
+
+
+def test_outcomes_compare_predictions_with_repair_records(tmp_path):
+    e, models = scoring_engine(tmp_path)
+    try:
+        t = run_windows(e, 0, HISTORY_WINDOWS)
+        models.p_abnormal[[10, 20, 30]] = 0.9           # zones 11, 21 and 31 look abnormal
+        t = run_windows(e, t, 2)                        # alerts open
+        open_ts = rows(e, "SELECT created_ts FROM alerts WHERE asset='Z011'")[0]["created_ts"]
+        models.p_fail[10] = 0.95                        # failure call on zone 11 (stub estimate: 6 h)
+        t = run_windows(e, t, 6)
+        call_ts = rows(e, "SELECT MIN(ts) t FROM predictions WHERE asset='Z011' AND status='predicted_failure'")[0]["t"]
+
+        # a record dated after the data received so far is refused; so is an unknown asset
+        future = T0 + 60 * t + 3600
+        assert not e.work_order({"asset": "Z011", "kind": "idler_bearing", "failed_ts": future, "repaired_ts": future})
+        assert not e.work_order({"asset": "Q9", "kind": "x", "failed_ts": T0, "repaired_ts": T0})
+        assert rows(e, "SELECT COUNT(*) n FROM outcomes")[0]["n"] == 0
+
+        failed = T0 + 60 * t - 600
+        before = rows(e, "SELECT * FROM predictions ORDER BY asset, ts")
+        assert e.work_order({"asset": "Z011", "kind": "idler_bearing", "failed_ts": failed, "repaired_ts": failed + 300})
+        assert not e.work_order({"asset": "Z011", "kind": "idler_bearing", "failed_ts": failed, "repaired_ts": failed + 300})
+        assert e.work_order({"asset": "Z050", "kind": "idler_bearing", "failed_ts": failed, "repaired_ts": failed + 300})
+        assert rows(e, "SELECT * FROM predictions ORDER BY asset, ts") == before       # scoring only, no feedback
+        out = {o["asset"]: o for o in rows(e, "SELECT * FROM outcomes")}
+        assert out["Z050"]["kind"] == "missed" and out["Z050"]["alert_id"] is None
+        o = out["Z011"]
+        assert o["kind"] == "confirmed" and o["alert_created_ts"] == open_ts and o["call_ts"] == call_ts
+        assert o["lead_hours"] == pytest.approx((failed - open_ts) / 3600)
+        assert o["call_lead_hours"] == pytest.approx((failed - call_ts) / 3600) and o["within_24h"] == 1
+        assert o["eta_at_call"] == 6.0 and o["eta_error_hours"] == pytest.approx(abs(6.0 - (failed - call_ts) / 3600))
+
+        models.p_abnormal[:] = 0.0                      # all alerts close; zones 21 and 31 never failed
+        models.p_fail[:] = 0.0
+        t = run_windows(e, t, 6)
+        kinds = {o["asset"]: o["kind"] for o in rows(e, "SELECT * FROM outcomes")}
+        assert kinds == {"Z011": "confirmed", "Z050": "missed", "Z021": "false_alarm", "Z031": "false_alarm"}
+
+        # zone 21 fails a day later: its lapsed alert was an early warning, not a false alarm
+        t = run_windows(e, t, 6)
+        later = T0 + 60 * t - 600
+        assert e.work_order({"asset": "Z021", "kind": "idler_bearing", "failed_ts": later, "repaired_ts": later + 60})
+        z21 = rows(e, "SELECT kind, failed_ts, lead_hours FROM outcomes WHERE asset='Z021'")
+        assert len(z21) == 1 and z21[0]["kind"] == "early_warning" and z21[0]["failed_ts"] == later   # one row per failure
+        assert z21[0]["lead_hours"] > 0
+
+        with TestClient(create_app(SETTINGS, engine=e)) as client:
+            reply = client.get("/api/outcomes").json()
+            assert reply["summary"] == {"failures": 3, "warned": 1, "missed": 1, "false_alarms": 1, "early_warnings": 1,
+                                        "failure_calls": 1, "failure_calls_came_true": 1}
+            assert len(reply["outcomes"]) == 4 and reply["outcomes"][0]["asset"] == "Z021"
+            assert client.post("/api/work_orders", json={"orders": [{"asset": "Z031", "kind": "idler_bearing",
+                                                                     "failed_ts": later, "repaired_ts": later + 60}]}
+                               ).json() == {"received": 1}
+            after = client.get("/api/outcomes").json()["summary"]
+            assert after["early_warnings"] == 2 and after["false_alarms"] == 0 and after["failures"] == 4
+    finally:
+        pass
 
 
 def test_alerts_hold_while_the_belt_is_stopped(tmp_path):
@@ -382,7 +475,8 @@ def test_api_and_replayer_end_to_end(scenario, tmp_path):
         assert client.get("/api/health").json()["ok"] is True
         assert client.post("/api/replay", json={"speed": 99}).status_code == 422
         assert client.post("/api/replay", json={"action": "dance"}).status_code == 422
-        sent = run("feat", "", scenario, settings, inject=True, max_minutes=600, client=client, log=lambda m: None)
+        sent = run("feat", "", scenario, settings, inject=True, max_minutes=600, client=client, log=lambda m: None,
+                   work_orders=True)
         e.drain()
 
         # what the replayer says it injected is exactly what the backend counted

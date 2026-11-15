@@ -123,3 +123,26 @@
   Every model alert's message ends with "What the model saw: ..." and its evidence carries the same sentences as
   `reasons`. The dashboard shows them as a list on the alert card and in Zone details, no longer behind a toggle.
   Context features (share of time running, position) are skipped: they are not symptoms.
+- **Checking whether predictions come true** (user question: "what is the accuracy, and how do we know a predicted
+  failure was real?"). Two gaps were found and closed:
+  - **Offline.** A failure call used to count as right whenever it fired on a degrading part. `score_calls` in
+    `model/evaluate.py` now scores each call on whether the part failed within 24 h of it, and the failure-call
+    threshold is tuned on that (zone 0.97, was 0.35). **Result, seed 1: validation 9 of 10 calls came true within
+    24 h, stress 8 of 8, but test only 5 of 10.** The other 5 test calls were 0.3 to 11 h too early (the part
+    failed 24.3 to 35.1 h after the call); none was on a healthy part. Over three seeds test is 5 to 7 of 10. The
+    90% target is met on validation and **not on test**; the threshold was not retuned after seeing test.
+  - **Live.** The replayer now posts a repair record when each repair ends (`replayer/work_orders.py`: asset, fault
+    kind, failure time, repair end; never the fault's start). The backend stores them in `work_orders` and writes
+    one row per failure to `outcomes`. The dashboard has a **Track record** tab. This is a fifth reader of the
+    answer key, added on the user's decision; tests check that it reads only those four columns, releases nothing
+    before the repair ends, and that the model code never touches repair records.
+  - **A defect the live check exposed.** In the demo the drive alert opened at 16:09 and closed at 17:19, three
+    hours before the drive failed, because the drive's abnormal score wobbles around its threshold. The offline
+    score had only checked that an alert opened before the failure. Fixed in two ways: an open alert no longer
+    closes while the probability of failing within 24 h is above 50% (`HOLD_P_FAIL`; this can keep an alert open
+    but never open one), and the evaluation now reports "alert still open at failure". With the fix that is 10 of
+    10 and 2 of 2 on test, and the demo shows 4 of 4 failures with an alert open and no false alarms.
+  - Window-level precision, recall and average precision for the 24-hour classifier are in the report; plain
+    accuracy is not, because over 99% of windows are negative.
+  - The drive's failure-call threshold tuned to 0.05, the lowest candidate: drive faults last under 48 h, so any
+    call inside an open alert is within 24 h. It carries little information and rests on 2 validation events.
