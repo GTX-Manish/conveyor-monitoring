@@ -237,6 +237,25 @@ def test_severity_bands():
     assert severity(0.9, 48.0) == pytest.approx(0.54)
 
 
+def test_reasons_are_plain_sentences():
+    from model.explain import explain, reasons
+    assert explain("bearing_temp_c__dev6h", 9.83) == (
+        "Bearing temperature is 9.8 °C higher than the other zones on its run (6 h average)")
+    assert explain("vibration_rms_mm_s__dev24h", 0.1823) == (
+        "Vibration is 20% higher than the other zones on its run (24 h average)")
+    assert explain("acoustic_db__rise1h", 1.24).startswith("Acoustic level has risen 1.2 dB in the last hour")
+    assert explain("motor_temp_c__dev1h", 38.4) == (
+        "Motor temperature is 38.4 °C above the idler bearings' temperature (1 h average)")
+    assert explain("motor_minus_gearbox_1h", 10.7) == "The motor is 10.7 °C hotter than the gearbox (1 h average)"
+    assert explain("bearing_temp_c__nb6h", -2.0).startswith("Bearing temperature is 2.0 °C lower than the two neighbouring")
+    for context in ("run_share", "is_carry", "temp_reference", "throughput", "motor_current_a__mean1h"):
+        assert explain(context, 1.0) is None            # context, not a symptom
+    assert explain("bearing_temp_c__dev6h", None) is None and explain("bearing_temp_c__dev6h", float("nan")) is None
+    feats = [{"name": "run_share", "value": 1.0}, {"name": "acoustic_db__dev24h", "value": 1.2},
+             {"name": "vibration_kurtosis__dev24h", "value": 0.37}, {"name": "acoustic_db__dev24h", "value": 1.2}]
+    assert len(reasons(feats)) == 2 and reasons(feats)[0].startswith("Acoustic level is 1.2 dB higher")
+
+
 def scoring_engine(tmp_path):
     models = StubModels()
     e = Engine(tmp_path / "s.sqlite", LAYOUT, SETTINGS, models=models, scenario="unit")
@@ -269,6 +288,9 @@ def test_model_alert_lifecycle_and_status_rule(tmp_path):
         assert alerts["Z021"]["predicted_failure_ts"] == alerts["Z021"]["created_ts"] + 6 * 3600
         assert alerts["Z021"]["severity"] > alerts["Z011"]["severity"]
         assert json.loads(alerts["Z021"]["evidence"])["top_features"][0]["name"] == "bearing_temp_c__dev6h"
+        assert json.loads(alerts["Z021"]["evidence"])["reasons"] == [
+            "Bearing temperature is 9.0 °C higher than the other zones on its run (6 h average)"]
+        assert "What the model saw: Bearing temperature is 9.0 °C higher" in alerts["Z021"]["message"]
         st = {a["asset"]: a for a in e.status()["assets"]}
         assert (st["Z011"]["status"], st["Z021"]["status"], st["Z001"]["status"]) == (
             "abnormal", "predicted_failure", "normal")

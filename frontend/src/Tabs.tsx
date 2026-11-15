@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  Alert, IngestStats, Layout, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, assetName, count, featureLabel, get, hours,
+  Alert, IngestStats, Layout, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, alertText, assetName, count, get, hours,
   pct, simTime,
 } from "./api";
 import { StatusChip } from "./Detail";
@@ -16,6 +16,18 @@ function Severity({ label }: { label: string }) {
     <span className="inline-flex items-center gap-1.5 whitespace-nowrap capitalize">
       <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: SEVERITY_VAR[label] }} />{label}
     </span>
+  );
+}
+
+/** What the model saw, as a short list. Shown in full: an alert should say why it exists. */
+export function Reasons({ alert }: { alert: Alert }) {
+  const { reasons } = alertText(alert);
+  if (reasons.length === 0) return null;
+  return (
+    <div className="mt-2 text-sm">
+      <div className="font-medium">What the model saw</div>
+      <ul className="mt-0.5 list-disc space-y-0.5 pl-5 text-ink2">{reasons.map((r) => <li key={r}>{r}</li>)}</ul>
+    </div>
   );
 }
 
@@ -41,17 +53,8 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
                 <span className="text-ink3">{a.state === "open" ? `since ${simTime(a.created_ts, origin)}` : `closed ${simTime(a.closed_ts, origin)}`}</span>
               </div>
             </div>
-            <p className="mt-1 text-ink2">{a.message}</p>
-            {a.evidence && a.evidence.top_features.length > 0 && (
-              <details className="mt-1.5 text-sm" onClick={(e) => e.stopPropagation()}>
-                <summary className="cursor-pointer text-ink2 underline-offset-2 hover:underline">Why?</summary>
-                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink2">
-                  {a.evidence.top_features.map((f) => (
-                    <li key={f.name}>{featureLabel(f.name)}{f.value != null && <span className="tabular text-ink"> ({f.value > 0 ? "+" : ""}{f.value.toFixed(2)})</span>}</li>
-                  ))}
-                </ul>
-              </details>
-            )}
+            <p className="mt-1 text-ink2">{alertText(a).summary}</p>
+            <Reasons alert={a} />
           </li>
         ))}
       </ul>

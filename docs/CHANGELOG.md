@@ -118,3 +118,8 @@
   Deep links: `?tab=alerts`, `?zone=107`, `?tour=4`, `?tour=0`.
 - `scripts/demo.py` refuses to start when something is already listening on its port (it used to feed a second
   replay into the running backend) and takes `--port`.
+- **Alerts say what the model saw** (user feedback). `model/explain.py` turns the model's strongest features into
+  sentences, for example "Bearing temperature is 9.8 °C higher than the other zones on its run (6 h average)".
+  Every model alert's message ends with "What the model saw: ..." and its evidence carries the same sentences as
+  `reasons`. The dashboard shows them as a list on the alert card and in Zone details, no longer behind a toggle.
+  Context features (share of time running, position) are skipped: they are not symptoms.

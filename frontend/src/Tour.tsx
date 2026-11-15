@@ -19,7 +19,7 @@ export const STEPS: Step[] = [
   { tab: "Overview", target: "attention", title: "What needs attention",
     text: "The few things worth looking at right now, most serious first. Click one to open its zone. When this list is empty, the belt is healthy." },
   { tab: "Alerts", target: "panel", title: "Alerts",
-    text: "One card per problem, with where it is, how serious it is and when it started. Open “Why?” on a card to see what the model noticed." },
+    text: "One card per problem, with where it is, how serious it is and when it started. Each model alert lists what the model saw that made it raise the alert." },
   { tab: "Predictions", target: "panel", title: "Predictions",
     text: "What the model expects: which part, where on the belt, how likely it is to fail within 24 hours, and the estimated time left." },
   { tab: "Zone details", target: "panel", title: "Zone details",

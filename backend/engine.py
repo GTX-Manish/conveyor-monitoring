@@ -21,6 +21,7 @@ import numpy as np
 
 from common.ids import ASSETS, BELT_SIGNALS, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
 from model.alerting import ACTIVE_RUN_SHARE, Debouncer, severity, severity_label
+from model.explain import reasons
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
 log = logging.getLogger("engine")
@@ -502,7 +503,11 @@ class Engine:
         when = (f"Failure expected in about {eta:.0f} h." if eta is not None
                 else f"Chance of failing within a day: {p_fail:.0%}.")
         message = f"{where}: {what}. {when}"
-        evidence = json.dumps({"top_features": self.models.top_features("zone" if is_zone else "drive", x),
+        features = self.models.top_features("zone" if is_zone else "drive", x, k=8)
+        seen = reasons(features)                 # what the model saw, in plain words
+        if seen:
+            message += " What the model saw: " + "; ".join(seen) + "."
+        evidence = json.dumps({"top_features": features[:3], "reasons": seen,
                                "p_abnormal": round(float(self.p_abnormal[i]), 4), "p_fail_24h": round(p_fail, 4)})
         fail_ts = int(ts + eta * 3600) if eta is not None else None
         if opened:

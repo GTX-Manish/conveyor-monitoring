@@ -24,7 +24,7 @@ export interface Alert {
   alert_id: number; type: string; source: "model" | "data_quality"; asset: string; zone_id: number | null;
   position_m: number | null; severity: number; severity_label: "low" | "medium" | "high" | "critical";
   predicted_failure_ts: number | null; eta_hours: number | null; message: string;
-  evidence: { top_features: Feature[]; p_fail_24h: number; p_abnormal: number } | null;
+  evidence: { top_features: Feature[]; reasons?: string[]; p_fail_24h: number; p_abnormal: number } | null;
   state: "open" | "closed"; created_ts: number; updated_ts: number; closed_ts: number | null;
 }
 export interface Series {
@@ -112,3 +112,10 @@ export const pct = (v: number | null | undefined) => (v == null ? "–" : `${Mat
 export const hours = (v: number | null | undefined) => (v == null ? "–" : v < 1 ? "under 1 h" : `${Math.round(v)} h`);
 export const count = (v: number | undefined) => (v == null ? "–" : v.toLocaleString("en"));
 export const assetName = (a: string) => (a === "DRIVE" ? "Drive" : `Zone ${parseInt(a.slice(1), 10)}`);
+
+/** An alert's message split into its summary and the list of things the model saw. */
+export function alertText(a: Alert): { summary: string; reasons: string[] } {
+  const summary = a.message.split(" What the model saw:")[0];
+  const reasons = a.evidence?.reasons?.length ? a.evidence.reasons : (a.evidence?.top_features ?? []).map((f) => featureLabel(f.name));
+  return { summary, reasons };
+}

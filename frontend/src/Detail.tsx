@@ -2,9 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
-  Alert, Asset, Layout, Predictions, SIGNAL_LABEL, STATUS_LABEL, STATUS_VAR, Series, StatusReply, get, hours, pct, simTime,
+  Alert, Asset, Layout, Predictions, alertText, SIGNAL_LABEL, STATUS_LABEL, STATUS_VAR, Series, StatusReply, get, hours, pct, simTime,
 } from "./api";
 import type { Selection } from "./App";
+import { Reasons } from "./Tabs";
 
 const RANGES = [{ label: "6 h", h: 6 }, { label: "24 h", h: 24 }, { label: "3 days", h: 72 }, { label: "7 days", h: 168 }];
 const DRIVE_SIGNALS = ["motor_temp_c", "gearbox_temp_c", "motor_current_a", "tension_kn", "throughput_tph", "belt_speed_ms"];
@@ -125,9 +126,10 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
           </p>
         )}
         {mine.map((a) => (
-          <p key={a.alert_id} className="mt-3 rounded border border-line bg-raised p-2 text-sm">
-            <span className="font-medium">Open alert ({a.severity_label}):</span> {a.message}
-          </p>
+          <div key={a.alert_id} className="mt-3 rounded border border-line bg-raised p-3 text-sm">
+            <span className="font-medium">Open alert ({a.severity_label}):</span> {alertText(a).summary}
+            <Reasons alert={a} />
+          </div>
         ))}
       </div>
 
