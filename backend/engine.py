@@ -19,7 +19,7 @@ from pathlib import Path
 
 import numpy as np
 
-from common.ids import ASSETS, BELT_SIGNALS, DRIVE, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
+from common.ids import ASSETS, BELT_SIGNALS, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
 from model.alerting import ACTIVE_RUN_SHARE, Debouncer, severity, severity_label
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
@@ -469,7 +469,7 @@ class Engine:
         self.con.executemany(
             "INSERT OR REPLACE INTO predictions VALUES (?,?,?,?,?,?,?)",
             [(ts, a, float(self.p_abnormal[i]), float(self.p_fail[i]),
-              float(self.est_hours[i]) if status[i] != "normal" else None, status[i], self.models.version)
+              float(self.est_hours[i]) if status[i] == "predicted_failure" else None, status[i], self.models.version)
              for i, a in enumerate(ASSETS)])
         if not active:
             return
@@ -500,7 +500,8 @@ class Engine:
         else:
             where, pos, zone_id, what = "Drive", None, None, "motor and gearbox overheating"
         when = (f"failure expected in about {eta:.0f} h (probability of failing within 24 h: {p_fail:.0%})"
-                if eta is not None else f"no failure expected within 24 h yet (probability {p_fail:.0%})")
+                if eta is not None else f"failure within 24 h is not predicted yet (probability {p_fail:.0%}, "
+                                        f"called at {self.thr_fail[i]:.0%})")
         message = f"{where}: {what}; {when}."
         evidence = json.dumps({"top_features": self.models.top_features("zone" if is_zone else "drive", x),
                                "p_abnormal": round(float(self.p_abnormal[i]), 4), "p_fail_24h": round(p_fail, 4)})
@@ -531,7 +532,7 @@ class Engine:
                 suspect = any(v != "ok" for v in sensors.values())
                 quality = ("no_data" if is_zone and self.no_data[i] else "sensor_suspect" if suspect else "ok")
                 status = model[i] if model[i] == "predicted_failure" else "no_data" if suspect else model[i]
-                shown = scoring and model[i] != "normal"
+                shown = scoring and model[i] == "predicted_failure"   # a time is only given with a failure call
                 assets.append({
                     "asset": asset, "zone_id": i + 1 if is_zone else None, "status": status,
                     "model_status": model[i], "data_quality": quality, "sensors": sensors,

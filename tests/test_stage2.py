@@ -142,7 +142,7 @@ def test_drive_effects(pair):
     kind, scn, twin = pair
     if kind != DRIVE_OVERHEAT:
         pytest.skip("drive only")
-    ev, s = scn.events[0], sev(scn)
+    s = sev(scn)
     for col in ZONE_SIGNALS:  # no zone sees a drive fault
         assert scn.zones[col].equals(twin.zones[col])
     for col in set(BELT_SIGNALS) - {"motor_temp_c", "gearbox_temp_c", "motor_current_a"}:

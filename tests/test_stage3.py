@@ -5,8 +5,14 @@ import pytest
 
 from simulator.config import Config, config_from_dict
 from simulator.generate import generate, make_streams
-from simulator.hard_negatives import (DUSTY, HEAT_WAVE, HEAVY_LOAD, STARTUP, hard_negatives_frame,
-                                      schedule_hard_negatives)
+from simulator.hard_negatives import (
+    DUSTY,
+    HEAT_WAVE,
+    HEAVY_LOAD,
+    STARTUP,
+    hard_negatives_frame,
+    schedule_hard_negatives,
+)
 
 Z, A = 120, 121
 NO_MESS = {"missing_rate": 0, "outages_per_30d": 0, "stuck_per_30d": 0}

@@ -17,6 +17,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from common.ids import ASSETS, BELT_SIGNALS, ZONE_SIGNALS, asset_zone
+
 from .engine import Engine, connect
 
 REPO = Path(__file__).resolve().parents[1]

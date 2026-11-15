@@ -8,8 +8,7 @@ import pytest
 
 from simulator.config import Config
 from simulator.generate import generate
-from simulator.io import (PUBLIC_COLUMNS, LeakageError, check_public_columns, load_public,
-                          write_scenario)
+from simulator.io import PUBLIC_COLUMNS, LeakageError, check_public_columns, load_public, write_scenario
 
 REPO = Path(__file__).resolve().parents[1]
 # Live-path and model code. Folders that do not exist yet are skipped.

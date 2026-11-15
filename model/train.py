@@ -21,6 +21,7 @@ import numpy as np
 import pandas as pd
 
 from common.ids import ASSETS, DRIVE, N_ZONES
+
 from .evaluate import ADVANCED, FAILED, NORMAL, TARGET_PRECISION, tune_threshold
 from .features import WINDOW_MIN, drive_feature_names, zone_feature_names
 from .predict import ARTIFACTS, KINDS

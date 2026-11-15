@@ -6,10 +6,10 @@ import pytest
 import yaml
 
 from scripts import find_demo_seed as fds
+from simulator import scenario_set
 from simulator.config import Config
 from simulator.generate import generate
 from simulator.io import load_public
-from simulator import scenario_set
 from simulator.scenario_set import STRESS_OVERRIDES, balance_check, default_specs, read_split, write_config
 
 MINI = [dict(name="train_01", split="train", seed=101, days=2, overrides={}),

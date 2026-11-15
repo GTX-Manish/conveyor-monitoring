@@ -1,0 +1,7 @@
+line-length = 125
+target-version = "py312"
+exclude = [".venv", "frontend", "data"]
+
+[lint]
+select = ["E", "F", "W", "I"]
+ignore = ["E731"]   # small lambdas are used on purpose for one-line reshapes

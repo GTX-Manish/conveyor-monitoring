@@ -83,9 +83,9 @@ def test_asset_ids_round_trip():
 
 
 def test_signal_names_match_the_simulator():
+    from common import ids
     from simulator import healthy
     from simulator.generate import RUN_STATES
-    from common import ids
     assert ids.ZONE_SIGNALS == healthy.ZONE_SIGNALS and ids.BELT_SIGNALS == healthy.BELT_SIGNALS
     assert ids.RUN_STATES == RUN_STATES
 

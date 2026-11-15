@@ -79,3 +79,33 @@
   - Alerts hold while the belt is stopped (nothing can be learned about a bearing that is not turning).
   - Normal zone windows are thinned to 20% for training (memory); all other windows are kept.
   - LightGBM's native interface is used, so scikit-learn is not a dependency.
+- **Stage 8**: backend and replayer. `backend/engine.py` validates each batch (reject, de-duplicate, range-check),
+  stores it, advances a watermark so later steps see minutes in order, tracks sensor health (stuck after 15
+  identical running values, no data after 5 silent minutes) and scores every 10-minute window with the same
+  feature code as training. `replayer/run.py` posts one batch per simulated minute over HTTP and can inject
+  duplicates, out-of-range values, unknown zones and out-of-order batches. `python -m scripts.demo` runs both.
+  A full 14-day replay raised alerts for all three bearing faults and the drive fault, and the ingest counts
+  equal the replayer's injected counts exactly. Departures from the build plan, with reasons:
+  - **No queue and worker thread.** Each batch is processed in the request under one lock. A worker thread was
+    built first and was slower; the lock still gives one writer, and the waiting sender is the back-pressure.
+  - **`synchronous=OFF`** (the plan says NORMAL). On a busy disk, syncing cut ingest from about 135 to 24 batches
+    per second. The database is deleted and rebuilt on every start, so durability buys nothing here.
+  - **Top replay speed on the development machine is about 2 simulated hours per second**, not 3. The setting
+    allows 3; the replayer simply runs behind. The default of 1 holds.
+  - **The precomputed-predictions fallback is not built** (it is second in the plan's cut order).
+  - Per-window deviations moved from stage 2 to stage 1 of `model/features.py` so live scoring computes them once
+    per window. Model tables are bit-identical before and after, so the trained models did not change.
+  - Data-quality alerts are labelled `medium` directly: the plan gives them severity 0.5, which its own bands
+    ("under 0.5 medium") would call `high`.
+  - A time to failure is shown only when the failure call is made, so the dashboard never shows a time next to
+    "not predicted yet".
+  - Vision placeholders: empty `captures` and `vision_detections` tables and `/api/vision/*` endpoints that
+    return `enabled: false`.
+- **Stage 9**: dashboard (`frontend/`, React 18, Vite, TypeScript, Tailwind, TanStack Query, Recharts). Racetrack
+  map of 120 zones and the drive in four statuses (each with a glyph or hatch, not colour alone), drill-down by
+  section and zone with signal charts and model output, tabs for active anomalies (with the top 3 reasons), model
+  predictions, data health and a Vision tab that says it is not enabled. The built `frontend/dist` is committed
+  and served by the backend. Deep links (`?zone=107`, `?drive=1`, `?tab=health`) open a view directly.
+  Screenshots are in `docs/screenshots/`.
+- **Stage 10 (partly)**: `Makefile`, GitHub Actions CI (`ruff`, `pytest`, dashboard type-check and build), `ruff`
+  clean. The README is still to be written.

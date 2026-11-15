@@ -110,7 +110,7 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
         <div className="flex gap-1" role="group" aria-label="Time range">
           {RANGES.map((r) => (
             <button key={r.h} onClick={() => setRange(r.h)} aria-pressed={range === r.h}
-              className={`rounded border px-2 py-0.5 text-xs ${range === r.h ? "border-ink bg-raised font-semibold" : "border-line text-ink2 hover:bg-raised"}`}>{r.label}</button>
+              className={`whitespace-nowrap rounded border px-2 py-0.5 text-xs ${range === r.h ? "border-ink bg-raised font-semibold" : "border-line text-ink2 hover:bg-raised"}`}>{r.label}</button>
           ))}
         </div>
       </div>

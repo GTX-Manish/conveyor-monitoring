@@ -17,8 +17,15 @@ import numpy as np
 import pandas as pd
 
 from common.ids import ASSETS, BELT_SIGNALS, DRIVE, N_ZONES, RUN_STATES, ZONE_SIGNALS, simulator_asset
-from model.features import (HISTORY_WINDOWS, WINDOW_MIN, drive_feature_names, rolling_features, to_windows,
-                            window_aggregates, zone_feature_names)
+from model.features import (
+    HISTORY_WINDOWS,
+    WINDOW_MIN,
+    drive_feature_names,
+    rolling_features,
+    to_windows,
+    window_aggregates,
+    zone_feature_names,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 LABEL_COLUMNS = ["stage", "fails_within_24h", "hours_to_failure", "fault_id", "is_hard_negative_period"]
