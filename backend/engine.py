@@ -499,10 +499,9 @@ class Engine:
             what = "idler bearing degrading"
         else:
             where, pos, zone_id, what = "Drive", None, None, "motor and gearbox overheating"
-        when = (f"failure expected in about {eta:.0f} h (probability of failing within 24 h: {p_fail:.0%})"
-                if eta is not None else f"failure within 24 h is not predicted yet (probability {p_fail:.0%}, "
-                                        f"called at {self.thr_fail[i]:.0%})")
-        message = f"{where}: {what}; {when}."
+        when = (f"Failure expected in about {eta:.0f} h." if eta is not None
+                else f"Chance of failing within a day: {p_fail:.0%}.")
+        message = f"{where}: {what}. {when}"
         evidence = json.dumps({"top_features": self.models.top_features("zone" if is_zone else "drive", x),
                                "p_abnormal": round(float(self.p_abnormal[i]), 4), "p_fail_24h": round(p_fail, 4)})
         fail_ts = int(ts + eta * 3600) if eta is not None else None

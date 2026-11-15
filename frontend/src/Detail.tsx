@@ -22,12 +22,35 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
   layout: Layout; status: StatusReply; alerts: Alert[]; selection: Selection; onSelect: (s: Selection) => void; origin: number | null;
 }) {
   const [range, setRange] = useState(24);
+  const [plot, setPlot] = useState("model");
+  const picker = (
+    <label className="mb-4 flex flex-wrap items-center gap-2 text-sm text-ink2">
+      Show
+      <select className="rounded border border-line bg-surface px-2 py-1.5 text-sm text-ink"
+        value={!selection ? "" : selection.kind === "drive" ? "drive" : selection.kind === "zone" ? `z${selection.zone}` : `s${selection.section}`}
+        onChange={(e) => {
+          const v = e.target.value;
+          onSelect(v === "" ? null : v === "drive" ? { kind: "drive" } : v[0] === "z" ? { kind: "zone", zone: Number(v.slice(1)) } : { kind: "section", section: Number(v.slice(1)) });
+        }}>
+        <option value="">Choose a zone…</option>
+        <option value="drive">Drive (motor and gearbox)</option>
+        {layout.sections.map((sec) => (
+          <optgroup key={sec.section} label={`Section ${sec.name} (${sec.run} run)`}>
+            <option value={`s${sec.section}`}>All of section {sec.name}</option>
+            {[...sec.zones].sort((a, b) => a - b).map((z) => <option key={z} value={`z${z}`}>Zone {z}</option>)}
+          </optgroup>
+        ))}
+      </select>
+      <span className="text-ink3">or click a block on the map in Overview.</span>
+    </label>
+  );
   if (!selection)
     return (
-      <div className="text-sm text-ink2">
-        <h2 className="mb-1 text-sm font-semibold text-ink">Drill-down</h2>
-        Click a section label on the map to list its 10 zones, or a zone (or the drive) to see its signals, sensor
-        health, predictions and open alerts.
+      <div>
+        {picker}
+        <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">
+          Choose a zone, a section or the drive to see its status, its sensors and a chart of its readings.
+        </p>
       </div>
     );
 
@@ -35,11 +58,12 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
     const sec = layout.sections.find((s) => s.section === selection.section)!;
     return (
       <div>
+        {picker}
         <h2 className="mb-2 text-sm font-semibold">Section {sec.name}: zones {Math.min(...sec.zones)} to {Math.max(...sec.zones)} ({sec.run} run)</h2>
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-ink3">
             <tr><th className="py-1 font-normal">Zone</th><th className="font-normal">Position</th><th className="font-normal">Status</th>
-              <th className="text-right font-normal">Abnormal</th><th className="text-right font-normal">Fails in 24 h</th></tr>
+              <th className="text-right font-normal">Chance of failing within 24 h</th></tr>
           </thead>
           <tbody>
             {[...sec.zones].sort((a, b) => a - b).map((id) => {
@@ -49,7 +73,6 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
                   <td className="py-1.5 font-medium">Zone {id}</td>
                   <td className="tabular text-ink2">{z.position_m.toFixed(0)} m</td>
                   <td><StatusChip asset={a} /></td>
-                  <td className="tabular text-right">{pct(a.p_abnormal)}</td>
                   <td className="tabular text-right">{pct(a.p_fail_24h)}</td>
                 </tr>
               );
@@ -66,59 +89,71 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
   const mine = alerts.filter((a) => a.asset === asset.asset);
   const to = status.sim_ts ?? 0, from = to - range * 3600;
   const signals = isDrive ? DRIVE_SIGNALS : layout.zone_signals;
+  const shown = plot === "model" || signals.includes(plot) ? plot : "model";
+  const sentence: Record<string, string> = {
+    normal: "Nothing unusual here.",
+    abnormal: "The model sees unusual behaviour here. No failure is predicted within a day yet.",
+    predicted_failure: "The model predicts a failure here within about a day.",
+    no_data: "The sensors here are silent or stuck, so the real condition is unknown.",
+  };
+  const stuck = Object.entries(asset.sensors).filter(([, st]) => st !== "ok");
   return (
     <div>
-      <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-sm font-semibold">{zone ? `Zone ${zone.zone_id}` : "Drive (motor and gearbox)"}</h2>
-          {zone && (
-            <button className="text-xs text-ink2 underline-offset-2 hover:underline" onClick={() => onSelect({ kind: "section", section: zone.section })}>
-              Section S{zone.section} · {zone.position_m.toFixed(0)} m · {zone.run} run
-            </button>
-          )}
+      {picker}
+      <div className="mb-3 rounded-lg border border-line p-4">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="text-lg font-semibold">{zone ? `Zone ${zone.zone_id}` : "Drive (motor and gearbox)"}</h2>
+            {zone && (
+              <button className="text-sm text-ink2 underline-offset-2 hover:underline" onClick={() => onSelect({ kind: "section", section: zone.section })}>
+                Section S{zone.section} · {zone.position_m.toFixed(0)} m along the belt · {zone.run} run
+              </button>
+            )}
+          </div>
+          <StatusChip asset={asset} />
         </div>
-        <StatusChip asset={asset} />
+        <p className="mt-2 text-sm text-ink2">{sentence[asset.status]}</p>
+        <dl className="tabular mt-3 grid grid-cols-2 gap-2 text-sm sm:max-w-md">
+          <Stat label="Chance of failing within 24 h" value={pct(asset.p_fail_24h)} />
+          <Stat label="Estimated time to failure" value={asset.est_hours_to_failure != null ? hours(asset.est_hours_to_failure) : "Not predicted"} />
+        </dl>
+        {zone && (
+          <p className="mt-3 text-sm text-ink2">
+            <span className="text-ink3">Sensors: </span>
+            {stuck.length === 0 ? "all five are reporting normally."
+              : stuck.map(([sig, st]) => `${SIGNAL_LABEL[sig].replace(/ \(.*\)/, "")} ${st === "stuck" ? "is stuck on one value" : "is silent"}`).join("; ") + "."}
+          </p>
+        )}
+        {mine.map((a) => (
+          <p key={a.alert_id} className="mt-3 rounded border border-line bg-raised p-2 text-sm">
+            <span className="font-medium">Open alert ({a.severity_label}):</span> {a.message}
+          </p>
+        ))}
       </div>
 
-      <dl className="tabular mb-3 grid grid-cols-3 gap-2 text-sm">
-        <Stat label="Abnormal score" value={pct(asset.p_abnormal)} />
-        <Stat label="Fails within 24 h" value={pct(asset.p_fail_24h)} />
-        <Stat label="Estimated time to failure" value={asset.est_hours_to_failure != null ? hours(asset.est_hours_to_failure) : "–"} />
-      </dl>
-
-      {zone && (
-        <div className="mb-3">
-          <h3 className="mb-1 text-xs text-ink3">Sensor health</h3>
-          <ul className="flex flex-wrap gap-1.5 text-xs">
-            {Object.entries(asset.sensors).map(([sig, st]) => (
-              <li key={sig} className={`rounded border px-1.5 py-0.5 ${st === "ok" ? "border-line text-ink2" : "border-ink font-medium"}`}>
-                {SIGNAL_LABEL[sig].replace(/ \(.*\)/, "")}: {st === "ok" ? "ok" : st === "stuck" ? "stuck (repeating one value)" : "no data"}
-              </li>
+      <div className="rounded-lg border border-line p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap gap-1" role="group" aria-label="What to plot">
+            {["model", ...signals].map((sig) => (
+              <button key={sig} onClick={() => setPlot(sig)} aria-pressed={shown === sig}
+                className={`whitespace-nowrap rounded border px-2.5 py-1 text-sm ${shown === sig ? "border-ink bg-raised font-semibold" : "border-line text-ink2 hover:bg-raised"}`}>
+                {sig === "model" ? "Model output" : SIGNAL_LABEL[sig].replace(/ \(.*\)/, "")}
+              </button>
             ))}
-          </ul>
+          </div>
+          <div className="flex gap-1" role="group" aria-label="Time range">
+            {RANGES.map((r) => (
+              <button key={r.h} onClick={() => setRange(r.h)} aria-pressed={range === r.h}
+                className={`whitespace-nowrap rounded border px-2 py-1 text-xs ${range === r.h ? "border-ink bg-raised font-semibold" : "border-line text-ink2 hover:bg-raised"}`}>{r.label}</button>
+            ))}
+          </div>
         </div>
-      )}
-
-      {mine.map((a) => (
-        <p key={a.alert_id} className="mb-2 rounded border border-line bg-raised p-2 text-sm">
-          <span className="font-medium">Open alert ({a.severity_label}):</span> {a.message}
-        </p>
-      ))}
-
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-xs text-ink3">Signals, 1-minute readings averaged for display. Gaps are missing data, never filled in.</h3>
-        <div className="flex gap-1" role="group" aria-label="Time range">
-          {RANGES.map((r) => (
-            <button key={r.h} onClick={() => setRange(r.h)} aria-pressed={range === r.h}
-              className={`whitespace-nowrap rounded border px-2 py-0.5 text-xs ${range === r.h ? "border-ink bg-raised font-semibold" : "border-line text-ink2 hover:bg-raised"}`}>{r.label}</button>
-          ))}
-        </div>
+        {shown === "model"
+          ? <PredictionChart asset={asset.asset} from={from} to={to} origin={origin} />
+          : <SignalChart url={isDrive ? `/api/belt/series?signal=${shown}` : `/api/zones/${zone!.zone_id}/series?signal=${shown}`}
+              signal={shown} from={from} to={to} origin={origin} />}
+        <p className="mt-1 text-xs text-ink3">Readings are averaged for display. A gap in a line is missing data; it is never filled in.</p>
       </div>
-      <PredictionChart asset={asset.asset} from={from} to={to} origin={origin} />
-      {signals.map((sig) => (
-        <SignalChart key={sig} url={isDrive ? `/api/belt/series?signal=${sig}` : `/api/zones/${zone!.zone_id}/series?signal=${sig}`}
-          signal={sig} from={from} to={to} origin={origin} />
-      ))}
     </div>
   );
 }
@@ -151,12 +186,12 @@ function SignalChart({ url, signal, from, to, origin }: { url: string; signal: s
   return (
     <figure className="mb-1">
       <figcaption className="text-xs font-medium text-ink2">{SIGNAL_LABEL[signal]}</figcaption>
-      <div className="h-[92px]">
+      <div className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart data={points} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
             <CartesianGrid stroke="var(--grid)" vertical={false} />
             <XAxis dataKey="ts" type="number" domain={[f, t]} tickFormatter={(v) => simTime(v, origin)} {...axis} tickCount={5} minTickGap={50} />
-            <YAxis width={44} domain={["auto", "auto"]} {...axis} tickCount={3} tickFormatter={(v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1))} />
+            <YAxis width={44} domain={["auto", "auto"]} {...axis} tickCount={5} tickFormatter={(v: number) => (Math.abs(v) >= 100 ? v.toFixed(0) : v.toFixed(1))} />
             <Tooltip {...tooltipStyle} isAnimationActive={false} labelFormatter={(v) => simTime(v as number, origin)}
               formatter={(v: number) => [v == null ? "missing" : v.toFixed(2), SIGNAL_LABEL[signal]]} />
             <Line dataKey="value" stroke="var(--series-1)" strokeWidth={2} dot={false} isAnimationActive={false} connectNulls={false} />
@@ -177,13 +212,13 @@ function PredictionChart({ asset, from, to, origin }: { asset: string; from: num
   return (
     <figure className="mb-2">
       <figcaption className="flex flex-wrap items-center gap-x-4 text-xs font-medium text-ink2">
-        Model output (0 to 100%)
-        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-1)" }} />Abnormal score</span>
-        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-2)" }} />Fails within 24 h</span>
+        Model output
+        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-1)" }} />How unusual it looks</span>
+        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-2)" }} />Chance of failing within 24 h</span>
       </figcaption>
-      <div className="h-[110px]">
+      <div className="h-[260px]">
         {points.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-xs text-ink3">No predictions in this range yet (the model needs 24 h of history).</div>
+          <div className="flex h-full items-center justify-center text-xs text-ink3">No predictions in this range yet. The model needs a day of history first.</div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={points} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -191,7 +226,7 @@ function PredictionChart({ asset, from, to, origin }: { asset: string; from: num
               <XAxis dataKey="ts" type="number" domain={[f, t]} tickFormatter={(v) => simTime(v, origin)} {...axis} tickCount={5} minTickGap={50} />
               <YAxis width={44} domain={[0, 1]} ticks={[0, 0.5, 1]} tickFormatter={(v: number) => `${v * 100}%`} {...axis} />
               <Tooltip {...tooltipStyle} isAnimationActive={false} labelFormatter={(v) => simTime(v as number, origin)}
-                formatter={(v: number, name) => [pct(v), name === "p_abnormal" ? "Abnormal score" : "Fails within 24 h"]} />
+                formatter={(v: number, name) => [pct(v), name === "p_abnormal" ? "How unusual it looks" : "Chance of failing within 24 h"]} />
               <Line dataKey="p_abnormal" stroke="var(--series-1)" strokeWidth={2} dot={false} isAnimationActive={false} />
               <Line dataKey="p_fail_24h" stroke="var(--series-2)" strokeWidth={2} dot={false} isAnimationActive={false} />
             </LineChart>

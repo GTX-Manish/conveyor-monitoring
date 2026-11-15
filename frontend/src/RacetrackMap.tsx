@@ -29,10 +29,10 @@ export function RacetrackMap({ layout, status, selection, onSelect }: {
   };
 
   return (
-    <section className="rounded-lg border border-line p-3" aria-label="Belt map">
+    <section className="rounded-lg border border-line p-3" aria-label="Belt map" data-tour="map">
       <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">Belt map: 6 km loop, 120 zones, 12 sections</h2>
-        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink2">
+        <h3 className="text-sm font-semibold">Belt map <span className="font-normal text-ink3">· click a block to open that zone</span></h3>
+        <ul data-tour="legend" className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-ink2">
           {STATUSES.map((s) => (
             <li key={s} className="flex items-center gap-1.5">
               <svg width="14" height="14" aria-hidden><Swatch status={s} x={0} y={0} w={14} h={14} /></svg>

@@ -6,7 +6,7 @@ import {
 } from "./api";
 import { StatusChip } from "./Detail";
 
-const TYPE_LABEL: Record<string, string> = {
+export const ALERT_TITLE: Record<string, string> = {
   bearing_degradation: "Idler bearing degrading", drive_overheating: "Drive overheating",
   sensor_stuck: "Sensor stuck", sensor_outage: "Sensor suite silent",
 };
@@ -25,16 +25,16 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-xs text-ink2">
-        <span>Sorted by severity. One alert per fault: a fault that stays active updates its alert.</span>
-        <label className="flex items-center gap-1.5"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />Show closed</label>
+        <span>Most serious first. Click a card to open its zone.</span>
+        <label className="flex items-center gap-1.5"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />Also show past alerts</label>
       </div>
-      {shown.length === 0 && <p className="py-6 text-center text-sm text-ink3">No {showClosed ? "" : "open "}alerts.</p>}
+      {shown.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No {showClosed ? "" : "open "}alerts. The belt looks healthy.</p>}
       <ul className="space-y-2">
         {shown.map((a) => (
           <li key={a.alert_id} onClick={() => onSelect(a.asset)}
             className={`cursor-pointer rounded border border-line p-2.5 text-sm hover:bg-raised ${a.state === "closed" ? "opacity-60" : ""}`}>
             <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-              <div className="font-medium">{TYPE_LABEL[a.type] ?? a.type} · {assetName(a.asset)}{a.position_m != null ? ` (${a.position_m.toFixed(0)} m)` : ""}</div>
+              <div className="font-medium">{ALERT_TITLE[a.type] ?? a.type} · {assetName(a.asset)}{a.position_m != null ? ` (${a.position_m.toFixed(0)} m)` : ""}</div>
               <div className="flex items-center gap-3 text-xs">
                 <Severity label={a.severity_label} />
                 {a.eta_hours != null && <span className="tabular font-medium">fails in about {hours(a.eta_hours)}</span>}
@@ -43,12 +43,14 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
             </div>
             <p className="mt-1 text-ink2">{a.message}</p>
             {a.evidence && a.evidence.top_features.length > 0 && (
-              <div className="mt-1.5 text-xs text-ink2">
-                <span className="text-ink3">Why: </span>
-                {a.evidence.top_features.map((f, i) => (
-                  <span key={f.name}>{i > 0 && "; "}{featureLabel(f.name)}{f.value != null && <span className="tabular text-ink"> ({f.value > 0 ? "+" : ""}{f.value.toFixed(2)})</span>}</span>
-                ))}
-              </div>
+              <details className="mt-1.5 text-sm" onClick={(e) => e.stopPropagation()}>
+                <summary className="cursor-pointer text-ink2 underline-offset-2 hover:underline">Why?</summary>
+                <ul className="mt-1 list-disc space-y-0.5 pl-5 text-ink2">
+                  {a.evidence.top_features.map((f) => (
+                    <li key={f.name}>{featureLabel(f.name)}{f.value != null && <span className="tabular text-ink"> ({f.value > 0 ? "+" : ""}{f.value.toFixed(2)})</span>}</li>
+                  ))}
+                </ul>
+              </details>
             )}
           </li>
         ))}
@@ -60,22 +62,25 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
 export function PredictionsTab({ status, layout, origin, onSelect }: {
   status: StatusReply; layout: Layout; origin: number | null; onSelect: (asset: string) => void;
 }) {
+  const [showAll, setShowAll] = useState(false);
   if (!status.scoring)
     return <p className="py-6 text-center text-sm text-ink3">{status.model_version
       ? `The model scores once it has 24 h of history (${status.windows_of_history} of ${status.windows_needed} ten-minute windows so far).`
       : "No model is loaded, so there are no predictions. Sensor health still works."}</p>;
   const ranked = [...status.assets].sort((a, b) => (b.p_fail_24h ?? 0) - (a.p_fail_24h ?? 0) || (b.p_abnormal ?? 0) - (a.p_abnormal ?? 0));
   const flagged = ranked.filter((a) => a.model_status !== "normal");
-  const rows = flagged.length >= 8 ? flagged : ranked.slice(0, 8);
+  const rows = showAll ? ranked.slice(0, 15) : flagged;
   return (
     <div>
-      <p className="mb-2 text-xs text-ink2">
-        What, where and when, sorted by risk. {flagged.length} of {status.assets.length} assets are flagged by the model; scored at {simTime(status.scored_ts, origin)}.
-      </p>
-      <table className="w-full text-sm">
+      <div className="mb-2 flex items-center justify-between text-xs text-ink2">
+        <span>{flagged.length === 0 ? "The model flags nothing right now." : `The model flags ${flagged.length} of ${status.assets.length} parts.`} Last checked {simTime(status.scored_ts, origin)}.</span>
+        <label className="flex items-center gap-1.5"><input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />Also show the next most at risk</label>
+      </div>
+      {rows.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No part is expected to fail. Tick the box above to see the parts the model ranks highest anyway.</p>}
+      <table className={`w-full text-sm ${rows.length === 0 ? "hidden" : ""}`}>
         <thead className="text-left text-xs text-ink3">
-          <tr><th className="py-1 font-normal">Where</th><th className="font-normal">What</th><th className="font-normal">Fails within 24 h</th>
-            <th className="font-normal">Abnormal</th><th className="text-right font-normal">When</th></tr>
+          <tr><th className="py-1 font-normal">Where</th><th className="font-normal">What the model says</th><th className="font-normal">Chance of failing within 24 h</th>
+            <th className="font-normal">How unusual it looks</th><th className="text-right font-normal">Expected failure</th></tr>
         </thead>
         <tbody>
           {rows.map((a) => {

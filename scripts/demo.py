@@ -3,7 +3,9 @@
     python -m scripts.demo            # then open http://127.0.0.1:8000
 """
 import argparse
+import os
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -34,7 +36,11 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Run the demo.")
     ap.add_argument("--no-inject", action="store_true", help="do not add duplicate, out-of-range or out-of-order input")
     ap.add_argument("--speed", type=float, help="simulated hours per real second (default from configs/app.yaml)")
+    ap.add_argument("--port", type=int, help="port for the backend (default from configs/app.yaml)")
     args = ap.parse_args(argv)
+    if args.port:
+        server["port"] = args.port
+        os.environ["CONVEYOR_PORT"] = str(args.port)     # the backend process reads it
 
     scenario_dir = REPO / server["data_dir"] / server["scenario"] / "public"
     if not scenario_dir.is_dir():
@@ -42,6 +48,11 @@ def main(argv=None):
               f"{server['scenario']}", file=sys.stderr)
         return 1
     url = f"http://{server['host']}:{server['port']}"
+    with socket.socket() as probe:               # refuse to feed a backend that is already running
+        if probe.connect_ex((server["host"], server["port"])) == 0:
+            print(f"something is already listening on {url}. Stop it first, or pass --port to use another port.",
+                  file=sys.stderr)
+            return 1
     def interrupt(*_):          # a plain `kill` stops the children too, like Ctrl-C
         raise KeyboardInterrupt
     signal.signal(signal.SIGTERM, interrupt)

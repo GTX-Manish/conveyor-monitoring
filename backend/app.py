@@ -4,6 +4,7 @@
 """
 import json
 import logging
+import os
 from contextlib import asynccontextmanager, closing
 from pathlib import Path
 from typing import Any, Optional
@@ -27,7 +28,10 @@ log = logging.getLogger("backend")
 
 
 def load_settings(path=REPO / "configs" / "app.yaml") -> dict:
-    return yaml.safe_load(Path(path).read_text())
+    settings = yaml.safe_load(Path(path).read_text())
+    if os.environ.get("CONVEYOR_PORT"):          # lets a second copy run beside one already on the default port
+        settings["server"]["port"] = int(os.environ["CONVEYOR_PORT"])
+    return settings
 
 
 def load_layout(scenario_dir: Path) -> list:

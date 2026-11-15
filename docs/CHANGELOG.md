@@ -109,3 +109,12 @@
   Screenshots are in `docs/screenshots/`.
 - **Stage 10 (partly)**: `Makefile`, GitHub Actions CI (`ruff`, `pytest`, dashboard type-check and build), `ruff`
   clean. The README is still to be written.
+- **Dashboard simplified** (user feedback: the single page was overwhelming). The page is now six top-level tabs,
+  one question each: Overview (is anything wrong?), Alerts, Predictions, Zone details, Data health, Vision. Only
+  one is on screen at a time. Overview shows a one-line headline, the belt map and a short "needs attention" list.
+  Zone details plots one thing at a time (model output or one signal) chosen with buttons, and has a zone picker.
+  Alert reasons sit behind a "Why?" toggle. Labels use plain words ("chance of failing within 24 h"). A guided
+  walkthrough of 11 steps with Previous and Next opens on the first visit and from the "Tour" button.
+  Deep links: `?tab=alerts`, `?zone=107`, `?tour=4`, `?tour=0`.
+- `scripts/demo.py` refuses to start when something is already listening on its port (it used to feed a second
+  replay into the running backend) and takes `--port`.
