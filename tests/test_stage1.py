@@ -4,6 +4,7 @@ import pytest
 
 from simulator.config import Config, LayoutCfg, config_from_dict
 from simulator.generate import generate
+from simulator.healthy import BELT_SIGNALS
 
 
 def test_layout_counts(scn14):
@@ -98,8 +99,9 @@ def test_determinism():
 
 
 def test_noise_scale_changes_only_noise():
-    a = generate(Config(seed=3, days=1))
-    b = generate(config_from_dict({"seed": 3, "days": 1, "signals": {"noise_scale": 2.0}}))
+    quiet = {"noise_random": [1, 1], "drift_random": [0, 0], "shared_random": [0, 0]}
+    a = generate(config_from_dict({"seed": 3, "days": 1, "signals": quiet}))
+    b = generate(config_from_dict({"seed": 3, "days": 1, "signals": {**quiet, "noise_scale": 2.0}}))
     assert a.zones["vibration_kurtosis"].isna().mean() < 0.02  # default messiness: about 1% missing
     ka, kb = a.zones["vibration_kurtosis"], b.zones["vibration_kurtosis"]
     assert 1.8 < kb.std() / ka.std() < 2.2
@@ -148,3 +150,58 @@ def test_noise_level_is_random_per_scenario_and_changes_nothing_else():
     assert scaled.meta["noise_scale_effective"] == pytest.approx(2.0 * runs[3].meta["noise_factor"])
     with pytest.raises(ValueError):
         config_from_dict({"signals": {"noise_random": [0, 2]}})
+
+
+# ---- sensor drift and section-shared noise ------------------------------------------------------------------
+
+QUIET = {"noise_random": [1, 1], "drift_random": [0, 0], "shared_random": [0, 0]}
+
+
+def _gen(signals, seed=3, days=4):
+    return generate(config_from_dict({"seed": seed, "days": days, "signals": {**QUIET, **signals},
+                                      "faults": {"idler_bearing": {"per_30d": 0}, "drive_overheat": {"per_30d": 0}},
+                                      "messiness": {"missing_rate": 0, "outages_per_30d": 0, "stuck_per_30d": 0}}))
+
+
+def _extra(signals, col="bearing_temp_c"):
+    """What drift and/or shared noise added to one signal: the messy run minus the same run without them."""
+    base, messy = _gen({}), _gen(signals)
+    d = messy.zones[col].to_numpy(dtype=float) - base.zones[col].to_numpy(dtype=float)
+    return d.reshape(-1, 120)
+
+
+def test_drift_is_slow_per_sensor_and_leaves_the_rest_alone():
+    d = _extra({"drift_random": [2, 2]})
+    assert d.std() > 1.0                                              # drift_temp_c 1.5 x 2, over 4 days
+    hour_change = d[60:] - d[:-60]
+    assert hour_change.std() < 0.2 * d.std()                          # slow: an hour moves it a small part of its range
+    assert not np.allclose(d[:, 0], d[:, 1]) and not np.allclose(d[:, 0], d[:, 5])   # one wander per sensor
+    base, messy = _gen({}), _gen({"drift_random": [2, 2]})
+    assert base.layout.equals(messy.layout) and base.faults.equals(messy.faults)
+    assert base.conditions.drop(columns="belt_distance_m").equals(messy.conditions.drop(columns="belt_distance_m"))
+    for col in BELT_SIGNALS:                                          # drift is a zone-sensor effect only
+        assert base.belt_wide[col].equals(messy.belt_wide[col])
+
+
+def test_shared_noise_is_identical_within_a_section_and_independent_between_sections():
+    d = _extra({"shared_random": [2, 2]})
+    assert d.std() > 0.5
+    for sec in range(12):
+        block = d[:, sec * 10:(sec + 1) * 10]
+        assert np.allclose(block, block[:, [0]], atol=1e-3)            # all 10 zones see the same disturbance (float32)
+    assert abs(np.corrcoef(d[:, 0], d[:, 10])[0, 1]) < 0.5            # a different section sees a different one
+    assert abs(np.corrcoef(d[:, 0], d[:, 60])[0, 1]) < 0.5
+
+
+def test_drift_and_shared_levels_are_random_per_scenario_and_validated():
+    runs = {seed: generate(config_from_dict({"seed": seed, "days": 1})) for seed in range(1, 7)}
+    drifts = [r.meta["drift_scale_effective"] for r in runs.values()]
+    shared = [r.meta["shared_scale_effective"] for r in runs.values()]
+    assert all(0 <= v <= 3 for v in drifts + shared) and len(set(drifts)) == 6 and len(set(shared)) == 6
+    assert max(drifts) - min(drifts) > 0.5 and max(shared) - min(shared) > 0.5
+    off = _gen({})
+    assert off.meta["drift_scale_effective"] == 0 and off.meta["shared_scale_effective"] == 0
+    with pytest.raises(ValueError):
+        config_from_dict({"signals": {"drift_random": [-1, 2]}})
+    with pytest.raises(ValueError):
+        config_from_dict({"signals": {"shared_random": [3, 1]}})

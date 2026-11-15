@@ -85,6 +85,8 @@ def test_stress_overrides_are_in_stress_only(mini):
     used = {n: yaml.safe_load((out / n / "truth" / "config_used.yaml").read_text()) for n in ("train_01", "stress_01")}
     assert used["stress_01"]["signals"]["noise_scale"] == 2.0 and used["train_01"]["signals"]["noise_scale"] == 1.0
     assert used["stress_01"]["messiness"]["missing_rate"] == 0.03 and used["train_01"]["messiness"]["missing_rate"] == 0.01
+    assert used["stress_01"]["signals"]["drift_random"] == [2.0, 3.0]
+    assert used["train_01"]["signals"]["drift_random"] == [0.0, 3.0]
     assert used["stress_01"]["faults"]["idler_bearing"]["per_30d"] == 8.0
     assert used["stress_01"]["hard_negatives"]["dusty"]["per_30d"] == 3.0
     assert "seed" not in (out / "stress_01" / "public" / "manifest.json").read_text()

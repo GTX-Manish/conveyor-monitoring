@@ -195,3 +195,33 @@
     averaging does not remove, so this result does not carry over to a real belt.
   - The demo scenario came out at 4.7x noise and its outcomes are unchanged (3 of 4 failures warned, the weak drive
     fault missed); verified that the demo data, model and database are all the new ones.
+- **Sensor drift and section-shared noise** (user decision). Two kinds of sensor messiness that averaging does not
+  remove, each drawn per scenario on its own random stream (`drift`, appended to `STREAMS`; nothing else moves):
+  - **Drift** (`signals.drift_*`, level `drift_random` 0 to 3): each zone sensor wanders away from its true value over
+    days (forgets itself over about 3.5 days; long-run sd 1.5 C temperature, 1.5 dB acoustic, 4% vibration, 0.2
+    kurtosis, 2 mm offset, times the scenario's level).
+  - **Shared noise** (`signals.shared_*`, level `shared_random` 0 to 3): every zone in a splice section gets the same
+    disturbance (a sunlit stretch reads warm, a noisy cable run, a dusty section), so a section cannot be compared
+    with its neighbours to rule it out.
+  - The levels are in `run_meta.json` and `docs/scenario_set_report.md` (columns "Drift x" and "Shared x"). The
+    stress scenario is held at the top third of both ranges; the other splits draw freely. Tests that assume base
+    noise pin the levels with a `QUIET` setting.
+  - Probe before retraining: the model trained without them raised 394 to 1,134 false alerts on scenarios with
+    drift or shared noise at the top of the range, so this is a real test, not a cosmetic one.
+  - **Result after retraining, held-out test, seed 1. The model no longer meets the target.** Bearing alerts: 8 of 10
+    faults caught, **13 false alerts, precision 0.38**; failure calls 6 of 6 true but only 6 of 10 faults called.
+    Stress: 7 of 8 caught, 5 false alerts, precision 0.58. Drive alerts still 2 of 2 with no false alerts.
+    Validation looked fine (10 of 10, 1 false, precision 0.91) because its two scenarios happened to draw low shared
+    noise (0.19 and 0.85) and low or middling drift, while test_01 drew drift 2.67 and shared 1.72 and test_02 shared
+    2.42. The alert threshold was tuned on validation only, so it is too low for the noisier test scenarios. No
+    threshold was changed after seeing test.
+  - **Robustness** (`model/artifacts/robustness_report.md`, fixed levels, other kinds switched off): drift 3x, the top
+    of the training range, gives 4 of 8 bearing faults caught and 9 false alerts; drift 6x, 98 false alerts; all
+    three at the top of their ranges, 5 of 8 caught and 29 false alerts. Faults at 0.2 to 0.4 of normal strength:
+    2 of 8 caught. Noise up to 12x is now handled (0 to 1 false alerts); the model learned to cope with noise but
+    not with drift.
+  - **Demo:** 3 of 4 failures warned (the weak drive fault is still missed), but lead times shortened (Z107 62 h,
+    Z065 27 h, Z064 16 h, against 150, 83 and 76 h before).
+  - **What is not fixed:** nothing here makes the model drift-robust and validation does not span the conditions the
+    test scenarios draw. Options: more validation scenarios that cover the range, features that separate a slow
+    sensor wander from a growing fault, or per-sensor baselines. This is the next decision.

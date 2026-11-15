@@ -34,24 +34,36 @@ def _faults(strength=(0.3, 1.5), exponent=(1.5, 3.5), mix=(0.5, 1.5), idler=8.0,
             "idler_bearing": {"per_30d": idler}, "drive_overheat": {"per_30d": drive}}
 
 
-# name -> (seed, faults, noise scale). Seeds are far from the 101 to 401 used by the scenario set.
+def _only(noise=1.0, drift=0.0, shared=0.0):
+    """Exactly these messiness levels, nothing random: base noise x `noise`, drift x `drift`, shared x `shared`."""
+    return {"noise_scale": noise, "noise_random": [1.0, 1.0], "drift_random": [drift, drift],
+            "shared_random": [shared, shared]}
+
+
+# name -> (seed, faults, signals). Seeds are far from the 101 to 401 used by the scenario set. An empty signals
+# dict means the simulator's own random noise, drift and shared-noise levels, as in training. The "fixed" cases
+# set exactly one kind of messiness and switch the others off, to isolate it. Training saw noise 1 to 5x,
+# drift 0 to 3x and shared noise 0 to 3x.
 CASES = {
-    "like training (new seed, random noise 1 to 5x)": (701, _faults(), None),
-    "faults 0.5 to 0.75 of normal strength": (702, _faults(strength=(0.5, 0.75)), 1.0),
-    "faults 0.2 to 0.4 of normal strength": (703, _faults(strength=(0.2, 0.4)), 1.0),
-    "slow, nearly linear growth": (704, _faults(exponent=(1.0, 1.4)), 1.0),
-    "very late, sharp growth": (705, _faults(exponent=(3.5, 4.5)), 1.0),
-    "noise fixed at 1x (quiet)": (709, _faults(), 1.0),
-    "noise fixed at 3x": (706, _faults(), 3.0),
-    "noise fixed at 5x (top of training range)": (707, _faults(), 5.0),
-    "noise fixed at 8x (beyond training range)": (708, _faults(), 8.0),
-    "noise fixed at 12x (far beyond)": (710, _faults(), 12.0),
+    "like training (everything random)": (701, _faults(), {}),
+    "faults 0.5 to 0.75 of normal strength": (702, _faults(strength=(0.5, 0.75)), {}),
+    "faults 0.2 to 0.4 of normal strength": (703, _faults(strength=(0.2, 0.4)), {}),
+    "slow, nearly linear growth": (704, _faults(exponent=(1.0, 1.4)), {}),
+    "very late, sharp growth": (705, _faults(exponent=(3.5, 4.5)), {}),
+    "clean: no noise change, no drift, no shared noise": (709, _faults(), _only()),
+    "noise fixed at 5x (top of training range)": (707, _faults(), _only(noise=5.0)),
+    "noise fixed at 8x (beyond training range)": (708, _faults(), _only(noise=8.0)),
+    "noise fixed at 12x (far beyond)": (710, _faults(), _only(noise=12.0)),
+    "drift fixed at 3x (top of training range)": (711, _faults(), _only(drift=3.0)),
+    "drift fixed at 6x (beyond training range)": (712, _faults(), _only(drift=6.0)),
+    "drift fixed at 10x (far beyond)": (713, _faults(), _only(drift=10.0)),
+    "shared noise fixed at 3x (top of training range)": (714, _faults(), _only(shared=3.0)),
+    "shared noise fixed at 6x (beyond training range)": (715, _faults(), _only(shared=6.0)),
+    "all three at the top of the training range": (716, _faults(), _only(noise=5.0, drift=3.0, shared=3.0)),
 }
 
 
-def run_case(name, seed, faults, noise, boosters, meta, out_dir: Path) -> dict:
-    # noise None: the simulator's own random noise level; a number: that exact level, nothing random
-    signals = {} if noise is None else {"noise_scale": noise, "noise_random": [1.0, 1.0]}
+def run_case(name, seed, faults, signals, boosters, meta, out_dir: Path) -> dict:
     cfg = config_from_dict({"scenario": f"robust_{seed}", "seed": seed, "days": 30, "faults": faults, "signals": signals})
     root = write_scenario(generate(cfg), cfg, out_dir)
     build(root, out_dir / "model", cfg.scenario)
@@ -77,10 +89,10 @@ def main(argv=None):
     boosters = {g: {k: lgb.Booster(model_file=str(ARTIFACTS / f"{g}_{k}.txt")) for k in kinds} for g in ("zone", "drive")}
     out_dir = Path(args.out)
     results = {}
-    for name, (seed, faults, noise) in CASES.items():
+    for name, (seed, faults, signals) in CASES.items():
         if args.only and name not in args.only:
             continue
-        results[name] = run_case(name, seed, faults, noise, boosters, meta, out_dir)
+        results[name] = run_case(name, seed, faults, signals, boosters, meta, out_dir)
         z = results[name]["zone"]["alerts"]
         print(f"{name}: bearing faults caught {z['detected']}/{z['events']}, false alerts {z['false_alerts']}", flush=True)
 

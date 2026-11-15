@@ -23,7 +23,8 @@ ONE = 30 / DAYS  # per_30d rate that gives exactly one event in DAYS days
 
 
 def run(hard_negatives, faults=NO_FAULTS, seed=5, days=DAYS):
-    return generate(config_from_dict({"seed": seed, "days": days, "faults": faults,
+    quiet = {"noise_random": [1, 1], "drift_random": [0, 0], "shared_random": [0, 0]}   # base noise, see conftest
+    return generate(config_from_dict({"seed": seed, "days": days, "faults": faults, "signals": quiet,
                                       "hard_negatives": hard_negatives, "messiness": NO_MESS}))
 
 

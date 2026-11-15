@@ -53,6 +53,28 @@ signals:
   noise_random:
   - 1.0
   - 5.0
+  drift_scale: 1.0
+  drift_random:
+  - 0.0
+  - 3.0
+  drift_phi: 0.9998
+  drift_temp_c: 1.5
+  drift_acoustic_db: 1.5
+  drift_vib_frac: 0.04
+  drift_kurtosis: 0.2
+  drift_offset_mm: 2.0
+  shared_scale: 1.0
+  shared_random:
+  - 0.0
+  - 3.0
+  shared_temp_phi: 0.999
+  shared_temp_c: 1.5
+  shared_acoustic_phi: 0.95
+  shared_acoustic_db: 1.0
+  shared_vib_phi: 0.98
+  shared_vib_frac: 0.03
+  shared_kurtosis_phi: 0.97
+  shared_kurtosis: 0.1
   return_load_factor: 0.15
   temp_speed_c: 5.0
   temp_load_c: 7.0

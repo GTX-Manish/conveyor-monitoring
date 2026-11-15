@@ -27,7 +27,7 @@ from .messiness import inject_messiness, schedule_sensor_faults, sensor_faults_f
 
 RUN_STATES = ["stopped", "ramp", "running"]
 # New streams are only ever appended: stream i depends on i alone, so existing streams keep their draws.
-STREAMS = ["layout", "conditions", "faults", "hard_negatives", "signals", "messiness", "noise"]
+STREAMS = ["layout", "conditions", "faults", "hard_negatives", "signals", "messiness", "noise", "drift"]
 
 
 @dataclass
@@ -61,7 +61,12 @@ def generate(cfg: Config) -> Scenario:
     # Per-scenario noise level: drawn first and on its own stream, so it changes nothing else.
     lo, hi = cfg.signals.noise_random
     noise_factor = float(np.exp(rng["noise"].uniform(np.log(lo), np.log(hi))))
-    signals = replace(cfg.signals, noise_scale=cfg.signals.noise_scale * noise_factor)
+    # Likewise the per-scenario levels of sensor drift and section-shared noise (own stream, nothing else moves).
+    drift_factor = float(rng["drift"].uniform(*cfg.signals.drift_random))
+    shared_factor = float(rng["drift"].uniform(*cfg.signals.shared_random))
+    signals = replace(cfg.signals, noise_scale=cfg.signals.noise_scale * noise_factor,
+                      drift_scale=cfg.signals.drift_scale * drift_factor,
+                      shared_scale=cfg.signals.shared_scale * shared_factor)
 
     layout, layout_truth = build_layout(cfg.layout, rng["layout"])
     cond = build_conditions(cfg.conditions, cfg.start, n_steps, rng["conditions"])
@@ -73,7 +78,7 @@ def generate(cfg: Config) -> Scenario:
     hn = cfg.hard_negatives
     zone_sig = generate_healthy_zones(signals, cond, layout, layout_truth, rng["signals"],
                                       startup_mask=cond.startup_mask(hn.startup_minutes),
-                                      startup_vib_gain=hn.startup_vib_gain)
+                                      startup_vib_gain=hn.startup_vib_gain, drift_rng=rng["drift"])
     belt_sig = generate_healthy_belt(signals, cond, layout, cfg.layout.belt_speed_ms, rng["signals"])
     # Belt travel comes from the clean belt speed, so the public belt_speed_ms integrates to the true D(t).
     D = belt_distance(belt_sig["belt_speed_ms"], cfg.step_seconds)
@@ -114,6 +119,7 @@ def generate(cfg: Config) -> Scenario:
         "n_timestamps": T, "n_zones": Z, "zone_rows": len(zones), "belt_wide_rows": len(belt_wide),
         "running_share": float(np.mean(cond.speed > 0)),
         "noise_factor": noise_factor, "noise_scale_effective": signals.noise_scale,
+        "drift_scale_effective": signals.drift_scale, "shared_scale_effective": signals.shared_scale,
         "fault_counts": {k: sum(e.type == k for e in events) for k in (IDLER, DRIVE_OVERHEAT)},
         "hard_negative_counts": {k: sum(e.type == k for e in hard_negs)
                                  for k in (HEAVY_LOAD, HEAT_WAVE, DUSTY, STARTUP)},

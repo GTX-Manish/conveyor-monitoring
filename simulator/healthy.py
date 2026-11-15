@@ -10,8 +10,12 @@ BELT_SIGNALS = ["throughput_tph", "motor_current_a", "motor_temp_c", "gearbox_te
 
 
 def generate_healthy_zones(cfg: SignalsCfg, cond: Conditions, layout_public, layout_truth, rng,
-                           startup_mask=None, startup_vib_gain=1.0):
-    """Return a dict signal -> (T, Z) float array."""
+                           startup_mask=None, startup_vib_gain=1.0, drift_rng=None):
+    """Return a dict signal -> (T, Z) float array.
+
+    drift_rng is a separate random stream for sensor drift and section-shared noise, so switching them on or off
+    never changes the draws above it. Without it (or with both scales at 0) the signals are the plain healthy ones.
+    """
     ns = cfg.noise_scale
     T, Z = len(cond.speed), len(layout_public)
     speed = cond.speed[:, None]
@@ -44,8 +48,36 @@ def generate_healthy_zones(cfg: SignalsCfg, cond: Conditions, layout_public, lay
               * (1.0 + cfg.offset_curve_gain * is_curve)
               + rng.normal(0.0, cfg.offset_noise_mm * ns, (T, Z)))
 
+    if drift_rng is not None and (cfg.drift_scale > 0 or cfg.shared_scale > 0):
+        _add_sensor_messiness(cfg, layout_public, drift_rng, bearing, vib, kurt, acoustic, offset)
+
     return {"vibration_rms_mm_s": vib, "vibration_kurtosis": kurt, "bearing_temp_c": bearing,
             "acoustic_db": acoustic, "belt_offset_mm": offset}
+
+
+def _add_sensor_messiness(cfg: SignalsCfg, layout_public, rng, bearing, vib, kurt, acoustic, offset) -> None:
+    """Add slow per-sensor drift and per-section shared noise to the arrays, in place, one signal at a time
+    (one (T, Z) array at a time keeps the memory cost small)."""
+    T, Z = bearing.shape
+    section = layout_public["splice_section"].to_numpy().astype(int) - 1
+    n_sections = int(section.max()) + 1
+    d, sh = cfg.drift_scale, cfg.shared_scale
+    # (array, drift sd, shared phi, shared sd, multiplicative?)
+    plan = [(bearing, cfg.drift_temp_c, cfg.shared_temp_phi, cfg.shared_temp_c, False),
+            (acoustic, cfg.drift_acoustic_db, cfg.shared_acoustic_phi, cfg.shared_acoustic_db, False),
+            (vib, cfg.drift_vib_frac, cfg.shared_vib_phi, cfg.shared_vib_frac, True),
+            (kurt, cfg.drift_kurtosis, cfg.shared_kurtosis_phi, cfg.shared_kurtosis, False),
+            (offset, cfg.drift_offset_mm, None, 0.0, False)]
+    for arr, drift_sd, shared_phi, shared_sd, multiplicative in plan:
+        extra = np.zeros((T, Z))
+        if d > 0:
+            extra += ar1(rng, (T, Z), cfg.drift_phi, drift_sd * d)       # one wander per sensor
+        if sh > 0 and shared_phi is not None:
+            extra += ar1(rng, (T, n_sections), shared_phi, shared_sd * sh)[:, section]   # one per section
+        if multiplicative:
+            arr *= np.maximum(1.0 + extra, 0.2)
+        else:
+            arr += extra
 
 
 def generate_healthy_belt(cfg: SignalsCfg, cond: Conditions, layout_public, belt_speed_nominal_ms, rng):

@@ -75,11 +75,39 @@ class SignalsCfg:
     # Each scenario also draws its own noise multiplier from this range (log-uniform) and applies it on top of
     # noise_scale, so some scenarios are quiet and some are very noisy. (1, 1) switches it off.
     noise_random: tuple = (1.0, 5.0)
+    # Sensor drift: each sensor wanders away from its true value over days (calibration drift, fouling). Averaging
+    # does not remove it. Each scenario draws a drift level uniformly from drift_random (0 means no drift) and
+    # applies it on top of drift_scale. Sizes are the long-run standard deviation of the wander.
+    drift_scale: float = 1.0
+    drift_random: tuple = (0.0, 3.0)
+    drift_phi: float = 0.9998           # per minute: the wander forgets itself over about 3.5 days
+    drift_temp_c: float = 1.5
+    drift_acoustic_db: float = 1.5
+    drift_vib_frac: float = 0.04        # a fraction of the vibration level
+    drift_kurtosis: float = 0.2
+    drift_offset_mm: float = 2.0
+    # Shared noise: every zone in a splice section sees the same disturbance (a sunlit stretch reads warm, a noisy
+    # cable run, a dusty section). It is the same for all 10 zones, so it cannot be told apart from a section fault
+    # by comparing neighbours. Drawn like drift, from shared_random.
+    shared_scale: float = 1.0
+    shared_random: tuple = (0.0, 3.0)
+    shared_temp_phi: float = 0.999
+    shared_temp_c: float = 1.5
+    shared_acoustic_phi: float = 0.95
+    shared_acoustic_db: float = 1.0
+    shared_vib_phi: float = 0.98
+    shared_vib_frac: float = 0.03
+    shared_kurtosis_phi: float = 0.97
+    shared_kurtosis: float = 0.1
 
     def __post_init__(self):
         lo, hi = self.noise_random
         if not 0 < lo <= hi:
             raise ValueError(f"signals.noise_random must be a range (low, high) with 0 < low <= high, got {(lo, hi)}")
+        for name in ("drift_random", "shared_random"):
+            lo, hi = getattr(self, name)
+            if not 0 <= lo <= hi:
+                raise ValueError(f"signals.{name} must be a range (low, high) with 0 <= low <= high, got {(lo, hi)}")
     return_load_factor: float = 0.15
     # bearing temperature
     temp_speed_c: float = 5.0

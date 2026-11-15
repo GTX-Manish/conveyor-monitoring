@@ -1,16 +1,16 @@
 {
-  "like training (new seed, random noise 1 to 5x)": {
+  "like training (everything random)": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
-        "detected": 8,
-        "open_at_failure": 8,
-        "detection_rate": 1.0,
-        "median_lead_hours": 100.91666666666666,
-        "min_lead_hours": 45.666666666666664,
-        "alerts": 10,
-        "true_alerts": 10,
+        "detected": 7,
+        "open_at_failure": 7,
+        "detection_rate": 0.875,
+        "median_lead_hours": 43.5,
+        "min_lead_hours": 17.666666666666664,
+        "alerts": 9,
+        "true_alerts": 9,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": 0,
         "false_alert_share": 0.0,
@@ -18,44 +18,40 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 8,
+        "calls": 6,
         "came_true": 6,
-        "early": 2,
+        "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 8,
+        "events_called": 6,
         "events_called_in_time": 6,
         "hours_list": [
-          59.766666412353516,
-          23.766666412353516,
-          78.06666564941406,
-          94.93333435058594,
-          57.36666488647461,
-          41.20000076293945,
-          22.766666412353516,
-          35.93333435058594
+          13.433333396911621,
+          12.933333396911621,
+          27.733333587646484,
+          26.03333282470703,
+          41.53333282470703,
+          12.266666412353516
         ],
         "eta_error_list": [
-          9.796404422302558,
-          16.58965120147957,
-          21.00468438951974,
-          33.36567890730936,
-          30.423547498903645,
-          0.5757508090505397,
-          6.989383686132392,
-          2.595502805591785
+          18.126579335135165,
+          10.10653919532535,
+          22.130867588647746,
+          6.941019061675661,
+          23.860875021290123,
+          0.21391722135447466
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.75,
-        "precision": 0.75,
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
         "recall": 0.75,
-        "median_hours_call_to_failure": 49.28333282470703,
-        "median_eta_error_hours": 13.193027811891064
+        "median_hours_call_to_failure": 19.733333110809326,
+        "median_eta_error_hours": 14.116559265230258
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 1,
         "open_at_failure": 1,
@@ -82,29 +78,29 @@
           4.883333206176758
         ],
         "eta_error_list": [
-          8.477979926403782
+          2.1662014224953454
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 0.5,
         "median_hours_call_to_failure": 4.883333206176758,
-        "median_eta_error_hours": 8.477979926403782
+        "median_eta_error_hours": 2.1662014224953454
       }
     }
   },
   "faults 0.5 to 0.75 of normal strength": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
-        "detected": 8,
-        "open_at_failure": 8,
-        "detection_rate": 1.0,
-        "median_lead_hours": 82.0,
-        "min_lead_hours": 48.83333333333333,
-        "alerts": 8,
-        "true_alerts": 8,
+        "detected": 7,
+        "open_at_failure": 7,
+        "detection_rate": 0.875,
+        "median_lead_hours": 32.0,
+        "min_lead_hours": 11.0,
+        "alerts": 14,
+        "true_alerts": 14,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": 0,
         "false_alert_share": 0.0,
@@ -112,49 +108,39 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 8,
-        "came_true": 8,
+        "calls": 3,
+        "came_true": 3,
         "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 8,
-        "events_called_in_time": 8,
+        "events_called": 3,
+        "events_called_in_time": 3,
         "hours_list": [
-          56.61666488647461,
-          18.66666603088379,
-          69.71666717529297,
-          61.45000076293945,
-          9.716666221618652,
-          71.44999694824219,
-          23.766666412353516,
-          6.233333110809326
+          7.2833333015441895,
+          2.8333332538604736,
+          0.7833333611488342
         ],
         "eta_error_list": [
-          2.3485037751821594,
-          15.838315877284266,
-          31.46582312655719,
-          24.48134178979904,
-          26.69477805902477,
-          28.00106737981583,
-          20.0978725397937,
-          22.624893436080843
+          10.390846410957007,
+          9.53455193236571,
+          10.728031550028623
         ],
-        "threshold": 0.8,
+        "threshold": 0.99,
         "share_came_true": 1.0,
         "precision": 1.0,
-        "recall": 1.0,
-        "median_hours_call_to_failure": 40.19166564941406,
-        "median_eta_error_hours": 23.553117612939943
+        "recall": 0.375,
+        "median_hours_call_to_failure": 2.8333332538604736,
+        "median_eta_error_hours": 10.390846410957007
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 2,
         "open_at_failure": 1,
         "detection_rate": 1.0,
-        "median_lead_hours": 9.166666666666666,
+        "median_lead_hours": 10.166666666666666,
         "min_lead_hours": 2.6666666666666665,
         "alerts": 2,
         "true_alerts": 2,
@@ -174,171 +160,157 @@
         "events_called_in_time": 2,
         "hours_list": [
           2.6666667461395264,
-          15.649999618530273
+          17.649999618530273
         ],
         "eta_error_list": [
-          4.502121900886236,
-          2.7679430991308394
+          5.048662659798045,
+          8.421193857588989
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 1.0,
-        "median_hours_call_to_failure": 9.1583331823349,
-        "median_eta_error_hours": 3.6350325000085375
+        "median_hours_call_to_failure": 10.1583331823349,
+        "median_eta_error_hours": 6.734928258693516
       }
     }
   },
   "faults 0.2 to 0.4 of normal strength": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
-        "detected": 8,
-        "open_at_failure": 8,
-        "detection_rate": 1.0,
-        "median_lead_hours": 87.66666666666666,
-        "min_lead_hours": 28.166666666666664,
-        "alerts": 14,
-        "true_alerts": 14,
-        "false_alerts": 0,
-        "false_alerts_in_hard_negative_periods": 0,
-        "false_alert_share": 0.0,
-        "precision": 1.0,
-        "false_alerts_per_asset_per_month": 0.0
+        "detected": 2,
+        "open_at_failure": 2,
+        "detection_rate": 0.25,
+        "median_lead_hours": 23.0,
+        "min_lead_hours": 1.8333333333333333,
+        "alerts": 12,
+        "true_alerts": 7,
+        "false_alerts": 5,
+        "false_alerts_in_hard_negative_periods": 1,
+        "false_alert_share": 0.4166666666666667,
+        "precision": 0.2857142857142857,
+        "false_alerts_per_asset_per_month": 0.041666666666666664
       },
       "calls": {
-        "calls": 6,
-        "came_true": 6,
+        "calls": 0,
+        "came_true": 0,
         "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 6,
-        "events_called_in_time": 6,
-        "hours_list": [
-          47.93333435058594,
-          21.100000381469727,
-          5.166666507720947,
-          24.58333396911621,
-          33.599998474121094,
-          33.266666412353516
-        ],
-        "eta_error_list": [
-          2.6431870622001767,
-          15.859109493873845,
-          12.296365838482753,
-          20.426585560925766,
-          4.143976932500706,
-          3.7908554424548626
-        ],
-        "threshold": 0.8,
-        "share_came_true": 1.0,
-        "precision": 1.0,
-        "recall": 0.75,
-        "median_hours_call_to_failure": 28.925000190734863,
-        "median_eta_error_hours": 8.22017138549173
+        "events_called": 0,
+        "events_called_in_time": 0,
+        "hours_list": [],
+        "eta_error_list": [],
+        "threshold": 0.99,
+        "share_came_true": NaN,
+        "precision": NaN,
+        "recall": 0.0,
+        "median_hours_call_to_failure": NaN,
+        "median_eta_error_hours": NaN
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 1,
         "open_at_failure": 0,
         "detection_rate": 0.5,
-        "median_lead_hours": 16.166666666666664,
-        "min_lead_hours": 16.166666666666664,
-        "alerts": 7,
+        "median_lead_hours": 17.0,
+        "min_lead_hours": 17.0,
+        "alerts": 6,
         "true_alerts": 1,
-        "false_alerts": 6,
+        "false_alerts": 5,
         "false_alerts_in_hard_negative_periods": 1,
-        "false_alert_share": 0.8571428571428571,
-        "precision": 0.14285714285714285,
-        "false_alerts_per_asset_per_month": 6.0
+        "false_alert_share": 0.8333333333333334,
+        "precision": 0.16666666666666666,
+        "false_alerts_per_asset_per_month": 5.0
       },
       "calls": {
-        "calls": 7,
+        "calls": 6,
         "came_true": 1,
         "early": 0,
-        "false": 6,
+        "false": 5,
         "events": 2,
         "events_called": 1,
         "events_called_in_time": 1,
         "hours_list": [
-          16.049999237060547
+          16.883333206176758
         ],
         "eta_error_list": [
-          4.399124421650777
+          9.315269046622575
         ],
         "threshold": 0.05,
-        "share_came_true": 0.14285714285714285,
-        "precision": 0.14285714285714285,
+        "share_came_true": 0.16666666666666666,
+        "precision": 0.16666666666666666,
         "recall": 0.5,
-        "median_hours_call_to_failure": 16.049999237060547,
-        "median_eta_error_hours": 4.399124421650777
+        "median_hours_call_to_failure": 16.883333206176758,
+        "median_eta_error_hours": 9.315269046622575
       }
     }
   },
   "slow, nearly linear growth": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
         "detected": 8,
-        "open_at_failure": 8,
+        "open_at_failure": 7,
         "detection_rate": 1.0,
-        "median_lead_hours": 134.75,
-        "min_lead_hours": 68.66666666666666,
-        "alerts": 9,
-        "true_alerts": 9,
-        "false_alerts": 0,
+        "median_lead_hours": 57.916666666666664,
+        "min_lead_hours": 24.5,
+        "alerts": 23,
+        "true_alerts": 17,
+        "false_alerts": 6,
         "false_alerts_in_hard_negative_periods": 0,
-        "false_alert_share": 0.0,
-        "precision": 1.0,
-        "false_alerts_per_asset_per_month": 0.0
+        "false_alert_share": 0.2608695652173913,
+        "precision": 0.5714285714285714,
+        "false_alerts_per_asset_per_month": 0.05
       },
       "calls": {
         "calls": 7,
-        "came_true": 4,
-        "early": 3,
+        "came_true": 5,
+        "early": 2,
         "false": 0,
         "events": 8,
-        "events_called": 7,
+        "events_called": 5,
         "events_called_in_time": 4,
         "hours_list": [
-          85.11666870117188,
-          162.06666564941406,
-          70.83333587646484,
-          75.06666564941406,
-          31.700000762939453,
-          49.233333587646484,
-          27.366666793823242
+          17.933332443237305,
+          80.61666870117188,
+          58.61666488647461,
+          20.16666603088379,
+          0.28333333134651184,
+          23.03333282470703,
+          95.23332977294922
         ],
         "eta_error_list": [
-          57.01540338766277,
-          135.549821731925,
-          34.71406898377614,
-          41.517933740532634,
-          6.402215237428109,
-          7.933495302292833,
-          3.476955441850386
+          22.90984733233813,
+          70.85496668083883,
+          41.27993954899009,
+          4.9910853947360145,
+          11.918331638217133,
+          3.092011452424483,
+          73.47039437057552
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.5714285714285714,
-        "precision": 0.5714285714285714,
+        "threshold": 0.99,
+        "share_came_true": 0.7142857142857143,
+        "precision": 0.7142857142857143,
         "recall": 0.5,
-        "median_hours_call_to_failure": 70.83333587646484,
-        "median_eta_error_hours": 34.71406898377614
+        "median_hours_call_to_failure": 23.03333282470703,
+        "median_eta_error_hours": 22.90984733233813
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 2,
         "open_at_failure": 2,
         "detection_rate": 1.0,
-        "median_lead_hours": 14.833333333333332,
+        "median_lead_hours": 14.916666666666664,
         "min_lead_hours": 5.666666666666666,
         "alerts": 2,
         "true_alerts": 2,
@@ -358,31 +330,31 @@
         "events_called_in_time": 2,
         "hours_list": [
           5.550000190734863,
-          23.850000381469727
+          24.016666412353516
         ],
         "eta_error_list": [
-          3.382866154382402,
-          14.904203275970012
+          2.6963835417042468,
+          15.711042906282202
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 1.0,
-        "median_hours_call_to_failure": 14.700000286102295,
-        "median_eta_error_hours": 9.143534715176207
+        "median_hours_call_to_failure": 14.78333330154419,
+        "median_eta_error_hours": 9.203713223993224
       }
     }
   },
   "very late, sharp growth": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
-        "detected": 8,
-        "open_at_failure": 8,
-        "detection_rate": 1.0,
-        "median_lead_hours": 68.33333333333333,
-        "min_lead_hours": 19.333333333333332,
+        "detected": 6,
+        "open_at_failure": 6,
+        "detection_rate": 0.75,
+        "median_lead_hours": 44.25,
+        "min_lead_hours": 18.0,
         "alerts": 8,
         "true_alerts": 8,
         "false_alerts": 0,
@@ -392,52 +364,46 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 8,
-        "came_true": 8,
+        "calls": 5,
+        "came_true": 5,
         "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 8,
-        "events_called_in_time": 8,
+        "events_called": 5,
+        "events_called_in_time": 5,
         "hours_list": [
-          9.300000190734863,
-          38.766666412353516,
-          70.16666412353516,
-          71.5999984741211,
-          47.86666488647461,
-          14.766666412353516,
-          20.53333282470703,
-          28.149999618530273
+          7.266666889190674,
+          22.433332443237305,
+          23.866666793823242,
+          7.983333110809326,
+          2.5333333015441895
         ],
         "eta_error_list": [
-          20.8805993746307,
-          1.8302937115015752,
-          27.891159529103632,
-          30.433469107608474,
-          10.53719761541997,
-          8.65357625333553,
-          16.672834413597982,
-          9.719905602479692
+          21.60471765883929,
+          5.542736038804662,
+          3.255673736942491,
+          11.255521422451995,
+          30.99463210360991
         ],
-        "threshold": 0.8,
+        "threshold": 0.99,
         "share_came_true": 1.0,
         "precision": 1.0,
-        "recall": 1.0,
-        "median_hours_call_to_failure": 33.458333015441895,
-        "median_eta_error_hours": 13.605016014508976
+        "recall": 0.625,
+        "median_hours_call_to_failure": 7.983333110809326,
+        "median_eta_error_hours": 11.255521422451995
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 1,
         "open_at_failure": 1,
         "detection_rate": 0.5,
-        "median_lead_hours": 8.5,
-        "min_lead_hours": 8.5,
-        "alerts": 1,
-        "true_alerts": 1,
+        "median_lead_hours": 13.5,
+        "min_lead_hours": 13.5,
+        "alerts": 2,
+        "true_alerts": 2,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": 0,
         "false_alert_share": 0.0,
@@ -445,38 +411,40 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 1,
-        "came_true": 1,
+        "calls": 2,
+        "came_true": 2,
         "early": 0,
         "false": 0,
         "events": 2,
         "events_called": 1,
         "events_called_in_time": 1,
         "hours_list": [
-          8.366666793823242
+          13.366666793823242,
+          9.366666793823242
         ],
         "eta_error_list": [
-          3.37040675226162
+          5.0864331814815635,
+          1.5534456598467674
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 0.5,
-        "median_hours_call_to_failure": 8.366666793823242,
-        "median_eta_error_hours": 3.37040675226162
+        "median_hours_call_to_failure": 11.366666793823242,
+        "median_eta_error_hours": 3.3199394206641655
       }
     }
   },
-  "noise fixed at 1x (quiet)": {
+  "clean: no noise change, no drift, no shared noise": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
         "detected": 8,
         "open_at_failure": 8,
         "detection_rate": 1.0,
-        "median_lead_hours": 85.5,
-        "min_lead_hours": 36.666666666666664,
+        "median_lead_hours": 28.333333333333332,
+        "min_lead_hours": 6.666666666666666,
         "alerts": 8,
         "true_alerts": 8,
         "false_alerts": 0,
@@ -486,44 +454,38 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 8,
-        "came_true": 7,
+        "calls": 5,
+        "came_true": 4,
         "early": 1,
         "false": 0,
         "events": 8,
-        "events_called": 8,
-        "events_called_in_time": 7,
+        "events_called": 5,
+        "events_called_in_time": 4,
         "hours_list": [
-          10.366666793823242,
-          22.483333587646484,
-          42.483333587646484,
-          104.0,
-          37.81666564941406,
-          38.86666488647461,
-          41.150001525878906,
-          16.46666717529297
+          23.316667556762695,
+          76.0,
+          12.649999618530273,
+          15.649999618530273,
+          9.466666221618652
         ],
         "eta_error_list": [
-          15.663492839428212,
-          9.532268123592623,
-          20.34887647601539,
-          48.2981767154428,
-          9.59251762670355,
-          2.914882449190621,
-          13.100617532253313,
-          10.921228641125126
+          3.7274887350344166,
+          44.18566119555446,
+          3.5591227931195704,
+          4.24399760268102,
+          22.00817724745338
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.875,
-        "precision": 0.875,
-        "recall": 0.875,
-        "median_hours_call_to_failure": 38.341665267944336,
-        "median_eta_error_hours": 12.01092308668922
+        "threshold": 0.99,
+        "share_came_true": 0.8,
+        "precision": 0.8,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 15.649999618530273,
+        "median_eta_error_hours": 4.24399760268102
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 1,
         "open_at_failure": 1,
@@ -550,29 +512,29 @@
           2.183333396911621
         ],
         "eta_error_list": [
-          8.962978127097756
+          2.3479028778379982
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 0.5,
         "median_hours_call_to_failure": 2.183333396911621,
-        "median_eta_error_hours": 8.962978127097756
+        "median_eta_error_hours": 2.3479028778379982
       }
     }
   },
-  "noise fixed at 3x": {
+  "noise fixed at 5x (top of training range)": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
         "detected": 8,
         "open_at_failure": 8,
         "detection_rate": 1.0,
-        "median_lead_hours": 109.66666666666666,
-        "min_lead_hours": 57.33333333333333,
-        "alerts": 16,
-        "true_alerts": 16,
+        "median_lead_hours": 45.916666666666664,
+        "min_lead_hours": 13.5,
+        "alerts": 14,
+        "true_alerts": 14,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": 0,
         "false_alert_share": 0.0,
@@ -581,145 +543,49 @@
       },
       "calls": {
         "calls": 7,
-        "came_true": 6,
-        "early": 1,
+        "came_true": 7,
+        "early": 0,
         "false": 0,
         "events": 8,
         "events_called": 7,
-        "events_called_in_time": 6,
+        "events_called_in_time": 7,
         "hours_list": [
-          25.21666717529297,
-          143.10000610351562,
-          27.483333587646484,
-          46.66666793823242,
-          66.43333435058594,
-          45.20000076293945,
-          24.0
+          4.75,
+          11.600000381469727,
+          10.366666793823242,
+          35.483333587646484,
+          14.933333396911621,
+          8.866666793823242,
+          2.2333333492279053
         ],
         "eta_error_list": [
-          13.83597016552389,
-          71.38925003144,
-          7.4184165340941135,
-          5.51414323186539,
-          21.49142271448136,
-          10.490216187833283,
-          29.63356622125128
+          18.81532583577251,
+          19.131213840841017,
+          8.005926417434033,
+          15.883741315472282,
+          0.7816768961893672,
+          4.582072779323443,
+          27.100206032513082
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.8571428571428571,
-        "precision": 0.8571428571428571,
-        "recall": 0.75,
-        "median_hours_call_to_failure": 45.20000076293945,
-        "median_eta_error_hours": 13.83597016552389
-      }
-    },
-    "drive": {
-      "alerts": {
-        "threshold": 0.8,
-        "events": 2,
-        "detected": 2,
-        "open_at_failure": 2,
-        "detection_rate": 1.0,
-        "median_lead_hours": 14.333333333333332,
-        "min_lead_hours": 8.166666666666666,
-        "alerts": 2,
-        "true_alerts": 2,
-        "false_alerts": 0,
-        "false_alerts_in_hard_negative_periods": 0,
-        "false_alert_share": 0.0,
-        "precision": 1.0,
-        "false_alerts_per_asset_per_month": 0.0
-      },
-      "calls": {
-        "calls": 2,
-        "came_true": 2,
-        "early": 0,
-        "false": 0,
-        "events": 2,
-        "events_called": 2,
-        "events_called_in_time": 2,
-        "hours_list": [
-          8.033333778381348,
-          20.383333206176758
-        ],
-        "eta_error_list": [
-          4.630395991982444,
-          11.76838758201116
-        ],
-        "threshold": 0.05,
+        "threshold": 0.99,
         "share_came_true": 1.0,
         "precision": 1.0,
-        "recall": 1.0,
-        "median_hours_call_to_failure": 14.208333492279053,
-        "median_eta_error_hours": 8.199391786996802
-      }
-    }
-  },
-  "noise fixed at 5x (top of training range)": {
-    "zone": {
-      "alerts": {
-        "threshold": 0.999,
-        "events": 8,
-        "detected": 8,
-        "open_at_failure": 8,
-        "detection_rate": 1.0,
-        "median_lead_hours": 73.83333333333333,
-        "min_lead_hours": 25.5,
-        "alerts": 12,
-        "true_alerts": 12,
-        "false_alerts": 0,
-        "false_alerts_in_hard_negative_periods": 0,
-        "false_alert_share": 0.0,
-        "precision": 1.0,
-        "false_alerts_per_asset_per_month": 0.0
-      },
-      "calls": {
-        "calls": 8,
-        "came_true": 6,
-        "early": 2,
-        "false": 0,
-        "events": 8,
-        "events_called": 8,
-        "events_called_in_time": 6,
-        "hours_list": [
-          41.43333435058594,
-          38.91666793823242,
-          37.86666488647461,
-          134.81666564941406,
-          119.93333435058594,
-          56.04999923706055,
-          39.03333282470703,
-          18.899999618530273
-        ],
-        "eta_error_list": [
-          2.389929393775816,
-          1.2177653792181289,
-          11.093557511621785,
-          89.53351783185151,
-          69.45909616122265,
-          15.337813285682905,
-          6.335180199126526,
-          25.977005300825923
-        ],
-        "threshold": 0.8,
-        "share_came_true": 0.75,
-        "precision": 0.75,
-        "recall": 0.75,
-        "median_hours_call_to_failure": 40.233333587646484,
-        "median_eta_error_hours": 13.215685398652345
+        "recall": 0.875,
+        "median_hours_call_to_failure": 10.366666793823242,
+        "median_eta_error_hours": 15.883741315472282
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
-        "detected": 2,
+        "detected": 1,
         "open_at_failure": 1,
-        "detection_rate": 1.0,
-        "median_lead_hours": 9.25,
-        "min_lead_hours": 9.0,
-        "alerts": 2,
-        "true_alerts": 2,
+        "detection_rate": 0.5,
+        "median_lead_hours": 9.5,
+        "min_lead_hours": 9.5,
+        "alerts": 1,
+        "true_alerts": 1,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": 0,
         "false_alert_share": 0.0,
@@ -727,92 +593,88 @@
         "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 2,
-        "came_true": 2,
+        "calls": 1,
+        "came_true": 1,
         "early": 0,
         "false": 0,
         "events": 2,
-        "events_called": 2,
-        "events_called_in_time": 2,
+        "events_called": 1,
+        "events_called_in_time": 1,
         "hours_list": [
-          8.933333396911621,
           9.466666221618652
         ],
         "eta_error_list": [
-          2.1628597309575213,
-          1.5523298126934622
+          2.8855581900796112
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
-        "recall": 1.0,
-        "median_hours_call_to_failure": 9.199999809265137,
-        "median_eta_error_hours": 1.8575947718254917
+        "recall": 0.5,
+        "median_hours_call_to_failure": 9.466666221618652,
+        "median_eta_error_hours": 2.8855581900796112
       }
     }
   },
   "noise fixed at 8x (beyond training range)": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
         "detected": 8,
         "open_at_failure": 8,
         "detection_rate": 1.0,
-        "median_lead_hours": 72.66666666666666,
-        "min_lead_hours": 32.666666666666664,
-        "alerts": 36,
-        "true_alerts": 13,
-        "false_alerts": 23,
-        "false_alerts_in_hard_negative_periods": 10,
-        "false_alert_share": 0.6388888888888888,
-        "precision": 0.25806451612903225,
-        "false_alerts_per_asset_per_month": 0.19166666666666668
+        "median_lead_hours": 28.916666666666664,
+        "min_lead_hours": 10.5,
+        "alerts": 17,
+        "true_alerts": 17,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
       },
       "calls": {
-        "calls": 8,
+        "calls": 7,
         "came_true": 7,
-        "early": 1,
+        "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 8,
+        "events_called": 7,
         "events_called_in_time": 7,
         "hours_list": [
-          35.266666412353516,
-          3.4166667461395264,
-          37.79999923706055,
-          11.949999809265137,
-          46.93333435058594,
-          95.93333435058594,
-          20.41666603088379,
-          48.733333587646484
+          12.266666412353516,
+          1.2833333015441895,
+          45.63333511352539,
+          13.433333396911621,
+          9.583333015441895,
+          47.43333435058594,
+          5.733333110809326
         ],
         "eta_error_list": [
-          1.4501309315202917,
-          35.386106054416786,
-          12.876914123142562,
-          12.625282325412705,
-          21.874485774580165,
-          62.184169441738014,
-          12.402562151123519,
-          1.928429874112311
+          7.608605382440299,
+          10.94801556890716,
+          24.654526422242586,
+          6.376569021055982,
+          5.119303382487397,
+          13.644846153839914,
+          13.71808381392081
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.875,
-        "precision": 0.875,
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
         "recall": 0.875,
-        "median_hours_call_to_failure": 36.53333282470703,
-        "median_eta_error_hours": 12.751098224277634
+        "median_hours_call_to_failure": 12.266666412353516,
+        "median_eta_error_hours": 10.94801556890716
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 2,
         "open_at_failure": 2,
         "detection_rate": 1.0,
-        "median_lead_hours": 0.25,
+        "median_lead_hours": 0.16666666666666666,
         "min_lead_hours": 0.16666666666666666,
         "alerts": 2,
         "true_alerts": 2,
@@ -831,79 +693,71 @@
         "events_called": 2,
         "events_called_in_time": 2,
         "hours_list": [
-          0.25,
+          0.0833333358168602,
           0.15000000596046448
         ],
         "eta_error_list": [
-          4.253435574118719,
-          4.087756174508321
+          6.349615665899133,
+          6.083611469642701
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 1.0,
-        "median_hours_call_to_failure": 0.20000000298023224,
-        "median_eta_error_hours": 4.17059587431352
+        "median_hours_call_to_failure": 0.11666667088866234,
+        "median_eta_error_hours": 6.216613567770917
       }
     }
   },
   "noise fixed at 12x (far beyond)": {
     "zone": {
       "alerts": {
-        "threshold": 0.999,
+        "threshold": 0.96,
         "events": 8,
         "detected": 8,
-        "open_at_failure": 8,
+        "open_at_failure": 7,
         "detection_rate": 1.0,
-        "median_lead_hours": 125.99999999999999,
-        "min_lead_hours": 79.16666666666666,
-        "alerts": 182,
-        "true_alerts": 32,
-        "false_alerts": 150,
-        "false_alerts_in_hard_negative_periods": 39,
-        "false_alert_share": 0.8241758241758241,
-        "precision": 0.05063291139240506,
-        "false_alerts_per_asset_per_month": 1.25
+        "median_lead_hours": 43.83333333333333,
+        "min_lead_hours": 13.0,
+        "alerts": 21,
+        "true_alerts": 20,
+        "false_alerts": 1,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.047619047619047616,
+        "precision": 0.8888888888888888,
+        "false_alerts_per_asset_per_month": 0.008333333333333333
       },
       "calls": {
-        "calls": 8,
-        "came_true": 7,
-        "early": 1,
+        "calls": 4,
+        "came_true": 4,
+        "early": 0,
         "false": 0,
         "events": 8,
-        "events_called": 8,
-        "events_called_in_time": 7,
+        "events_called": 4,
+        "events_called_in_time": 4,
         "hours_list": [
-          41.650001525878906,
-          16.816667556762695,
-          6.816666603088379,
-          97.69999694824219,
-          40.93333435058594,
-          33.28333282470703,
-          42.53333282470703,
-          20.600000381469727
+          48.53333282470703,
+          6.766666889190674,
+          24.450000762939453,
+          21.700000762939453
         ],
         "eta_error_list": [
-          3.408926356411463,
-          11.1155741680818,
-          16.504910806287242,
-          58.51169837917658,
-          7.940787675936932,
-          2.30190173542152,
-          15.024224814921968,
-          18.426051567210173
+          33.39959349784285,
+          8.398975128665288,
+          9.555322139565613,
+          0.8658312025883106
         ],
-        "threshold": 0.8,
-        "share_came_true": 0.875,
-        "precision": 0.875,
-        "recall": 0.875,
-        "median_hours_call_to_failure": 37.108333587646484,
-        "median_eta_error_hours": 13.069899491501884
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 23.075000762939453,
+        "median_eta_error_hours": 8.977148634115451
       }
     },
     "drive": {
       "alerts": {
-        "threshold": 0.8,
+        "threshold": 0.85,
         "events": 2,
         "detected": 1,
         "open_at_failure": 1,
@@ -930,14 +784,532 @@
           2.1666667461395264
         ],
         "eta_error_list": [
-          0.12504123158405722
+          0.46555684096200145
         ],
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
         "recall": 0.5,
         "median_hours_call_to_failure": 2.1666667461395264,
-        "median_eta_error_hours": 0.12504123158405722
+        "median_eta_error_hours": 0.46555684096200145
+      }
+    }
+  },
+  "drift fixed at 3x (top of training range)": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 4,
+        "open_at_failure": 4,
+        "detection_rate": 0.5,
+        "median_lead_hours": 32.5,
+        "min_lead_hours": 7.0,
+        "alerts": 14,
+        "true_alerts": 5,
+        "false_alerts": 9,
+        "false_alerts_in_hard_negative_periods": 4,
+        "false_alert_share": 0.6428571428571429,
+        "precision": 0.3076923076923077,
+        "false_alerts_per_asset_per_month": 0.075
+      },
+      "calls": {
+        "calls": 2,
+        "came_true": 2,
+        "early": 0,
+        "false": 0,
+        "events": 8,
+        "events_called": 2,
+        "events_called_in_time": 2,
+        "hours_list": [
+          26.299999237060547,
+          8.266666412353516
+        ],
+        "eta_error_list": [
+          11.56535564595998,
+          5.149764940931998
+        ],
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.25,
+        "median_hours_call_to_failure": 17.28333282470703,
+        "median_eta_error_hours": 8.357560293445989
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 1,
+        "open_at_failure": 1,
+        "detection_rate": 0.5,
+        "median_lead_hours": 7.0,
+        "min_lead_hours": 7.0,
+        "alerts": 1,
+        "true_alerts": 1,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 1,
+        "came_true": 1,
+        "early": 0,
+        "false": 0,
+        "events": 2,
+        "events_called": 1,
+        "events_called_in_time": 1,
+        "hours_list": [
+          6.883333206176758
+        ],
+        "eta_error_list": [
+          2.04405088478938
+        ],
+        "threshold": 0.05,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 6.883333206176758,
+        "median_eta_error_hours": 2.04405088478938
+      }
+    }
+  },
+  "drift fixed at 6x (beyond training range)": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 4,
+        "open_at_failure": 3,
+        "detection_rate": 0.5,
+        "median_lead_hours": 79.33333333333333,
+        "min_lead_hours": 22.5,
+        "alerts": 102,
+        "true_alerts": 4,
+        "false_alerts": 98,
+        "false_alerts_in_hard_negative_periods": 14,
+        "false_alert_share": 0.9607843137254902,
+        "precision": 0.0392156862745098,
+        "false_alerts_per_asset_per_month": 0.8166666666666667
+      },
+      "calls": {
+        "calls": 13,
+        "came_true": 2,
+        "early": 1,
+        "false": 10,
+        "events": 8,
+        "events_called": 3,
+        "events_called_in_time": 2,
+        "hours_list": [
+          40.099998474121094,
+          16.66666603088379,
+          75.98332977294922
+        ],
+        "eta_error_list": [
+          26.153763895050222,
+          8.114607330491724,
+          47.49150221786867
+        ],
+        "threshold": 0.99,
+        "share_came_true": 0.15384615384615385,
+        "precision": 0.15384615384615385,
+        "recall": 0.25,
+        "median_hours_call_to_failure": 40.099998474121094,
+        "median_eta_error_hours": 26.153763895050222
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 1,
+        "open_at_failure": 1,
+        "detection_rate": 0.5,
+        "median_lead_hours": 8.166666666666666,
+        "min_lead_hours": 8.166666666666666,
+        "alerts": 1,
+        "true_alerts": 1,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 1,
+        "came_true": 1,
+        "early": 0,
+        "false": 0,
+        "events": 2,
+        "events_called": 1,
+        "events_called_in_time": 1,
+        "hours_list": [
+          8.100000381469727
+        ],
+        "eta_error_list": [
+          1.629357591378807
+        ],
+        "threshold": 0.05,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 8.100000381469727,
+        "median_eta_error_hours": 1.629357591378807
+      }
+    }
+  },
+  "drift fixed at 10x (far beyond)": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 4,
+        "open_at_failure": 3,
+        "detection_rate": 0.5,
+        "median_lead_hours": 24.416666666666664,
+        "min_lead_hours": 12.666666666666666,
+        "alerts": 257,
+        "true_alerts": 7,
+        "false_alerts": 250,
+        "false_alerts_in_hard_negative_periods": 31,
+        "false_alert_share": 0.9727626459143969,
+        "precision": 0.015748031496062992,
+        "false_alerts_per_asset_per_month": 2.0833333333333335
+      },
+      "calls": {
+        "calls": 51,
+        "came_true": 5,
+        "early": 1,
+        "false": 45,
+        "events": 8,
+        "events_called": 4,
+        "events_called_in_time": 4,
+        "hours_list": [
+          11.266666412353516,
+          35.599998474121094,
+          162.63333129882812,
+          61.13333511352539,
+          10.966666221618652,
+          2.4000000953674316
+        ],
+        "eta_error_list": [
+          3.3428525677952843,
+          16.586387054549874,
+          154.74106678489298,
+          49.5366262400834,
+          14.538534184884519,
+          6.810705679571724
+        ],
+        "threshold": 0.99,
+        "share_came_true": 0.09803921568627451,
+        "precision": 0.09803921568627451,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 23.433332443237305,
+        "median_eta_error_hours": 15.562460619717196
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 2,
+        "open_at_failure": 2,
+        "detection_rate": 1.0,
+        "median_lead_hours": 6.75,
+        "min_lead_hours": 4.5,
+        "alerts": 7,
+        "true_alerts": 2,
+        "false_alerts": 5,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.7142857142857143,
+        "precision": 0.2857142857142857,
+        "false_alerts_per_asset_per_month": 5.0
+      },
+      "calls": {
+        "calls": 7,
+        "came_true": 2,
+        "early": 0,
+        "false": 5,
+        "events": 2,
+        "events_called": 2,
+        "events_called_in_time": 2,
+        "hours_list": [
+          8.916666984558105,
+          4.366666793823242
+        ],
+        "eta_error_list": [
+          5.979556628893458,
+          0.46872675784267237
+        ],
+        "threshold": 0.05,
+        "share_came_true": 0.2857142857142857,
+        "precision": 0.2857142857142857,
+        "recall": 1.0,
+        "median_hours_call_to_failure": 6.641666889190674,
+        "median_eta_error_hours": 3.224141693368065
+      }
+    }
+  },
+  "shared noise fixed at 3x (top of training range)": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 6,
+        "open_at_failure": 6,
+        "detection_rate": 0.75,
+        "median_lead_hours": 21.75,
+        "min_lead_hours": 3.6666666666666665,
+        "alerts": 12,
+        "true_alerts": 12,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 1,
+        "came_true": 1,
+        "early": 0,
+        "false": 0,
+        "events": 8,
+        "events_called": 1,
+        "events_called_in_time": 1,
+        "hours_list": [
+          11.933333396911621
+        ],
+        "eta_error_list": [
+          9.670917784203109
+        ],
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.125,
+        "median_hours_call_to_failure": 11.933333396911621,
+        "median_eta_error_hours": 9.670917784203109
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 1,
+        "open_at_failure": 1,
+        "detection_rate": 0.5,
+        "median_lead_hours": 0.16666666666666666,
+        "min_lead_hours": 0.16666666666666666,
+        "alerts": 1,
+        "true_alerts": 1,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 1,
+        "came_true": 1,
+        "early": 0,
+        "false": 0,
+        "events": 2,
+        "events_called": 1,
+        "events_called_in_time": 1,
+        "hours_list": [
+          0.03333333507180214
+        ],
+        "eta_error_list": [
+          6.451648433394981
+        ],
+        "threshold": 0.05,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 0.03333333507180214,
+        "median_eta_error_hours": 6.451648433394981
+      }
+    }
+  },
+  "shared noise fixed at 6x (beyond training range)": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 8,
+        "open_at_failure": 8,
+        "detection_rate": 1.0,
+        "median_lead_hours": 41.0,
+        "min_lead_hours": 1.8333333333333333,
+        "alerts": 21,
+        "true_alerts": 19,
+        "false_alerts": 2,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.09523809523809523,
+        "precision": 0.8,
+        "false_alerts_per_asset_per_month": 0.016666666666666666
+      },
+      "calls": {
+        "calls": 8,
+        "came_true": 8,
+        "early": 0,
+        "false": 0,
+        "events": 8,
+        "events_called": 7,
+        "events_called_in_time": 7,
+        "hours_list": [
+          4.949999809265137,
+          39.63333511352539,
+          46.766666412353516,
+          43.53333282470703,
+          33.599998474121094,
+          19.899999618530273,
+          13.533333778381348,
+          6.449999809265137
+        ],
+        "eta_error_list": [
+          1.4919177334097586,
+          28.833638045238242,
+          29.692412601564932,
+          24.412595997901523,
+          17.86666968566986,
+          3.213217013879273,
+          5.370789805444037,
+          1.4557476273666667
+        ],
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.875,
+        "median_hours_call_to_failure": 26.749999046325684,
+        "median_eta_error_hours": 11.618729745556948
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 1,
+        "open_at_failure": 1,
+        "detection_rate": 0.5,
+        "median_lead_hours": 1.0,
+        "min_lead_hours": 1.0,
+        "alerts": 1,
+        "true_alerts": 1,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 1,
+        "came_true": 1,
+        "early": 0,
+        "false": 0,
+        "events": 2,
+        "events_called": 1,
+        "events_called_in_time": 1,
+        "hours_list": [
+          1.0
+        ],
+        "eta_error_list": [
+          6.274345007740581
+        ],
+        "threshold": 0.05,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.5,
+        "median_hours_call_to_failure": 1.0,
+        "median_eta_error_hours": 6.274345007740581
+      }
+    }
+  },
+  "all three at the top of the training range": {
+    "zone": {
+      "alerts": {
+        "threshold": 0.96,
+        "events": 8,
+        "detected": 5,
+        "open_at_failure": 5,
+        "detection_rate": 0.625,
+        "median_lead_hours": 18.5,
+        "min_lead_hours": 6.333333333333333,
+        "alerts": 35,
+        "true_alerts": 6,
+        "false_alerts": 29,
+        "false_alerts_in_hard_negative_periods": 5,
+        "false_alert_share": 0.8285714285714286,
+        "precision": 0.14705882352941177,
+        "false_alerts_per_asset_per_month": 0.24166666666666667
+      },
+      "calls": {
+        "calls": 3,
+        "came_true": 3,
+        "early": 0,
+        "false": 0,
+        "events": 8,
+        "events_called": 3,
+        "events_called_in_time": 3,
+        "hours_list": [
+          4.7166666984558105,
+          30.933332443237305,
+          24.133333206176758
+        ],
+        "eta_error_list": [
+          11.19478874941394,
+          12.017388042317286,
+          3.308843342525531
+        ],
+        "threshold": 0.99,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 0.375,
+        "median_hours_call_to_failure": 24.133333206176758,
+        "median_eta_error_hours": 11.19478874941394
+      }
+    },
+    "drive": {
+      "alerts": {
+        "threshold": 0.85,
+        "events": 2,
+        "detected": 2,
+        "open_at_failure": 2,
+        "detection_rate": 1.0,
+        "median_lead_hours": 7.416666666666666,
+        "min_lead_hours": 6.0,
+        "alerts": 2,
+        "true_alerts": 2,
+        "false_alerts": 0,
+        "false_alerts_in_hard_negative_periods": 0,
+        "false_alert_share": 0.0,
+        "precision": 1.0,
+        "false_alerts_per_asset_per_month": 0.0
+      },
+      "calls": {
+        "calls": 2,
+        "came_true": 2,
+        "early": 0,
+        "false": 0,
+        "events": 2,
+        "events_called": 2,
+        "events_called_in_time": 2,
+        "hours_list": [
+          5.983333110809326,
+          8.766666412353516
+        ],
+        "eta_error_list": [
+          3.2707320615613753,
+          1.0723872986660652
+        ],
+        "threshold": 0.05,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "median_hours_call_to_failure": 7.374999761581421,
+        "median_eta_error_hours": 2.1715596801137202
       }
     }
   }
