@@ -18,11 +18,13 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from common.ids import ASSETS, BELT_SIGNALS, ZONE_SIGNALS, asset_zone
+from model.alerting import CALL_HORIZON_HOURS
 
 from .engine import Engine, connect
 
 REPO = Path(__file__).resolve().parents[1]
 FRONTEND = REPO / "frontend" / "dist"
+MODEL_SUMMARY = REPO / "model" / "artifacts" / "summary.json"
 MAX_POINTS = 500
 log = logging.getLogger("backend")
 
@@ -228,12 +230,26 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
                      "ORDER BY COALESCE(o.failed_ts, o.resolved_ts) DESC")
         n = lambda kind: sum(r["kind"] == kind for r in rows)  # noqa: E731
         called = [r for r in rows if r["call_ts"] is not None]
+        failures, warned = n("confirmed") + n("early_warning") + n("missed"), n("confirmed") + n("early_warning")
+        # Recall: of the parts that failed, how many had an alert open at that moment. Precision: of the alerts
+        # that have been settled, how many were followed by a real failure. None until there is a case to count.
+        recall = n("confirmed") / failures if failures else None
+        precision = warned / (warned + n("false_alarm")) if warned + n("false_alarm") else None
         return {"outcomes": rows,
-                "summary": {"failures": n("confirmed") + n("early_warning") + n("missed"), "warned": n("confirmed"),
+                "summary": {"failures": failures, "warned": n("confirmed"), "precision": precision, "recall": recall,
                             "missed": n("missed"),
                             "false_alarms": n("false_alarm"), "early_warnings": n("early_warning"),
                             "failure_calls": len(called),
-                            "failure_calls_came_true": sum(bool(r["within_24h"]) for r in called)}}
+                            "failure_calls_came_true": sum(bool(r["within_horizon"]) for r in called),
+                            "call_horizon_hours": CALL_HORIZON_HOURS}}
+
+    @app.get("/api/model/evaluation")
+    def model_evaluation():
+        """The held-out test figures written by scripts/score.py, shown beside the live track record."""
+        path = Path(MODEL_SUMMARY)
+        if not path.exists():
+            raise HTTPException(404, "no evaluation summary; run: python -m scripts.score")
+        return json.loads(path.read_text())
 
     @app.get("/api/ingest/stats")
     def ingest_stats():

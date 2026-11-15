@@ -22,7 +22,7 @@ import pandas as pd
 
 from common.ids import ASSETS, DRIVE, N_ZONES
 
-from .alerting import HOLD_P_FAIL
+from .alerting import CALL_HORIZON_HOURS, HOLD_P_FAIL
 from .evaluate import ADVANCED, FAILED, NORMAL, TARGET_PRECISION, tune_call_threshold, tune_threshold
 from .features import WINDOW_MIN, drive_feature_names, zone_feature_names
 from .predict import ARTIFACTS, KINDS
@@ -109,7 +109,7 @@ def tune(val_grids: list) -> dict:
     """Thresholds from the validation scenarios, frozen afterwards.
 
     `abnormal` opens the alert. `predicted_failure` is the failure call inside an open alert; it is tuned on
-    whether the part really failed within 24 hours of the call.
+    whether the part really failed within the claimed window (CALL_HORIZON_HOURS) after the call.
     """
     abn = tune_threshold([dict(prob=g["p_abnormal"], run_share=g["run_share"], stage=g["stage"],
                                fault_id=g["fault_id"], months=g["months"], hold=g["p_fail_24h"] >= HOLD_P_FAIL)
@@ -120,7 +120,8 @@ def tune(val_grids: list) -> dict:
             "abnormal_met_target": abn["met_target"], "predicted_failure_met_target": fail["met_target"],
             "abnormal_validation": {k: v for k, v in abn.items() if k not in drop},
             "predicted_failure_validation": {k: v for k, v in fail.items() if k not in drop},
-            "abnormal_sweep": abn["sweep"]}
+            "abnormal_sweep": abn["sweep"],
+            "predicted_failure_sweep": [{k: v for k, v in r.items() if k not in drop} for r in fail["sweep"]]}
 
 
 def train(data_dir: Path, seed: int = 1, log=print) -> dict:
@@ -143,7 +144,7 @@ def train(data_dir: Path, seed: int = 1, log=print) -> dict:
             f"{t['abnormal_validation']['detected']}/{t['abnormal_validation']['events']} events on validation, "
             f"target met: {t['abnormal_met_target']}); failure-call threshold {t['predicted_failure']} "
             f"({t['predicted_failure_validation']['came_true']} of {t['predicted_failure_validation']['calls']} calls "
-            f"came true within 24 h on validation, target met: {t['predicted_failure_met_target']})")
+            f"came true within {CALL_HORIZON_HOURS:.0f} h on validation, target met: {t['predicted_failure_met_target']})")
     return out
 
 
@@ -153,10 +154,11 @@ def save(result: dict, seed: int, directory=ARTIFACTS) -> None:
     for group in ("zone", "drive"):
         for kind in KINDS:
             result["boosters"][group][kind].save_model(str(directory / f"{group}_{kind}.txt"))
-    thresholds = {g: {k: v for k, v in t.items() if k != "abnormal_sweep"} for g, t in result["thresholds"].items()}
+    thresholds = {g: {k: v for k, v in t.items() if not k.endswith("_sweep")} for g, t in result["thresholds"].items()}
     meta = {"version": f"lgbm-w{WINDOW_MIN}-seed{seed}", "window_minutes": WINDOW_MIN, "seed": seed,
             "zone_features": zone_feature_names(), "drive_features": drive_feature_names(),
             "assets": len(ASSETS), "drive_asset": DRIVE, "target_precision": TARGET_PRECISION,
+            "call_horizon_hours": CALL_HORIZON_HOURS,
             "normal_keep": NORMAL_KEEP, "params": PARAMS, "splits": result["splits"], "thresholds": thresholds}
     (directory / "meta.json").write_text(json.dumps(meta, indent=2))
 

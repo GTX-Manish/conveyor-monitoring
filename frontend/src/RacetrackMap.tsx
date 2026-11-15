@@ -137,7 +137,7 @@ function MapTooltip({ hover, layout }: { hover: { asset: Asset; x: number; y: nu
       {a.p_abnormal != null && (
         <dl className="tabular mt-1.5 grid grid-cols-[1fr_auto] gap-x-3 text-ink2">
           <dt>Abnormal score</dt><dd className="text-ink">{pct(a.p_abnormal)}</dd>
-          <dt>Fails within 24 h</dt><dd className="text-ink">{pct(a.p_fail_24h)}</dd>
+          <dt>Failure risk score</dt><dd className="text-ink">{pct(a.p_fail_24h)}</dd>
           {a.est_hours_to_failure != null && (<><dt>Estimated time to failure</dt><dd className="text-ink">{hours(a.est_hours_to_failure)}</dd></>)}
         </dl>
       )}

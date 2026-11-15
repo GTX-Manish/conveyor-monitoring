@@ -64,7 +64,7 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
         <table className="w-full text-sm">
           <thead className="text-left text-xs text-ink3">
             <tr><th className="py-1 font-normal">Zone</th><th className="font-normal">Position</th><th className="font-normal">Status</th>
-              <th className="text-right font-normal">Chance of failing within 24 h</th></tr>
+              <th className="text-right font-normal">Failure risk score</th></tr>
           </thead>
           <tbody>
             {[...sec.zones].sort((a, b) => a - b).map((id) => {
@@ -93,8 +93,8 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
   const shown = plot === "model" || signals.includes(plot) ? plot : "model";
   const sentence: Record<string, string> = {
     normal: "Nothing unusual here.",
-    abnormal: "The model sees unusual behaviour here. No failure is predicted within a day yet.",
-    predicted_failure: "The model predicts a failure here within about a day.",
+    abnormal: "The model sees unusual behaviour here. It does not yet predict a failure within 72 hours.",
+    predicted_failure: "The model predicts a failure here within 72 hours.",
     no_data: "The sensors here are silent or stuck, so the real condition is unknown.",
   };
   const stuck = Object.entries(asset.sensors).filter(([, st]) => st !== "ok");
@@ -115,7 +115,7 @@ export function Detail({ layout, status, alerts, selection, onSelect, origin }: 
         </div>
         <p className="mt-2 text-sm text-ink2">{sentence[asset.status]}</p>
         <dl className="tabular mt-3 grid grid-cols-2 gap-2 text-sm sm:max-w-md">
-          <Stat label="Chance of failing within 24 h" value={pct(asset.p_fail_24h)} />
+          <Stat label="Failure risk score" value={pct(asset.p_fail_24h)} />
           <Stat label="Estimated time to failure" value={asset.est_hours_to_failure != null ? hours(asset.est_hours_to_failure) : "Not predicted"} />
         </dl>
         {zone && (
@@ -216,7 +216,7 @@ function PredictionChart({ asset, from, to, origin }: { asset: string; from: num
       <figcaption className="flex flex-wrap items-center gap-x-4 text-xs font-medium text-ink2">
         Model output
         <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-1)" }} />How unusual it looks</span>
-        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-2)" }} />Chance of failing within 24 h</span>
+        <span className="flex items-center gap-1 font-normal"><i className="inline-block h-0.5 w-4" style={{ background: "var(--series-2)" }} />Failure risk score</span>
       </figcaption>
       <div className="h-[260px]">
         {points.length === 0 ? (
@@ -228,7 +228,7 @@ function PredictionChart({ asset, from, to, origin }: { asset: string; from: num
               <XAxis dataKey="ts" type="number" domain={[f, t]} tickFormatter={(v) => simTime(v, origin)} {...axis} tickCount={5} minTickGap={50} />
               <YAxis width={44} domain={[0, 1]} ticks={[0, 0.5, 1]} tickFormatter={(v: number) => `${v * 100}%`} {...axis} />
               <Tooltip {...tooltipStyle} isAnimationActive={false} labelFormatter={(v) => simTime(v as number, origin)}
-                formatter={(v: number, name) => [pct(v), name === "p_abnormal" ? "How unusual it looks" : "Chance of failing within 24 h"]} />
+                formatter={(v: number, name) => [pct(v), name === "p_abnormal" ? "How unusual it looks" : "Failure risk score"]} />
               <Line dataKey="p_abnormal" stroke="var(--series-1)" strokeWidth={2} dot={false} isAnimationActive={false} />
               <Line dataKey="p_fail_24h" stroke="var(--series-2)" strokeWidth={2} dot={false} isAnimationActive={false} />
             </LineChart>

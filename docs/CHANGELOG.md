@@ -146,3 +146,15 @@
     accuracy is not, because over 99% of windows are negative.
   - The drive's failure-call threshold tuned to 0.05, the lowest candidate: drive faults last under 48 h, so any
     call inside an open alert is within 24 h. It carries little information and rests on 2 validation events.
+- **Failure call now claims 72 hours** (user's decision, the safer side; one shared setting,
+  `CALL_HORIZON_HOURS` in `model/alerting.py`). On the previous 24 h rule only 5 of 10 test calls came true; all 10
+  were within 36 h. 72 was chosen after seeing those test results, so it loosens the claim; it is not the model
+  improving. The failure-call threshold was retuned on validation for the 72 h rule (zone 0.15 to 0.3 across three
+  seeds). The classifier itself still predicts "within 24 h"; the dashboard calls its output a "failure risk score".
+- **Precision and recall reported** (`model/artifacts/eval_report.md`, new "at a glance" table, plus validation
+  trade-off tables for both thresholds so they can be balanced without touching test). Seed 1, held-out test:
+  alerts 12 of 12 faults caught, 0 false; failure calls 12 of 12 within 72 h. At window level (24 h classifier) zone
+  precision is 0.83 and recall 0.92 on test. Drive window-level precision is low at its chosen threshold (0.04).
+- **Live accuracy on Overview.** `GET /api/outcomes` now returns precision and recall; `GET /api/model/evaluation`
+  serves the offline test figures (`model/artifacts/summary.json`). The Overview strip shows recall, precision and
+  failure predictions that came true so far in the run, how many cases they rest on, and the offline figures.

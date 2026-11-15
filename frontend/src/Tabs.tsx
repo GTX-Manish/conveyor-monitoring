@@ -82,7 +82,7 @@ export function PredictionsTab({ status, layout, origin, onSelect }: {
       {rows.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No part is expected to fail. Tick the box above to see the parts the model ranks highest anyway.</p>}
       <table className={`w-full text-sm ${rows.length === 0 ? "hidden" : ""}`}>
         <thead className="text-left text-xs text-ink3">
-          <tr><th className="py-1 font-normal">Where</th><th className="font-normal">What the model says</th><th className="font-normal">Chance of failing within 24 h</th>
+          <tr><th className="py-1 font-normal">Where</th><th className="font-normal">What the model says</th><th className="font-normal">Failure risk score</th>
             <th className="font-normal">How unusual it looks</th><th className="text-right font-normal">Expected failure</th></tr>
         </thead>
         <tbody>
@@ -210,7 +210,7 @@ export function TrackRecordTab({ origin, onSelect }: { origin: number | null; on
     ["Warned, but the alert had closed", String(s.early_warnings), "it opened earlier and lapsed before the failure"],
     ["Failures missed", String(s.missed), "no alert at any point"],
     ["False alarms", String(s.false_alarms), "an alert closed and no failure followed"],
-    ["Failure calls that came true", `${s.failure_calls_came_true} of ${s.failure_calls}`, "the part failed within 24 h of the call"],
+    ["Failure calls that came true", `${s.failure_calls_came_true} of ${s.failure_calls}`, `the part failed within ${s.call_horizon_hours} h of the call`],
   ] : [];
   return (
     <div className="space-y-4">
@@ -260,6 +260,6 @@ function outcomeSentence(o: Outcome, origin: number | null): string {
     ? `${failed} An alert first opened ${hours(o.lead_hours)} earlier but had closed again by the time the part failed.`
     : `${failed} The first alert came ${hours(o.lead_hours)} earlier and an alert was open when it failed.`;
   if (o.call_ts == null) return `${warned} No failure call was made before it failed.`;
-  const verdict = o.within_24h ? "The call came true within 24 h." : "The call was early: the part lasted longer than 24 h.";
+  const verdict = o.within_horizon ? "The prediction came true within 72 h." : "The prediction was early: the part lasted longer than 72 h.";
   return `${warned} A failure was predicted ${hours(o.call_lead_hours)} before it happened, with ${hours(o.eta_at_call)} estimated at the time (off by ${hours(o.eta_error_hours)}). ${verdict}`;
 }

@@ -123,11 +123,18 @@ export function alertText(a: Alert): { summary: string; reasons: string[] } {
 export interface Outcome {
   outcome_id: number; asset: string; kind: "confirmed" | "missed" | "false_alarm" | "early_warning";
   alert_created_ts: number | null; call_ts: number | null; failed_ts: number | null; lead_hours: number | null;
-  call_lead_hours: number | null; within_24h: number | null; eta_at_call: number | null; eta_error_hours: number | null;
+  call_lead_hours: number | null; within_horizon: number | null; eta_at_call: number | null; eta_error_hours: number | null;
   resolved_ts: number; fault_kind: string | null; position_m: number | null; section: number | null;
 }
 export interface Outcomes {
   outcomes: Outcome[];
   summary: { failures: number; warned: number; missed: number; false_alarms: number; early_warnings: number;
-             failure_calls: number; failure_calls_came_true: number };
+             failure_calls: number; failure_calls_came_true: number; call_horizon_hours: number;
+             precision: number | null; recall: number | null };
+}
+
+/** Held-out test figures from the offline evaluation (scripts/score.py). */
+export interface OfflineEvaluation {
+  split: string; call_horizon_hours: number; faults: number; caught: number; open_at_failure: number; false_alerts: number;
+  calls: number; calls_came_true: number; faults_called: number;
 }

@@ -6,7 +6,7 @@ because rows are overwhelmingly normal and row accuracy would look good for a mo
 """
 import numpy as np
 
-from .alerting import ACTIVE_RUN_SHARE, HOLD_P_FAIL, alert_spans
+from .alerting import ACTIVE_RUN_SHARE, CALL_HORIZON_HOURS, HOLD_P_FAIL, alert_spans
 from .features import WINDOW_MIN
 
 NORMAL, EARLY, ADVANCED, FAILED = 0, 1, 2, 3
@@ -107,7 +107,7 @@ def tune_threshold(scenarios: list, candidates, target: float = TARGET_PRECISION
 
 
 # ---------------------------------------------------------------- does a failure call come true?
-HORIZON_HOURS = 24.0
+CLASSIFIER_HORIZON_HOURS = 24.0     # what the classifier was trained to predict
 
 
 def score_calls(p_abnormal, thr_abnormal: float, p_fail, thr_fail: float, run_share, stage, fault_id,
@@ -116,7 +116,7 @@ def score_calls(p_abnormal, thr_abnormal: float, p_fail, thr_fail: float, run_sh
 
     A call is made exactly as the live system makes it: an abnormal alert is open on the asset and the
     probability of failing within 24 h reaches its threshold. One call per alert, at the first such window.
-    A call CAME TRUE if the part failed within 24 h of it, was EARLY if the part failed later than that, and was
+    A call CAME TRUE if the part failed within CALL_HORIZON_HOURS of it, was EARLY if it failed later, and was
     FALSE if the part was normal. The time estimate is compared with the real time at the moment of the call.
     """
     active = np.asarray(run_share) >= ACTIVE_RUN_SHARE
@@ -138,7 +138,7 @@ def score_calls(p_abnormal, thr_abnormal: float, p_fail, thr_fail: float, run_sh
         left = float(hours_to_failure[w, a])        # real hours to failure at the call (0 once failed)
         hours.append(left)
         called_events.add(fault_id[w, a])
-        if left <= HORIZON_HOURS:
+        if left <= CALL_HORIZON_HOURS:
             out["came_true"] += 1
             in_time_events.add(fault_id[w, a])
         else:
@@ -153,6 +153,8 @@ def score_calls(p_abnormal, thr_abnormal: float, p_fail, thr_fail: float, run_sh
 
 def _finish_calls(out: dict) -> dict:
     out["share_came_true"] = out["came_true"] / out["calls"] if out["calls"] else float("nan")
+    out["precision"] = out["share_came_true"]                                  # calls that were right
+    out["recall"] = out["events_called_in_time"] / out["events"] if out["events"] else float("nan")  # faults called
     out["median_hours_call_to_failure"] = float(np.median(out["hours_list"])) if out["hours_list"] else float("nan")
     out["median_eta_error_hours"] = float(np.median(out["eta_error_list"])) if out["eta_error_list"] else float("nan")
     return out
@@ -168,7 +170,7 @@ def pooled_calls(parts: list) -> dict:
 
 
 def tune_call_threshold(scenarios: list, thr_abnormal: float, candidates, target: float = TARGET_PRECISION) -> dict:
-    """Threshold for the failure call: at least `target` of calls must be followed by a failure within 24 h.
+    """Threshold for the failure call: at least `target` of calls must be followed by a failure in the window.
 
     Among thresholds that reach the target, take the one that calls the most events in time, then the lowest
     (the earliest warning that is still honest). If none reaches it, return the one with the best share and
@@ -193,7 +195,7 @@ def row_metrics(p_fail, threshold: float, stage, hours_to_failure) -> dict:
     failure would score above 99%. Windows during a repair are left out (the part has already failed).
     """
     keep = stage != FAILED
-    y = (np.isin(stage, (EARLY, ADVANCED)) & (np.nan_to_num(hours_to_failure, nan=np.inf) <= HORIZON_HOURS))[keep]
+    y = (np.isin(stage, (EARLY, ADVANCED)) & (np.nan_to_num(hours_to_failure, nan=np.inf) <= CLASSIFIER_HORIZON_HOURS))[keep]
     p = np.nan_to_num(p_fail[keep], nan=0.0)
     pred = p >= threshold
     tp, fp, fn = int((pred & y).sum()), int((pred & ~y).sum()), int((~pred & y).sum())

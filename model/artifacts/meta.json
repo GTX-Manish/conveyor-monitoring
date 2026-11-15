@@ -100,6 +100,7 @@
   "assets": 121,
   "drive_asset": "DRIVE",
   "target_precision": 0.9,
+  "call_horizon_hours": 72.0,
   "normal_keep": 0.2,
   "params": {
     "zone": {
@@ -149,7 +150,7 @@
   "thresholds": {
     "zone": {
       "abnormal": 0.999,
-      "predicted_failure": 0.97,
+      "predicted_failure": 0.3,
       "abnormal_met_target": true,
       "predicted_failure_met_target": true,
       "abnormal_validation": {
@@ -170,16 +171,18 @@
       },
       "predicted_failure_validation": {
         "calls": 10,
-        "came_true": 9,
-        "early": 1,
+        "came_true": 10,
+        "early": 0,
         "false": 0,
         "events": 10,
         "events_called": 10,
-        "events_called_in_time": 9,
-        "threshold": 0.97,
-        "share_came_true": 0.9,
-        "median_hours_call_to_failure": 22.541666984558105,
-        "median_eta_error_hours": 3.7161182670381177,
+        "events_called_in_time": 10,
+        "threshold": 0.3,
+        "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
+        "median_hours_call_to_failure": 29.78333282470703,
+        "median_eta_error_hours": 8.670475477455991,
         "met_target": true
       }
     },
@@ -214,6 +217,8 @@
         "events_called_in_time": 2,
         "threshold": 0.05,
         "share_came_true": 1.0,
+        "precision": 1.0,
+        "recall": 1.0,
         "median_hours_call_to_failure": 6.091666668653488,
         "median_eta_error_hours": 5.809890237414478,
         "met_target": true

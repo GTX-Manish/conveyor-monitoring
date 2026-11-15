@@ -239,28 +239,29 @@ def test_severity_bands():
 
 def test_failure_calls_are_scored_on_what_happened_next():
     from model.evaluate import row_metrics, score_calls
-    W = 400                                             # three assets, 10-minute windows
+    W = 700                                             # three assets, 10-minute windows
     stage = np.zeros((W, 3), dtype=np.int8)
     htf = np.full((W, 3), np.nan)
     fault = np.full((W, 3), "", dtype=object)
-    for a, (onset, failure, fid) in enumerate([(50, 300, "F1"), (50, 300, "F2")]):
+    for a, (onset, failure, fid) in enumerate([(50, 300, "F1"), (50, 650, "F2")]):
         stage[onset:failure, a], fault[onset:failure, a] = 2, fid
         htf[onset:failure, a] = (failure - np.arange(onset, failure)) / 6.0
         stage[failure:failure + 12, a], htf[failure:failure + 12, a], fault[failure:failure + 12, a] = 3, 0.0, fid
     p_abn, p_fail = np.zeros((W, 3)), np.zeros((W, 3))
     p_abn[60:300, 0], p_fail[240:300, 0] = 1.0, 0.9     # call 10 h before failure: came true
-    p_abn[60:300, 1], p_fail[100:300, 1] = 1.0, 0.9     # call 33 h before failure: early
+    p_abn[60:650, 1], p_fail[100:650, 1] = 1.0, 0.9     # call 92 h before failure: early (the claim is 72 h)
     p_abn[60:120, 2], p_fail[70:120, 2] = 1.0, 0.9      # healthy part: false
     est = np.full((W, 3), 12.0)
     r = score_calls(p_abn, 0.5, p_fail, 0.8, np.ones(W), stage, fault, htf, est)
     assert (r["calls"], r["came_true"], r["early"], r["false"]) == (3, 1, 1, 1)
     assert r["events"] == 2 and r["events_called"] == 2 and r["events_called_in_time"] == 1
     assert r["share_came_true"] == pytest.approx(1 / 3)
-    assert sorted(r["hours_list"]) == pytest.approx([10.0, 200 / 6])
-    assert r["median_eta_error_hours"] == pytest.approx(np.median([2.0, 200 / 6 - 12]))
+    assert sorted(r["hours_list"]) == pytest.approx([10.0, 550 / 6])
+    assert r["median_eta_error_hours"] == pytest.approx(np.median([2.0, 550 / 6 - 12]))
+    assert r["precision"] == pytest.approx(1 / 3) and r["recall"] == 0.5
     assert score_calls(p_abn, 0.5, p_fail, 0.95, np.ones(W), stage, fault, htf)["calls"] == 0
     m = row_metrics(p_fail, 0.8, stage, htf)
-    assert m["positive_windows"] == 2 * 144 and m["tp"] == 60 + 144 and m["fp"] == 56 + 50
+    assert m["positive_windows"] == 2 * 144 and m["tp"] == 60 + 144 and m["fp"] == 406 + 50
     assert m["recall"] == pytest.approx(204 / 288) and 0 < m["average_precision"] <= 1
 
 
@@ -382,7 +383,7 @@ def test_outcomes_compare_predictions_with_repair_records(tmp_path):
         o = out["Z011"]
         assert o["kind"] == "confirmed" and o["alert_created_ts"] == open_ts and o["call_ts"] == call_ts
         assert o["lead_hours"] == pytest.approx((failed - open_ts) / 3600)
-        assert o["call_lead_hours"] == pytest.approx((failed - call_ts) / 3600) and o["within_24h"] == 1
+        assert o["call_lead_hours"] == pytest.approx((failed - call_ts) / 3600) and o["within_horizon"] == 1
         assert o["eta_at_call"] == 6.0 and o["eta_error_hours"] == pytest.approx(abs(6.0 - (failed - call_ts) / 3600))
 
         models.p_abnormal[:] = 0.0                      # all alerts close; zones 21 and 31 never failed
@@ -402,7 +403,8 @@ def test_outcomes_compare_predictions_with_repair_records(tmp_path):
         with TestClient(create_app(SETTINGS, engine=e)) as client:
             reply = client.get("/api/outcomes").json()
             assert reply["summary"] == {"failures": 3, "warned": 1, "missed": 1, "false_alarms": 1, "early_warnings": 1,
-                                        "failure_calls": 1, "failure_calls_came_true": 1}
+                                        "failure_calls": 1, "failure_calls_came_true": 1, "call_horizon_hours": 72.0,
+                                        "recall": pytest.approx(1 / 3), "precision": pytest.approx(2 / 3)}
             assert len(reply["outcomes"]) == 4 and reply["outcomes"][0]["asset"] == "Z021"
             assert client.post("/api/work_orders", json={"orders": [{"asset": "Z031", "kind": "idler_bearing",
                                                                      "failed_ts": later, "repaired_ts": later + 60}]}
@@ -506,6 +508,13 @@ def test_api_and_replayer_end_to_end(scenario, tmp_path):
         assert client.get("/api/predictions", params={"asset": "Z005"}).json()["asset"] == "Z005"
         assert client.get("/api/predictions", params={"asset": "Q1"}).status_code == 404
         assert "sensors" in client.get("/api/sensors/health").json()
+        empty = client.get("/api/outcomes").json()["summary"]          # nothing settled yet: no percentages
+        assert empty["failures"] == 0 and empty["precision"] is None and empty["recall"] is None
+        import backend.app as app_module
+        app_module.MODEL_SUMMARY = tmp_path / "summary.json"
+        assert client.get("/api/model/evaluation").status_code == 404
+        (tmp_path / "summary.json").write_text('{"faults": 12, "caught": 12}')
+        assert client.get("/api/model/evaluation").json() == {"faults": 12, "caught": 12}
         for path in ("status", "detections", "defects"):   # vision placeholders: present, empty, saying so
             assert client.get(f"/api/vision/{path}").json() == {
                 "enabled": False, "reason": "The camera pipeline is not part of this run.", "items": []}

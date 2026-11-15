@@ -9,6 +9,10 @@ import numpy as np
 OPEN_AFTER = 2      # (assumption) windows above the threshold before an alert opens: 20 minutes
 CLOSE_AFTER = 6     # (assumption) windows below it before the alert closes: 1 hour
 ACTIVE_RUN_SHARE = 0.5
+# A "predicted failure" call claims the part will fail within this many hours. The classifier behind it is
+# trained on 24 h; the claim is deliberately wider (user's decision, the safer side): on the test scenarios only
+# half of the calls were followed by a failure within 24 h, and all of them within 36 h.
+CALL_HORIZON_HOURS = 72.0
 HOLD_P_FAIL = 0.5   # (assumption) an open alert does not close while failure within 24 h is more likely than not
 BANDS = [(0.25, "low"), (0.5, "medium"), (0.75, "high"), (float("inf"), "critical")]
 

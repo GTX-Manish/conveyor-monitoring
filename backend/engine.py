@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 from common.ids import ASSETS, BELT_SIGNALS, DRIVE, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
-from model.alerting import ACTIVE_RUN_SHARE, HOLD_P_FAIL, Debouncer, severity, severity_label
+from model.alerting import ACTIVE_RUN_SHARE, CALL_HORIZON_HOURS, HOLD_P_FAIL, Debouncer, severity, severity_label
 from model.explain import reasons
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
@@ -508,7 +508,7 @@ class Engine:
         else:
             where, pos, zone_id, what = "Drive", None, None, "motor and gearbox overheating"
         when = (f"Failure expected in about {eta:.0f} h." if eta is not None
-                else f"Chance of failing within a day: {p_fail:.0%}.")
+                else f"Failure risk score: {p_fail:.0%}.")
         message = f"{where}: {what}. {when}"
         features = self.models.top_features("zone" if is_zone else "drive", x, k=8)
         seen = reasons(features)                 # what the model saw, in plain words
@@ -577,10 +577,10 @@ class Engine:
         self.con.executemany("DELETE FROM outcomes WHERE outcome_id=?", [(r["outcome_id"],) for r in lapsed])
         self.con.execute(
             "INSERT INTO outcomes (asset, kind, alert_id, order_id, alert_created_ts, call_ts, failed_ts,"
-            " lead_hours, call_lead_hours, within_24h, eta_at_call, eta_error_hours, resolved_ts)"
+            " lead_hours, call_lead_hours, within_horizon, eta_at_call, eta_error_hours, resolved_ts)"
             " VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (asset, kind, alert_id, order_id, first_ts, call["ts"] if call else None, failed,
-             (failed - first_ts) / 3600.0, call_lead, None if call is None else int(call_lead <= 24.0), eta,
+             (failed - first_ts) / 3600.0, call_lead, None if call is None else int(call_lead <= CALL_HORIZON_HOURS), eta,
              None if eta is None else abs(eta - call_lead), now))
         return True
 

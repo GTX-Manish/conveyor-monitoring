@@ -51,5 +51,5 @@ CREATE TABLE work_orders (order_id INTEGER PRIMARY KEY AUTOINCREMENT, asset TEXT
 -- lapsed, and the part did fail later).
 CREATE TABLE outcomes (outcome_id INTEGER PRIMARY KEY AUTOINCREMENT, asset TEXT NOT NULL, kind TEXT NOT NULL,
   alert_id INTEGER, order_id INTEGER, alert_created_ts INTEGER, call_ts INTEGER, failed_ts INTEGER,
-  lead_hours REAL, call_lead_hours REAL, within_24h INTEGER, eta_at_call REAL, eta_error_hours REAL,
+  lead_hours REAL, call_lead_hours REAL, within_horizon INTEGER, eta_at_call REAL, eta_error_hours REAL,
   resolved_ts INTEGER NOT NULL);

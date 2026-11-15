@@ -1,6 +1,9 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { Alert, IngestStats, Layout, SEVERITY_VAR, SensorHealth, StatusReply, assetName, get, hours, post, simTime } from "./api";
+import {
+  Alert, IngestStats, Layout, OfflineEvaluation, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, assetName, get, hours, post,
+  simTime,
+} from "./api";
 import { Detail } from "./Detail";
 import { RacetrackMap } from "./RacetrackMap";
 import { ALERT_TITLE, AnomaliesTab, DataHealthTab, PredictionsTab, TrackRecordTab, VisionTab } from "./Tabs";
@@ -83,7 +86,7 @@ export default function App() {
       <main data-tour={tab === "Overview" ? undefined : "panel"}>
         <p className="mb-3 text-sm text-ink2">{TAB_HINT[tab]}</p>
         {tab === "Overview" && <Overview layout={layout.data} status={s} open={open} origin={origin} selection={selection}
-          onSelect={select} onSelectAsset={selectAsset} onSeeAll={() => setTab("Alerts")} />}
+          onSelect={select} onSelectAsset={selectAsset} onSeeAll={() => setTab("Alerts")} onTrackRecord={() => setTab("Track record")} />}
         {tab === "Alerts" && <AnomaliesTab alerts={alerts.data?.alerts ?? []} origin={origin} onSelect={selectAsset} />}
         {tab === "Predictions" && <PredictionsTab status={s} layout={layout.data} origin={origin} onSelect={selectAsset} />}
         {tab === "Track record" && <TrackRecordTab origin={origin} onSelect={selectAsset} />}
@@ -143,9 +146,9 @@ function TopBar({ status, origin, onControl, onTour }: {
   );
 }
 
-function Overview({ layout, status, open, origin, selection, onSelect, onSelectAsset, onSeeAll }: {
+function Overview({ layout, status, open, origin, selection, onSelect, onSelectAsset, onSeeAll, onTrackRecord }: {
   layout: Layout; status: StatusReply; open: Alert[]; origin: number | null; selection: Selection;
-  onSelect: (s: Selection) => void; onSelectAsset: (asset: string) => void; onSeeAll: () => void;
+  onSelect: (s: Selection) => void; onSelectAsset: (asset: string) => void; onSeeAll: () => void; onTrackRecord: () => void;
 }) {
   const top = open.slice(0, 5);
   const headline = open.length === 0 ? "Everything looks normal."
@@ -154,6 +157,7 @@ function Overview({ layout, status, open, origin, selection, onSelect, onSelectA
     <div className="space-y-4">
       <h2 className="text-xl font-semibold">{headline}</h2>
       <RacetrackMap layout={layout} status={status} selection={selection} onSelect={onSelect} />
+      <Accuracy onOpen={onTrackRecord} />
       <section data-tour="attention" className="rounded-lg border border-line p-4">
         <div className="mb-2 flex items-baseline justify-between">
           <h3 className="text-sm font-semibold">Needs attention</h3>
@@ -179,5 +183,48 @@ function Overview({ layout, status, open, origin, selection, onSelect, onSelectA
         )}
       </section>
     </div>
+  );
+}
+
+const share = (n: number, of: number) => (of > 0 ? `${Math.round((100 * n) / of)}%` : "–");
+
+/** The model's record in this run, set against what really happened, plus the offline test figures. */
+function Accuracy({ onOpen }: { onOpen: () => void }) {
+  const live = useQuery({ queryKey: ["outcomes"], queryFn: () => get<Outcomes>("/api/outcomes"), refetchInterval: 4000 });
+  const offline = useQuery({
+    queryKey: ["evaluation"], queryFn: () => get<OfflineEvaluation>("/api/model/evaluation"), refetchInterval: false, retry: false, staleTime: Infinity,
+  });
+  const s = live.data?.summary;
+  const real = s ? s.warned + s.early_warnings : 0;
+  const settled = s ? real + s.false_alarms : 0;
+  const tiles: [string, string, string][] = s ? [
+    ["Failures caught (recall)", share(s.warned, s.failures),
+      s.failures ? `${s.warned} of ${s.failures} failed parts had an alert open` : "no part has failed yet"],
+    ["Alerts that were real (precision)", share(real, settled),
+      settled ? `${real} of ${settled} settled alerts were followed by a failure` : "no alert has been settled yet"],
+    [`Failure predictions that came true`, share(s.failure_calls_came_true, s.failure_calls),
+      s.failure_calls ? `${s.failure_calls_came_true} of ${s.failure_calls} failed within ${s.call_horizon_hours} h` : "no prediction has been settled yet"],
+  ] : [];
+  const o = offline.data;
+  return (
+    <section data-tour="accuracy" className="rounded-lg border border-line p-4">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h3 className="text-sm font-semibold">Model accuracy so far in this run</h3>
+        <button onClick={onOpen} className="text-sm text-ink2 underline underline-offset-2 hover:text-ink">See each case</button>
+      </div>
+      <dl className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {tiles.map(([label, value, note]) => (
+          <div key={label} className="rounded border border-line p-3">
+            <dt className="text-xs text-ink3">{label}</dt>
+            <dd className="tabular text-2xl font-semibold leading-tight">{value}</dd>
+            <dd className="text-xs text-ink3">{note}</dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-2 text-xs text-ink3">
+        Checked against repair records, which arrive after each repair. {s && s.failures > 0 ? `This rests on ${s.failures} failure${s.failures === 1 ? "" : "s"} in one demo scenario. ` : ""}
+        {o && `Offline, on ${o.faults} faults the model never saw: ${o.caught} caught (${share(o.caught, o.faults)}), ${o.false_alerts} false alert${o.false_alerts === 1 ? "" : "s"}, ${o.calls_came_true} of ${o.calls} failure predictions within ${o.call_horizon_hours} h.`}
+      </p>
+    </section>
   );
 }
