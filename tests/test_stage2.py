@@ -16,6 +16,7 @@ ZERO = {
     IDLER: {"temp_c": 0, "acoustic_db": 0, "vib_gain": 0, "kurtosis_add": 0, "current_a": 0},
     DRIVE_OVERHEAT: {"motor_temp_c": 0, "gearbox_temp_c": 0, "current_a": 0},
 }
+FIXED = {"strength": (1.0, 1.0), "signal_mix": (1.0, 1.0), "exponent": (2.5, 2.5)}   # the old fixed fault
 SHORT = {
     IDLER: {"min_days": 1, "max_days": 2},
     DRIVE_OVERHEAT: {"min_hours": 24, "max_hours": 48},
@@ -24,7 +25,7 @@ SHORT = {
 
 def one_fault(kind, zero=False, seed=11):
     """A 6-day scenario with exactly one fault of `kind`. `zero` gives the same schedule with no effect."""
-    faults = {k: {"per_30d": 0} for k in ZERO}
+    faults = {**FIXED, **{k: {"per_30d": 0} for k in ZERO}}
     faults[kind] = {"per_30d": 5, **SHORT[kind], **(ZERO[kind] if zero else {})}  # 5 x 6/30 = exactly 1
     return generate(config_from_dict({"seed": seed, "days": 6, "faults": faults, "messiness": NO_MESS}))
 
@@ -38,8 +39,8 @@ def zmat(scn, col):
     return scn.zones[col].to_numpy().reshape(-1, Z).astype(float)
 
 
-def sev(scn, exponent=2.5):
-    return severity(scn.events[0], len(scn.belt_wide), exponent)
+def sev(scn):
+    return severity(scn.events[0], len(scn.belt_wide))
 
 
 # ---- scheduling -------------------------------------------------------------------------------------
@@ -187,3 +188,52 @@ def test_fault_truth_stays_out_of_public(pair, tmp_path):
     public_text = (root / "public" / "manifest.json").read_text()
     assert scn.events[0].fault_id not in public_text and "fault" not in public_text
     assert set(scn.belt_wide["run_state"].unique()) <= {"stopped", "ramp", "running"}  # no "repair" state
+
+
+# ---- every fault has its own character ----------------------------------------------------------------
+
+def test_each_fault_draws_its_own_strength_shape_and_mix():
+    cfg = Config(seed=3, days=30)
+    events = schedule_faults(cfg.faults, 30, Z, make_streams(3)["faults"])
+    assert len(events) == 6
+    lo_s, hi_s = cfg.faults.strength
+    lo_e, hi_e = cfg.faults.exponent
+    lo_m, hi_m = cfg.faults.signal_mix
+    for ev in events:
+        assert lo_s <= ev.strength <= hi_s and lo_e <= ev.exponent <= hi_e
+        assert len(ev.mix) == (5 if ev.type == IDLER else 3) and all(lo_m <= m <= hi_m for m in ev.mix)
+    assert len({round(e.strength, 6) for e in events}) == len(events)      # no two alike
+    assert len({round(e.exponent, 6) for e in events}) == len(events)
+    again = schedule_faults(cfg.faults, 30, Z, make_streams(3)["faults"])
+    assert [(e.strength, e.exponent, e.mix) for e in events] == [(e.strength, e.exponent, e.mix) for e in again]
+
+
+def test_a_stronger_fault_has_a_larger_effect_and_the_growth_shape_follows_its_exponent():
+    def temp_effect(strength, exponent):
+        faults = {**FIXED, "strength": (strength, strength), "exponent": (exponent, exponent),
+                  "drive_overheat": {"per_30d": 0}, "idler_bearing": {"per_30d": 5, **SHORT[IDLER]}}
+        cfg = {"seed": 11, "days": 6, "faults": faults, "messiness": NO_MESS}
+        scn = generate(config_from_dict(cfg))
+        twin = generate(config_from_dict({**cfg, "faults": {**faults, "idler_bearing": {**faults["idler_bearing"],
+                                                                                         **ZERO[IDLER]}}}))
+        ev = scn.events[0]
+        d = (zmat(scn, "acoustic_db") - zmat(twin, "acoustic_db"))[:, ev.zone - 1]
+        return ev, d
+    ev1, weak = temp_effect(0.5, 2.5)
+    ev2, strong = temp_effect(1.0, 2.5)
+    assert ev1.onset == ev2.onset and ev1.failure == ev2.failure
+    assert strong.max() == pytest.approx(2 * weak.max(), rel=0.02)            # the effect scales with strength
+    _, late = temp_effect(1.0, 3.5)
+    _, linear = temp_effect(1.0, 1.0)
+    span = slice(ev2.onset, ev2.failure)    # the belt is stopped at night, so compare the whole progression
+    assert linear[span].sum() > strong[span].sum() > late[span].sum()        # a lower exponent grows earlier
+
+
+def test_fault_ranges_are_validated_and_degenerate_ranges_give_the_fixed_fault():
+    with pytest.raises(ValueError):
+        config_from_dict({"faults": {"strength": [0, 1]}})
+    with pytest.raises(ValueError):
+        config_from_dict({"faults": {"exponent": [3.0, 2.0]}})
+    cfg = Config(seed=3, days=30, faults=config_from_dict({"faults": FIXED}).faults)
+    for ev in schedule_faults(cfg.faults, 30, Z, make_streams(3)["faults"]):
+        assert (ev.strength, ev.exponent, ev.mix[0]) == (1.0, 2.5, 1.0)

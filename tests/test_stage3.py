@@ -175,8 +175,8 @@ def test_labels_by_hand():
     assert (stage[f:r, a] == "failed").all() and (htf[f:r, a] == 0).all() and not within[f:r, a].any()
     assert stage[r, a] == "normal" and np.isnan(htf[r, a]) and sev[r, a] == 0
 
-    # early / advanced boundary: s = ((t - onset) / dur) ** 2.5 crosses 0.3
-    k = int(np.ceil(dur * 0.3 ** (1 / 2.5)))
+    # early / advanced boundary: s = ((t - onset) / dur) ** ev.exponent crosses 0.3
+    k = int(np.ceil(dur * 0.3 ** (1 / ev.exponent)))
     assert stage[o + k - 1, a] == "early" and stage[o + k, a] == "advanced"
     assert sev[o + k - 1, a] < 0.3 <= sev[o + k, a]
     assert (stage[o + 1:o + k, a] == "early").all() and (stage[o + k:f, a] == "advanced").all()

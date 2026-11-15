@@ -33,7 +33,7 @@ def build_labels(events, hard_negative_mask, timestamps, n_zones: int, cfg: Conf
 
     for i, ev in enumerate(events):
         a = col[ev.asset]
-        s = severity(ev, T, cfg.faults.progression_exponent)
+        s = severity(ev, T)
         dev = slice(ev.onset, ev.failure)
         down = slice(ev.failure, ev.repair_end)
         sev[dev, a] = s[dev]

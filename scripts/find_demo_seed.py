@@ -63,8 +63,6 @@ def check(seed: int) -> dict:
     idlers = [e for e in events if e.type == IDLER]
     drives = [e for e in events if e.type == DRIVE_OVERHEAT]
     faulty_zones = {e.zone for e in idlers}
-    exponent = cfg.faults.progression_exponent
-    early_share = cfg.labels.early_below ** (1.0 / exponent)   # share of a fault's life spent in the early stage
 
     ok = dict.fromkeys((r[0] for r in RULES), False)
     stars = [e for e in idlers if e.onset >= 1 * DAY and 8 * DAY <= e.failure < 12 * DAY]
@@ -75,6 +73,7 @@ def check(seed: int) -> dict:
                        and s.end - s.start >= 120 for s in sensor)
     best = (False, False)
     for star in stars:   # the drive and heat-wave rules are judged against the star idler fault
+        early_share = cfg.labels.early_below ** (1.0 / star.exponent)   # share of its life spent in the early stage
         advanced_start = star.onset + early_share * (star.failure - star.onset)
         drive = (len(drives) == 1 and 4 * DAY <= drives[0].failure < 13 * DAY
                  and abs(drives[0].failure - star.failure) >= DAY)

@@ -113,7 +113,15 @@ faults:
     exp: 1.3
     current_a: 6.0
     current_exp: 2.0
-  progression_exponent: 2.5
+  strength:
+  - 0.3
+  - 1.5
+  signal_mix:
+  - 0.5
+  - 1.5
+  exponent:
+  - 1.5
+  - 3.5
   min_start_hours: 24.0
   min_end_margin_hours: 12.0
   same_asset_gap_hours: 24.0

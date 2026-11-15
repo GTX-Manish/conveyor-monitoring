@@ -13,6 +13,8 @@ from .conditions import lag
 from .config import Config, FaultsCfg
 
 IDLER, DRIVE_OVERHEAT = "idler_bearing", "drive_overheat"
+IDLER_SIGNALS = ("bearing_temp", "acoustic", "vibration", "kurtosis", "motor_current")
+DRIVE_SIGNALS = ("motor_temp", "gearbox_temp", "motor_current")
 SNAP_SLACK_MIN = 12 * 60  # room for moving a failure out of the daily stopped window
 
 
@@ -25,6 +27,9 @@ class FaultEvent:
     onset: int                 # step indices
     failure: int
     repair_end: int
+    strength: float = 1.0      # how strong this fault is, as a multiple of the base amplitudes in the config
+    exponent: float = 2.5      # growth shape: severity = progress ** exponent
+    mix: tuple = ()            # one multiplier per affected signal (order in IDLER_SIGNALS / DRIVE_SIGNALS)
 
 
 def _count(rate_per_30d, days, rng):
@@ -74,7 +79,14 @@ def schedule_faults(cfg: FaultsCfg, days: int, n_zones: int, rng) -> list:
         raw.append((DRIVE_OVERHEAT, "DRIVE", 0, o, f, e))
 
     raw.sort(key=lambda r: (r[3], r[0], r[1]))
-    return [FaultEvent(f"F{i + 1:03d}", *r) for i, r in enumerate(raw)]
+    events = []
+    for i, r in enumerate(raw):   # each fault gets its own character; drawn in schedule order, after all placement
+        strength = float(rng.uniform(*cfg.strength))
+        exponent = float(rng.uniform(*cfg.exponent))
+        n_signals = len(IDLER_SIGNALS) if r[0] == IDLER else len(DRIVE_SIGNALS)
+        mix = tuple(float(m) for m in rng.uniform(*cfg.signal_mix, size=n_signals))
+        events.append(FaultEvent(f"F{i + 1:03d}", *r, strength=strength, exponent=exponent, mix=mix))
+    return events
 
 
 def apply_repair_stops(events, base, ramp_minutes: float):
@@ -99,11 +111,12 @@ def apply_repair_stops(events, base, ramp_minutes: float):
     return base
 
 
-def severity(ev: FaultEvent, n_steps: int, exponent: float):
-    """s(t): 0 before onset, rising to 1 at failure, 1 during the repair window, 0 after repair_end."""
+def severity(ev: FaultEvent, n_steps: int):
+    """s(t): 0 before onset, rising to 1 at failure (as progress ** the fault's own exponent), 1 during the repair
+    window, 0 after repair_end."""
     s = np.zeros(n_steps)
     t = np.arange(ev.onset, ev.failure)
-    s[t] = ((t - ev.onset) / (ev.failure - ev.onset)) ** exponent
+    s[t] = ((t - ev.onset) / (ev.failure - ev.onset)) ** ev.exponent
     s[ev.failure:ev.repair_end] = 1.0
     return s
 
@@ -115,7 +128,9 @@ def apply_fault_effects(zone_sig, belt_sig, events, cond, cfg: Config) -> None:
     speed = cond.speed
 
     for ev in events:
-        s = severity(ev, n_steps, fc.progression_exponent)
+        s = severity(ev, n_steps)
+        k = ev.strength
+        m = ev.mix or (1.0,) * (len(IDLER_SIGNALS) if ev.type == IDLER else len(DRIVE_SIGNALS))
         # s is 0 after repair_end; the extra 12 h only lets the thermal lag decay smoothly
         live = slice(ev.onset, min(n_steps, ev.repair_end + 720))
         sl, sp = s[live], speed[live]
@@ -123,19 +138,19 @@ def apply_fault_effects(zone_sig, belt_sig, events, cond, cfg: Config) -> None:
         if ev.type == IDLER:
             c, z = fc.idler_bearing, ev.zone - 1
             # heat needs a turning roller, and the bearing housing is a thermal mass
-            zone_sig["bearing_temp_c"][live, z] += lag(c.temp_c * sl ** c.temp_exp * sp, sc.temp_tau_min)
-            zone_sig["acoustic_db"][live, z] += c.acoustic_db * sl ** c.acoustic_exp * sp
-            zone_sig["vibration_rms_mm_s"][live, z] *= 1.0 + c.vib_gain * sl ** c.vib_exp * np.minimum(sp, 1.0)
-            zone_sig["vibration_kurtosis"][live, z] += c.kurtosis_add * sl * sp
-            belt_sig["motor_current_a"][live] += c.current_a * sl ** c.current_exp * sp
+            zone_sig["bearing_temp_c"][live, z] += lag(k * m[0] * c.temp_c * sl ** c.temp_exp * sp, sc.temp_tau_min)
+            zone_sig["acoustic_db"][live, z] += k * m[1] * c.acoustic_db * sl ** c.acoustic_exp * sp
+            zone_sig["vibration_rms_mm_s"][live, z] *= 1.0 + k * m[2] * c.vib_gain * sl ** c.vib_exp * np.minimum(sp, 1.0)
+            zone_sig["vibration_kurtosis"][live, z] += k * m[3] * c.kurtosis_add * sl * sp
+            belt_sig["motor_current_a"][live] += k * m[4] * c.current_a * sl ** c.current_exp * sp
             # the drive cannot see idler faults: motor and gearbox temperature are deliberately untouched
 
         elif ev.type == DRIVE_OVERHEAT:
             c = fc.drive_overheat
             rise = sl ** c.exp * sp
-            belt_sig["motor_temp_c"][live] += lag(c.motor_temp_c * rise, sc.motor_temp_tau_min)
-            belt_sig["gearbox_temp_c"][live] += lag(c.gearbox_temp_c * rise, sc.gearbox_temp_tau_min)
-            belt_sig["motor_current_a"][live] += c.current_a * sl ** c.current_exp * sp
+            belt_sig["motor_temp_c"][live] += lag(k * m[0] * c.motor_temp_c * rise, sc.motor_temp_tau_min)
+            belt_sig["gearbox_temp_c"][live] += lag(k * m[1] * c.gearbox_temp_c * rise, sc.gearbox_temp_tau_min)
+            belt_sig["motor_current_a"][live] += k * m[2] * c.current_a * sl ** c.current_exp * sp
 
 
 def faults_frame(events, timestamps) -> pd.DataFrame:
@@ -148,5 +163,7 @@ def faults_frame(events, timestamps) -> pd.DataFrame:
         "failure_time": ts[[e.failure for e in events]],
         "repair_end": ts[[e.repair_end for e in events]],
         "duration_hours": [(e.failure - e.onset) / 60.0 for e in events],
+        "strength": [e.strength for e in events],
+        "exponent": [e.exponent for e in events],
         "repair_hours": [(e.repair_end - e.failure) / 60.0 for e in events],
     })

@@ -158,3 +158,22 @@
 - **Live accuracy on Overview.** `GET /api/outcomes` now returns precision and recall; `GET /api/model/evaluation`
   serves the offline test figures (`model/artifacts/summary.json`). The Overview strip shows recall, precision and
   failure predictions that came true so far in the run, how many cases they rest on, and the offline figures.
+- **Faults are now random per fault** (user feedback: near-perfect scores came from every fault being identical).
+  Each fault draws its own **strength** (0.3 to 1.5 of the base amplitudes), **growth exponent** (1.5 to 3.5) and a
+  **mix** (0.5 to 1.5, separately per signal, so one fault shows more in heat and another in noise); ranges are in
+  `faults.strength`, `faults.signal_mix`, `faults.exponent`. Ranges of (1, 1) with exponent (2.5, 2.5) give the old
+  fixed fault, which the simulator tests still use. The draws come after all placement draws, so fault schedules
+  are unchanged and demo seed 1015 still passes every rule. Stage labels follow each fault's own exponent.
+  The whole set was regenerated, and the models retrained and re-evaluated (three seeds).
+  - **Result, held-out test, seed 1:** alerts still catch 10 of 10 bearing faults and 2 of 2 drive faults with no
+    false alerts. **Failure calls dropped:** 7 of 10 bearing faults got a call (recall 0.70, precision 1.00); the
+    weak faults never raise one. Stress: 3 false alerts (alert precision 0.73) and failure-call recall 0.50.
+  - **The demo now shows a miss:** the drive fault in the demo is weak and the model never alerts on it (3 of 4
+    failures warned, recall 0.75).
+  - **`scripts/robustness.py`** scores the frozen model on 8 deliberately different scenarios
+    (`model/artifacts/robustness_report.md`). Bearing alerts catch every fault even at 0.2 to 0.4 of normal
+    strength, but false alerts explode with noise (3 at x2, 114 at x4, 990 at x8) because the thresholds were tuned
+    at normal noise. The drive model misses faults at low strength and raises 8 false alerts at 0.2 to 0.4.
+  - **Why detection is still so good:** the model's signal is the vibration kurtosis deviation from peer zones,
+    and the simulator's healthy kurtosis noise is tiny (sd 0.12), so even a weak fault stands out. That is a
+    property of the simulator, not evidence the model would work on a real belt.

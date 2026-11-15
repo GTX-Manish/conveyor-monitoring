@@ -5,7 +5,7 @@
   "caught": 12,
   "open_at_failure": 12,
   "false_alerts": 0,
-  "calls": 12,
-  "calls_came_true": 12,
-  "faults_called": 12
+  "calls": 9,
+  "calls_came_true": 9,
+  "faults_called": 9
 }

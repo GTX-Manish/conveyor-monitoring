@@ -14,7 +14,7 @@ REPO = Path(__file__).resolve().parents[1]
 # Live-path and model code. Folders that do not exist yet are skipped.
 PIPELINE_DIRS = ["backend", "replayer", "frontend/src", "common", "model", "vision", "scripts"]
 # The only files outside simulator/ that may read ground truth (BUILD_PLAN.md section 2).
-TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py",
+TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py", "scripts/robustness.py",
                  "replayer/work_orders.py"}   # repair records, released only after each repair (see its docstring)
 OTHER_TRUTH_FILES = ["layout_truth", "faults.parquet", "hard_negatives.parquet", "sensor_faults.parquet",
                      "conditions.parquet"]

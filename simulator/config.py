@@ -153,10 +153,20 @@ class DriveOverheatCfg:
 class FaultsCfg:
     idler_bearing: IdlerBearingCfg = field(default_factory=IdlerBearingCfg)
     drive_overheat: DriveOverheatCfg = field(default_factory=DriveOverheatCfg)
-    progression_exponent: float = 2.5
+    # Every fault draws its own strength, growth shape and signal mix from these ranges (uniform), so no two faults
+    # look the same. A range of (1, 1) with exponent (2.5, 2.5) gives the old fixed fault.
+    strength: tuple = (0.3, 1.5)         # multiplies every effect of the fault
+    signal_mix: tuple = (0.5, 1.5)       # drawn separately per signal: one fault shows more in heat, another in noise
+    exponent: tuple = (1.5, 3.5)         # severity grows as (progress) ** exponent: 1 is linear, 3.5 is late and sharp
     min_start_hours: float = 24.0
     min_end_margin_hours: float = 12.0
     same_asset_gap_hours: float = 24.0  # (assumption) minimum gap between two events on the drive
+
+    def __post_init__(self):
+        for name in ("strength", "signal_mix", "exponent"):
+            lo, hi = getattr(self, name)
+            if not 0 < lo <= hi:
+                raise ValueError(f"faults.{name} must be a range (low, high) with 0 < low <= high, got {(lo, hi)}")
 
 
 @dataclass
