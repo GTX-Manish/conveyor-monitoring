@@ -42,6 +42,9 @@ def main(argv=None):
               f"{server['scenario']}", file=sys.stderr)
         return 1
     url = f"http://{server['host']}:{server['port']}"
+    def interrupt(*_):          # a plain `kill` stops the children too, like Ctrl-C
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGTERM, interrupt)
     procs = [subprocess.Popen([sys.executable, "-m", "backend.app"], cwd=REPO)]
     try:
         health = wait_for_health(url)
