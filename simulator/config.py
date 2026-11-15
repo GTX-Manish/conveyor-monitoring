@@ -72,6 +72,14 @@ class ConditionsCfg:
 @dataclass
 class SignalsCfg:
     noise_scale: float = 1.0  # multiplies every noise sd below (stress scenario uses 2.0)
+    # Each scenario also draws its own noise multiplier from this range (log-uniform) and applies it on top of
+    # noise_scale, so some scenarios are quiet and some are very noisy. (1, 1) switches it off.
+    noise_random: tuple = (1.0, 5.0)
+
+    def __post_init__(self):
+        lo, hi = self.noise_random
+        if not 0 < lo <= hi:
+            raise ValueError(f"signals.noise_random must be a range (low, high) with 0 < low <= high, got {(lo, hi)}")
     return_load_factor: float = 0.15
     # bearing temperature
     temp_speed_c: float = 5.0

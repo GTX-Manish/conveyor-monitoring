@@ -10,25 +10,29 @@ The saved model, with its thresholds frozen, scored on fresh 30-day scenarios th
 
 | Case | Faults | Caught | Alert still open at failure | False alerts | Alert precision | Calls | Came true within 72 h | Early | False calls |
 |---|---|---|---|---|---|---|---|---|---|
-| like training (new seed) | 8 | 8 | 8 | 0 | 1.00 | 7 | 7 | 0 | 0 |
-| faults 0.5 to 0.75 of normal strength | 8 | 8 | 8 | 0 | 1.00 | 7 | 7 | 0 | 0 |
-| faults 0.2 to 0.4 of normal strength | 8 | 8 | 8 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| slow, nearly linear growth | 8 | 8 | 8 | 0 | 1.00 | 7 | 6 | 1 | 0 |
-| very late, sharp growth | 8 | 8 | 8 | 0 | 1.00 | 6 | 6 | 0 | 0 |
-| noise x2 | 8 | 8 | 8 | 3 | 0.73 | 7 | 6 | 1 | 0 |
-| noise x4 | 8 | 8 | 8 | 114 | 0.07 | 8 | 7 | 1 | 0 |
-| noise x8 | 8 | 8 | 8 | 990 | 0.01 | 7 | 6 | 1 | 0 |
+| like training (new seed, random noise 1 to 5x) | 8 | 8 | 8 | 0 | 1.00 | 8 | 6 | 2 | 0 |
+| faults 0.5 to 0.75 of normal strength | 8 | 8 | 8 | 0 | 1.00 | 8 | 8 | 0 | 0 |
+| faults 0.2 to 0.4 of normal strength | 8 | 8 | 8 | 0 | 1.00 | 6 | 6 | 0 | 0 |
+| slow, nearly linear growth | 8 | 8 | 8 | 0 | 1.00 | 7 | 4 | 3 | 0 |
+| very late, sharp growth | 8 | 8 | 8 | 0 | 1.00 | 8 | 8 | 0 | 0 |
+| noise fixed at 1x (quiet) | 8 | 8 | 8 | 0 | 1.00 | 8 | 7 | 1 | 0 |
+| noise fixed at 3x | 8 | 8 | 8 | 0 | 1.00 | 7 | 6 | 1 | 0 |
+| noise fixed at 5x (top of training range) | 8 | 8 | 8 | 0 | 1.00 | 8 | 6 | 2 | 0 |
+| noise fixed at 8x (beyond training range) | 8 | 8 | 8 | 23 | 0.26 | 8 | 7 | 1 | 0 |
+| noise fixed at 12x (far beyond) | 8 | 8 | 8 | 150 | 0.05 | 8 | 7 | 1 | 0 |
 
 ## Drive
 
 | Case | Faults | Caught | Alert still open at failure | False alerts | Alert precision | Calls | Came true within 72 h | Early | False calls |
 |---|---|---|---|---|---|---|---|---|---|
-| like training (new seed) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
+| like training (new seed, random noise 1 to 5x) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | faults 0.5 to 0.75 of normal strength | 2 | 2 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| faults 0.2 to 0.4 of normal strength | 2 | 1 | 0 | 8 | 0.11 | 9 | 1 | 0 | 8 |
+| faults 0.2 to 0.4 of normal strength | 2 | 1 | 0 | 6 | 0.14 | 7 | 1 | 0 | 6 |
 | slow, nearly linear growth | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| very late, sharp growth | 2 | 1 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| noise x2 | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| noise x4 | 2 | 2 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| noise x8 | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| very late, sharp growth | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
+| noise fixed at 1x (quiet) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
+| noise fixed at 3x | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| noise fixed at 5x (top of training range) | 2 | 2 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| noise fixed at 8x (beyond training range) | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| noise fixed at 12x (far beyond) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 

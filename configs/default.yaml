@@ -49,6 +49,9 @@ conditions:
   dust_ar_sd: 0.03
 signals:
   noise_scale: 1.0
+  noise_random:
+  - 1.0
+  - 5.0
   return_load_factor: 0.15
   temp_speed_c: 5.0
   temp_load_c: 7.0

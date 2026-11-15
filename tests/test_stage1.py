@@ -125,3 +125,26 @@ def test_yaml_roundtrip(tmp_path):
     cfg = config_from_dict({"seed": 5, "signals": {"noise_scale": 2.0}})
     dump_config(cfg, tmp_path / "c.yaml")
     assert load_config(tmp_path / "c.yaml") == cfg
+
+
+def test_noise_level_is_random_per_scenario_and_changes_nothing_else():
+    quiet = {"noise_random": [1, 1]}
+    runs = {seed: generate(config_from_dict({"seed": seed, "days": 1})) for seed in (1, 2, 3, 4, 5, 6)}
+    factors = [r.meta["noise_factor"] for r in runs.values()]
+    assert all(1.0 <= f <= 5.0 for f in factors) and len({round(f, 4) for f in factors}) == len(factors)
+    assert max(factors) / min(factors) > 1.5                                   # genuinely different noise levels
+    again = generate(config_from_dict({"seed": 3, "days": 1}))
+    assert again.meta["noise_factor"] == runs[3].meta["noise_factor"] and again.zones.equals(runs[3].zones)
+    base = generate(config_from_dict({"seed": 3, "days": 1, "signals": quiet}))
+    assert base.meta["noise_factor"] == 1.0 and base.meta["noise_scale_effective"] == 1.0
+    # the noise draw has its own stream: layout, faults and conditions are untouched by it
+    assert base.layout.equals(runs[3].layout) and base.layout_truth.equals(runs[3].layout_truth)
+    drop = ["belt_distance_m"]     # belt travel integrates the belt speed, which carries slip noise
+    assert base.conditions.drop(columns=drop).equals(runs[3].conditions.drop(columns=drop))
+    assert base.faults.equals(runs[3].faults)
+    assert not base.zones["acoustic_db"].equals(runs[3].zones["acoustic_db"])    # but the sensor noise differs
+    # an explicit noise_scale multiplies the random factor
+    scaled = generate(config_from_dict({"seed": 3, "days": 1, "signals": {"noise_scale": 2.0}}))
+    assert scaled.meta["noise_scale_effective"] == pytest.approx(2.0 * runs[3].meta["noise_factor"])
+    with pytest.raises(ValueError):
+        config_from_dict({"signals": {"noise_random": [0, 2]}})

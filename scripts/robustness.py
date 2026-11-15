@@ -36,20 +36,23 @@ def _faults(strength=(0.3, 1.5), exponent=(1.5, 3.5), mix=(0.5, 1.5), idler=8.0,
 
 # name -> (seed, faults, noise scale). Seeds are far from the 101 to 401 used by the scenario set.
 CASES = {
-    "like training (new seed)": (701, _faults(), 1.0),
+    "like training (new seed, random noise 1 to 5x)": (701, _faults(), None),
     "faults 0.5 to 0.75 of normal strength": (702, _faults(strength=(0.5, 0.75)), 1.0),
     "faults 0.2 to 0.4 of normal strength": (703, _faults(strength=(0.2, 0.4)), 1.0),
     "slow, nearly linear growth": (704, _faults(exponent=(1.0, 1.4)), 1.0),
     "very late, sharp growth": (705, _faults(exponent=(3.5, 4.5)), 1.0),
-    "noise x2": (706, _faults(), 2.0),
-    "noise x4": (707, _faults(), 4.0),
-    "noise x8": (708, _faults(), 8.0),
+    "noise fixed at 1x (quiet)": (709, _faults(), 1.0),
+    "noise fixed at 3x": (706, _faults(), 3.0),
+    "noise fixed at 5x (top of training range)": (707, _faults(), 5.0),
+    "noise fixed at 8x (beyond training range)": (708, _faults(), 8.0),
+    "noise fixed at 12x (far beyond)": (710, _faults(), 12.0),
 }
 
 
 def run_case(name, seed, faults, noise, boosters, meta, out_dir: Path) -> dict:
-    cfg = config_from_dict({"scenario": f"robust_{seed}", "seed": seed, "days": 30, "faults": faults,
-                            "signals": {"noise_scale": noise}})
+    # noise None: the simulator's own random noise level; a number: that exact level, nothing random
+    signals = {} if noise is None else {"noise_scale": noise, "noise_random": [1.0, 1.0]}
+    cfg = config_from_dict({"scenario": f"robust_{seed}", "seed": seed, "days": 30, "faults": faults, "signals": signals})
     root = write_scenario(generate(cfg), cfg, out_dir)
     build(root, out_dir / "model", cfg.scenario)
     out = {}

@@ -177,3 +177,21 @@
   - **Why detection is still so good:** the model's signal is the vibration kurtosis deviation from peer zones,
     and the simulator's healthy kurtosis noise is tiny (sd 0.12), so even a weak fault stands out. That is a
     property of the simulator, not evidence the model would work on a real belt.
+- **Random sensor noise per scenario** (user decision). Each scenario draws a noise multiplier log-uniformly from
+  `signals.noise_random` (1 to 5), applied on top of `signals.noise_scale`; (1, 1) switches it off. It uses its own
+  random stream (`noise`, appended to `STREAMS`), so layout, conditions and fault schedules are unchanged (tested).
+  The effective level is in each scenario's `run_meta.json` and in `docs/scenario_set_report.md` (1.2x to 4.7x across
+  the set; test_01 1.9x, test_02 2.5x, demo 4.7x, stress 3.5x). The stage 1 sanity targets keep the base noise
+  through the test fixture. Regenerated, retrained and re-evaluated.
+  - **Result, held-out test, seed 1:** bearing alerts 10 of 10 with 0 false alerts; failure calls 9 of 10 true
+    (precision 0.90, recall 0.90); drive alerts 2 of 2, calls 2 of 2. Stress: alerts 8 of 8 with 0 false alerts,
+    failure calls 5 of 7 true, recall 0.62.
+  - **Robustness (`scripts/robustness.py`):** with noise fixed at 1x, 3x and 5x (the training range) bearing alerts
+    catch 8 of 8 with 0 false alerts. **Outside the range it breaks:** 23 false alerts at 8x and 150 at 12x. The
+    drive model still misses faults at 0.2 to 0.4 of normal strength and raises 6 false alerts there.
+  - **Why noise matters so little inside the range:** the model works from 6 h and 24 h averages of the deviation
+    from peer zones, which average independent noise away (sd falls by about 1/sqrt(1440)). The simulator's noise
+    is independent between readings and zones. Real sensors drift, share noise and lose calibration, which
+    averaging does not remove, so this result does not carry over to a real belt.
+  - The demo scenario came out at 4.7x noise and its outcomes are unchanged (3 of 4 failures warned, the weak drive
+    fault missed); verified that the demo data, model and database are all the new ones.
