@@ -133,7 +133,34 @@ export interface Outcomes {
              precision: number | null; recall: number | null };
 }
 
-/** Held-out test figures from the offline evaluation (scripts/score.py). */
+/** The fresh test: scenarios never used for training, tuning or diagnosis, scored once (fresh_test_summary.json). */
+export interface FreshAsset {
+  faults: number; alerts_caught: number; false_alerts: number; alert_precision: number; alert_recall: number;
+  calls: number; calls_true: number; call_precision: number; call_recall: number; faults_called: number;
+  median_hours_call_to_failure: number;
+}
+export interface FreshTest {
+  split: string; scenarios: { name: string; seed: number }[]; drive_rate_per_30d: number; call_horizon_hours: number;
+  assets: { bearings: FreshAsset; drive: FreshAsset };
+}
+
+/** One sentence for the Overview, built only from the fresh-test file's numbers. */
+export function freshTestSentence(f: FreshTest): string {
+  const b = f.assets.bearings, d = f.assets.drive;
+  const faults = b.faults + d.faults, wrong = b.false_alerts + d.false_alerts;
+  const calls = b.calls + d.calls, right = b.calls_true + d.calls_true, called = b.faults_called + d.faults_called;
+  const pctOf = (n: number, of: number) => `${Math.round((100 * n) / Math.max(of, 1))}%`;
+  return `Fresh test, ${faults} simulated faults in scenarios never used for training, tuning or diagnosis: `
+    + `bearings ${b.alerts_caught} of ${b.faults} caught (${pctOf(b.alerts_caught, b.faults)}), `
+    + `drive ${d.alerts_caught} of ${d.faults} caught (${pctOf(d.alerts_caught, d.faults)}), `
+    + `${wrong} false alert${wrong === 1 ? "" : "s"}. `
+    + `${calls} failure predictions were made and ${right === calls ? "all came true" : `${right} came true`} `
+    + `within ${f.call_horizon_hours} h; ${2 * called === faults ? "half the faults got one" : `${called} of ${faults} faults got one`}. `
+    + "Simulated data only.";
+}
+
+/** Held-out test figures from the offline evaluation (scripts/score.py). Not shown in the dashboard: the old test
+ *  scenarios were used for diagnosis, so the fresh test is what the Overview quotes. */
 export interface OfflineEvaluation {
   split: string; call_horizon_hours: number; faults: number; caught: number; open_at_failure: number; false_alerts: number;
   calls: number; calls_came_true: number; faults_called: number;

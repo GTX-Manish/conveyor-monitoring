@@ -300,3 +300,8 @@
   `loop_map_alerts.png`, `alerts.png`, `predictions.png`, `data_health.png`, `track_record.png` (each under 80 KB).
   Still to do when the remote and the README exist: CI on the pushed commit, the README's commands run literally in a
   fresh clone of the GitHub remote, and `make test` and `ruff` in that clone.
+- **Fix 1: the Overview quotes the fresh test.** `model/artifacts/fresh_test_summary.json` is exported with the frozen
+  models by `score.py --frozen --fresh --export-summary`, which checks every figure against the committed
+  `fresh_test_report.md` and writes nothing if one differs (they matched: bearings 16 of 20, drive 6 of 12, 0 false
+  alerts, calls 10 of 10 and 6 of 6). New `GET /api/model/fresh-test`; the strip sentence is built only from that file,
+  and the tour step now names the fresh test. The old test_01/02 figures are no longer shown anywhere in the dashboard.

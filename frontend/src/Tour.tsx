@@ -17,7 +17,7 @@ export const STEPS: Step[] = [
   { tab: "Overview", target: "legend", title: "Four statuses",
     text: "Green is normal. Amber with a dot means the model sees unusual behaviour. Red with ! means a failure is predicted within 72 hours. Grey stripes with ? mean the sensors are silent or stuck, so the status is unknown, not normal." },
   { tab: "Overview", target: "accuracy", title: "Is the model any good?",
-    text: "The model's record in this run so far: of the parts that failed, how many it had warned about (recall), and of its alerts, how many were real (precision). It fills in as failures happen and are repaired. The line below it gives the figures from the offline test." },
+    text: "The model's record in this run so far: of the parts that failed, how many it had warned about (recall), and of its alerts, how many were real (precision). It fills in as failures happen and are repaired. The line below it gives the result of a fresh test, on scenarios never used for training, tuning or diagnosis." },
   { tab: "Overview", target: "attention", title: "What needs attention",
     text: "The few things worth looking at right now, most serious first. Click one to open its zone. When this list is empty, the belt is healthy." },
   { tab: "Alerts", target: "panel", title: "Alerts",

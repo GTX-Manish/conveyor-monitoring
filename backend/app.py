@@ -25,6 +25,7 @@ from .engine import Engine, connect
 REPO = Path(__file__).resolve().parents[1]
 FRONTEND = REPO / "frontend" / "dist"
 MODEL_SUMMARY = REPO / "model" / "artifacts" / "summary.json"
+FRESH_SUMMARY = REPO / "model" / "artifacts" / "fresh_test_summary.json"
 MAX_POINTS = 500
 log = logging.getLogger("backend")
 
@@ -249,6 +250,15 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         path = Path(MODEL_SUMMARY)
         if not path.exists():
             raise HTTPException(404, "no evaluation summary; run: python -m scripts.score")
+        return json.loads(path.read_text())
+
+    @app.get("/api/model/fresh-test")
+    def model_fresh_test():
+        """The fresh test: scenarios never used for training, tuning or diagnosis, scored once with the frozen models.
+        This is the headline accuracy the dashboard quotes."""
+        path = Path(FRESH_SUMMARY)
+        if not path.exists():
+            raise HTTPException(404, "no fresh-test summary; run: python -m scripts.score --frozen --fresh --export-summary")
         return json.loads(path.read_text())
 
     @app.get("/api/ingest/stats")

@@ -1,0 +1,54 @@
+{
+  "split": "test_fresh",
+  "scenarios": [
+    {
+      "name": "test_03",
+      "seed": 501
+    },
+    {
+      "name": "test_04",
+      "seed": 502
+    },
+    {
+      "name": "test_05",
+      "seed": 503
+    },
+    {
+      "name": "test_06",
+      "seed": 504
+    }
+  ],
+  "drive_rate_per_30d": 3.0,
+  "default_drive_rate_per_30d": 1.0,
+  "call_horizon_hours": 72.0,
+  "models_tag": "frozen-before-fresh-test",
+  "source": "model/artifacts/fresh_test_report.md",
+  "assets": {
+    "bearings": {
+      "faults": 20,
+      "alerts_caught": 16,
+      "false_alerts": 0,
+      "alert_precision": 1.0,
+      "alert_recall": 0.8,
+      "calls": 10,
+      "calls_true": 10,
+      "call_precision": 1.0,
+      "call_recall": 0.5,
+      "faults_called": 10,
+      "median_hours_call_to_failure": 14.21666669845581
+    },
+    "drive": {
+      "faults": 12,
+      "alerts_caught": 6,
+      "false_alerts": 0,
+      "alert_precision": 1.0,
+      "alert_recall": 0.5,
+      "calls": 6,
+      "calls_true": 6,
+      "call_precision": 1.0,
+      "call_recall": 0.5,
+      "faults_called": 6,
+      "median_hours_call_to_failure": 5.625
+    }
+  }
+}

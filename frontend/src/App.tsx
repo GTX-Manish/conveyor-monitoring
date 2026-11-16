@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import {
-  Alert, IngestStats, Layout, OfflineEvaluation, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, assetName, get, hours, post,
+  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, assetName, freshTestSentence, get, hours, post,
   simTime,
 } from "./api";
 import { Detail } from "./Detail";
@@ -191,8 +191,8 @@ const share = (n: number, of: number) => (of > 0 ? `${Math.round((100 * n) / of)
 /** The model's record in this run, set against what really happened, plus the offline test figures. */
 function Accuracy({ onOpen }: { onOpen: () => void }) {
   const live = useQuery({ queryKey: ["outcomes"], queryFn: () => get<Outcomes>("/api/outcomes"), refetchInterval: 4000 });
-  const offline = useQuery({
-    queryKey: ["evaluation"], queryFn: () => get<OfflineEvaluation>("/api/model/evaluation"), refetchInterval: false, retry: false, staleTime: Infinity,
+  const fresh = useQuery({
+    queryKey: ["fresh-test"], queryFn: () => get<FreshTest>("/api/model/fresh-test"), refetchInterval: false, retry: false, staleTime: Infinity,
   });
   const s = live.data?.summary;
   const real = s ? s.warned + s.early_warnings : 0;
@@ -205,7 +205,7 @@ function Accuracy({ onOpen }: { onOpen: () => void }) {
     [`Failure predictions that came true`, share(s.failure_calls_came_true, s.failure_calls),
       s.failure_calls ? `${s.failure_calls_came_true} of ${s.failure_calls} failed within ${s.call_horizon_hours} h` : "no prediction has been settled yet"],
   ] : [];
-  const o = offline.data;
+  const f = fresh.data;
   return (
     <section data-tour="accuracy" className="rounded-lg border border-line p-4">
       <div className="mb-2 flex items-baseline justify-between">
@@ -223,7 +223,7 @@ function Accuracy({ onOpen }: { onOpen: () => void }) {
       </dl>
       <p className="mt-2 text-xs text-ink3">
         Checked against repair records, which arrive after each repair. {s && s.failures > 0 ? `This rests on ${s.failures} failure${s.failures === 1 ? "" : "s"} in one demo scenario. ` : ""}
-        {o && `Offline, on ${o.faults} faults the model never saw: ${o.caught} caught (${share(o.caught, o.faults)}), ${o.false_alerts} false alert${o.false_alerts === 1 ? "" : "s"}, ${o.calls_came_true} of ${o.calls} failure predictions within ${o.call_horizon_hours} h.`}
+        {f && freshTestSentence(f)}
       </p>
     </section>
   );

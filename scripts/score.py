@@ -296,6 +296,57 @@ def summary(run: dict) -> dict:
 FRESH = "test_fresh"
 FRESH_REPORT = ARTIFACTS / "fresh_test_report.md"
 RESULTS_MARK = "## Results (scored once)"
+FRESH_SUMMARY = ARTIFACTS / "fresh_test_summary.json"
+ASSET_NAMES = (("zone", "Bearings"), ("drive", "Drive"))
+
+
+def fresh_numbers(data: Path, result: dict, out: dict) -> dict:
+    """The fresh-test figures as data, taken from the same evaluation output the report's tables are written from."""
+    names = result["splits"][FRESH]
+    assets = {}
+    for group, name in ASSET_NAMES:
+        a = out[group]["methods"]["LightGBM `abnormal` model"][FRESH]
+        c = out[group]["failure_calls"][FRESH]
+        assets[name.lower()] = {
+            "faults": a["events"], "alerts_caught": a["detected"], "false_alerts": a["false_alerts"],
+            "alert_precision": a["precision"], "alert_recall": a["detection_rate"],
+            "calls": c["calls"], "calls_true": c["came_true"], "call_precision": c["precision"],
+            "call_recall": c["recall"], "faults_called": c["events_called_in_time"],
+            "median_hours_call_to_failure": c["median_hours_call_to_failure"]}
+    seeds = [json.loads((data / n / "truth" / "run_meta.json").read_text())["seed"] for n in names]
+    return {"split": FRESH, "scenarios": [{"name": n, "seed": sd} for n, sd in zip(names, seeds)],
+            "drive_rate_per_30d": 3.0, "default_drive_rate_per_30d": 1.0, "call_horizon_hours": CALL_HORIZON_HOURS,
+            "models_tag": "frozen-before-fresh-test", "source": "model/artifacts/fresh_test_report.md",
+            "assets": assets}
+
+
+def committed_report_numbers(path: Path = FRESH_REPORT) -> dict:
+    """The figures as printed in the committed fresh-test report (its glance table and median hours)."""
+    text = path.read_text().split(RESULTS_MARK, 1)[1]       # the results only, not the criteria table above them
+    found = {}
+    for _, name in ASSET_NAMES:
+        row = next(line for line in text.splitlines() if line.startswith(f"| {name} | "))
+        cells = [c.strip() for c in row.strip("|").split("|")]
+        median = next(line for line in text.splitlines() if line.startswith(f"- {name}: median "))
+        found[name.lower()] = {"faults": int(cells[1]), "alerts_caught": int(cells[2]), "false_alerts": int(cells[3]),
+                               "calls": int(cells[6]), "calls_true": int(cells[7]),
+                               "median_hours_call_to_failure": float(median.split("median ")[1].split(" h")[0])}
+    return found
+
+
+def export_fresh_summary(numbers: dict, path: Path = FRESH_SUMMARY, report_path: Path = FRESH_REPORT) -> None:
+    """Write the machine-readable copy only if it agrees with the committed report, figure for figure."""
+    printed = committed_report_numbers(report_path)
+    problems = []
+    for asset, want in printed.items():
+        got = numbers["assets"][asset]
+        for key, value in want.items():
+            mine = round(got[key], 1) if key.startswith("median") else got[key]
+            if mine != value:
+                problems.append(f"{asset} {key}: report {value}, export {mine}")
+    if problems:
+        raise RuntimeError("the export does not match the committed report; nothing written: " + "; ".join(problems))
+    path.write_text(json.dumps(numbers, indent=2) + "\n")
 
 
 def write_fresh_report(data: Path, result: dict, out: dict, grids_by_group: dict, path: Path = FRESH_REPORT) -> None:
@@ -371,15 +422,24 @@ def main(argv=None):
     ap.add_argument("--frozen", action="store_true",
                     help="score the saved models and thresholds: nothing is trained, nothing in model/artifacts is "
                          "overwritten except the standard report files")
+    ap.add_argument("--export-summary", action="store_true",
+                    help="with --frozen --fresh: write only fresh_test_summary.json, after checking it against the "
+                         "committed fresh_test_report.md; the report itself is not rewritten")
     ap.add_argument("--fresh", action="store_true",
                     help="with --frozen: score only the test_fresh split into fresh_test_report.md and write nothing else")
     args = ap.parse_args(argv)
     if args.fresh and not args.frozen:
         ap.error("--fresh needs --frozen")
+    if args.export_summary and not args.fresh:
+        ap.error("--export-summary needs --frozen --fresh")
     if args.frozen:
         result = load_frozen(Path(args.data))
         if args.fresh:
             out, grids_by_group = evaluate_result(Path(args.data), result, scored=("test", FRESH))
+            if args.export_summary:
+                export_fresh_summary(fresh_numbers(Path(args.data), result, out))
+                print(f"wrote {FRESH_SUMMARY} (matches the committed report)")
+                return 0
             write_fresh_report(Path(args.data), result, out, grids_by_group)
             print(f"wrote {FRESH_REPORT}")
             return 0

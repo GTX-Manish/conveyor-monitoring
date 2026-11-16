@@ -515,6 +515,10 @@ def test_api_and_replayer_end_to_end(scenario, tmp_path):
         assert client.get("/api/model/evaluation").status_code == 404
         (tmp_path / "summary.json").write_text('{"faults": 12, "caught": 12}')
         assert client.get("/api/model/evaluation").json() == {"faults": 12, "caught": 12}
+        app_module.FRESH_SUMMARY = tmp_path / "fresh.json"
+        assert client.get("/api/model/fresh-test").status_code == 404
+        (tmp_path / "fresh.json").write_text('{"split": "test_fresh", "assets": {"bearings": {"faults": 20}}}')
+        assert client.get("/api/model/fresh-test").json()["assets"]["bearings"]["faults"] == 20
         for path in ("status", "detections", "defects"):   # vision placeholders: present, empty, saying so
             assert client.get(f"/api/vision/{path}").json() == {
                 "enabled": False, "reason": "The camera pipeline is not part of this run.", "items": []}
@@ -580,3 +584,29 @@ def test_fresh_test_scenarios_are_in_no_training_or_tuning_path():
         assert not {"test", "test_fresh", "stress", "validation"} & set(training_splits(group, ("train_drive",)))
     source = (REPO / "model" / "train.py").read_text()
     assert "test_fresh" not in source and "test_0" not in source
+
+
+# ---- handover fixes: the Overview quotes the fresh test, read from its file ---------------------------------------
+
+def test_fresh_test_summary_matches_the_committed_report():
+    """The machine-readable copy is an export of the scored result, not a second scoring run: figure for figure equal."""
+    from scripts.score import FRESH_SUMMARY, committed_report_numbers
+    summary = json.loads(FRESH_SUMMARY.read_text())
+    for asset, printed in committed_report_numbers().items():
+        got = summary["assets"][asset]
+        for key, value in printed.items():
+            assert (round(got[key], 1) if key.startswith("median") else got[key]) == value, (asset, key)
+    assert summary["split"] == "test_fresh" and [s["seed"] for s in summary["scenarios"]] == [501, 502, 503, 504]
+    assert summary["drive_rate_per_30d"] == 3.0 and summary["call_horizon_hours"] == 72.0
+
+
+def test_the_overview_quotes_the_fresh_test_not_the_old_one():
+    app_tsx = (REPO / "frontend" / "src" / "App.tsx").read_text()
+    api_ts = (REPO / "frontend" / "src" / "api.ts").read_text()
+    assert "/api/model/fresh-test" in app_tsx and "/api/model/evaluation" not in app_tsx
+    assert "freshTestSentence(f)" in app_tsx
+    for old in ("never saw", "Offline, on"):                  # the old headline wording is gone
+        assert old not in app_tsx and old not in api_ts
+    sentence = api_ts.split("export function freshTestSentence", 1)[1].split("\n}\n", 1)[0]
+    for number in ("12", "83", "16 of 20", "6 of 12", "32"):    # every figure comes from the file, none typed in
+        assert number not in sentence, number
