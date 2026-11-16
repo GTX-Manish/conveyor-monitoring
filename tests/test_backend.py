@@ -610,3 +610,33 @@ def test_the_overview_quotes_the_fresh_test_not_the_old_one():
     sentence = api_ts.split("export function freshTestSentence", 1)[1].split("\n}\n", 1)[0]
     for number in ("12", "83", "16 of 20", "6 of 12", "32"):    # every figure comes from the file, none typed in
         assert number not in sentence, number
+
+
+# ---- handover fixes: Critical only with an active failure call ------------------------------------------------
+
+def test_alert_label_is_capped_at_high_without_a_failure_call():
+    from model.alerting import alert_label
+    assert alert_label(0.87, failure_called=False) == "high"
+    assert alert_label(0.87, failure_called=True) == "critical"
+    assert alert_label(0.6, failure_called=False) == "high" and alert_label(0.3, failure_called=True) == "medium"
+    assert alert_label(0.1, failure_called=False) == "low"
+
+
+def test_no_critical_alert_on_an_asset_without_a_failure_call(tmp_path):
+    e, models = scoring_engine(tmp_path)          # stub thresholds: abnormal 0.5, failure call 0.8
+    try:
+        t = run_windows(e, 0, HISTORY_WINDOWS)
+        models.p_abnormal[[10, 20]] = 0.9
+        models.p_fail[10] = 0.78                  # risk in the critical band, but below the call threshold
+        models.p_fail[20] = 0.95                  # a failure call
+        t = run_windows(e, t, 2, z31={"acoustic_db": 50.0})
+        t = run_windows(e, t, 2, z31={"acoustic_db": 50.0})
+        alerts = {(a["type"], a["asset"]): a for a in rows(e, "SELECT * FROM alerts")}
+        z11, z21 = alerts[("bearing_degradation", "Z011")], alerts[("bearing_degradation", "Z021")]
+        assert z11["severity"] >= 0.75 and z11["severity_label"] == "high"
+        assert z21["severity_label"] == "critical"
+        st = {a["asset"]: a["status"] for a in e.status()["assets"]}
+        assert st["Z011"] == "abnormal" and st["Z021"] == "predicted_failure"
+        assert alerts[("sensor_stuck", "Z031")]["severity_label"] == "medium"
+    finally:
+        e.con.close()

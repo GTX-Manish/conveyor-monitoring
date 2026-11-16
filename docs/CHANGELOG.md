@@ -305,3 +305,7 @@
   `fresh_test_report.md` and writes nothing if one differs (they matched: bearings 16 of 20, drive 6 of 12, 0 false
   alerts, calls 10 of 10 and 6 of 6). New `GET /api/model/fresh-test`; the strip sentence is built only from that file,
   and the tour step now names the fresh test. The old test_01/02 figures are no longer shown anywhere in the dashboard.
+- **Fix 2: no "Critical" without a failure call.** `model/alerting.py` `alert_label` caps a model alert's label at `high`
+  unless a failure call is active on that asset (status `predicted_failure`); used in the one place labels are set,
+  `backend/engine.py` `_model_alert`. Numeric severity, thresholds and the status rule are unchanged; data-quality
+  alerts stay `medium`. The Alerts tab says "Critical is shown only when a failure is predicted within 72 h."

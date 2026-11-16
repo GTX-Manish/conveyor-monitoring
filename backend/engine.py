@@ -20,7 +20,14 @@ from pathlib import Path
 import numpy as np
 
 from common.ids import ASSETS, BELT_SIGNALS, DRIVE, N_ZONES, RUN_STATES, RUNNING, ZONE_SIGNALS, zone_asset
-from model.alerting import ACTIVE_RUN_SHARE, CALL_HORIZON_HOURS, HOLD_P_FAIL, Debouncer, severity, severity_label
+from model.alerting import (
+    ACTIVE_RUN_SHARE,
+    CALL_HORIZON_HOURS,
+    HOLD_P_FAIL,
+    Debouncer,
+    alert_label,
+    severity,
+)
 from model.explain import reasons
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
@@ -500,6 +507,7 @@ class Engine:
         p_fail = float(self.p_fail[i])
         eta = float(self.est_hours[i]) if p_fail >= self.thr_fail[i] else None
         sev = severity(p_fail, eta)
+        label = alert_label(sev, failure_called=eta is not None)   # eta exists only while a failure call is active
         if is_zone:
             row = self.layout_rows[i]
             where, pos, zone_id = (f"Zone {i + 1} (S{row['section']}, {row['position_m']:.0f} m, {row['run']} run)",
@@ -522,12 +530,12 @@ class Engine:
                 "INSERT INTO alerts (type, source, asset, zone_id, position_m, severity, severity_label,"
                 " predicted_failure_ts, eta_hours, message, evidence, state, created_ts, updated_ts)"
                 " VALUES (?,?,?,?,?,?,?,?,?,?,?,'open',?,?)",
-                (kind, "model", asset, zone_id, pos, sev, severity_label(sev), fail_ts, eta, message, evidence, ts, ts))
+                (kind, "model", asset, zone_id, pos, sev, label, fail_ts, eta, message, evidence, ts, ts))
         else:
             self.con.execute(
                 "UPDATE alerts SET severity=?, severity_label=?, predicted_failure_ts=?, eta_hours=?, message=?,"
                 " evidence=?, updated_ts=? WHERE type=? AND asset=? AND state='open'",
-                (sev, severity_label(sev), fail_ts, eta, message, evidence, ts, kind, asset))
+                (sev, label, fail_ts, eta, message, evidence, ts, kind, asset))
 
     # ------------------------------------------------------------------ step 5: were the predictions right?
     # Repair records arrive after the fact. They are compared with what the model said earlier; nothing here

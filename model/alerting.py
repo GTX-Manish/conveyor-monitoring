@@ -74,3 +74,11 @@ def severity(p_fail: float, eta_hours=None) -> float:
 
 def severity_label(value: float) -> str:
     return next(name for limit, name in BANDS if value < limit)
+
+
+def alert_label(value: float, failure_called: bool) -> str:
+    """The label shown on a model alert. `critical` only while a failure call is active on the asset (its status is
+    `predicted_failure`); otherwise capped at `high`, so the alert never says Critical while the map says Abnormal.
+    The numeric severity is unchanged."""
+    label = severity_label(value)
+    return "high" if label == "critical" and not failure_called else label

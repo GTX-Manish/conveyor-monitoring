@@ -37,7 +37,7 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-xs text-ink2">
-        <span>Most serious first. Click a card to open its zone.</span>
+        <span>Most serious first. Click a card to open its zone. Critical is shown only when a failure is predicted within 72 h.</span>
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />Also show past alerts</label>
       </div>
       {shown.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No {showClosed ? "" : "open "}alerts. The belt looks healthy.</p>}
