@@ -136,13 +136,32 @@ def _neighbour_mean(x):
 
 
 # ---------------------------------------------------------------- stage 2
+# Signals that all move together when a bearing fails: heat, noise, impact spikes and vibration. A drifting sensor
+# moves one signal on its own, so agreement across these is evidence of a real fault, not drift.
+AGREE_SIGNALS = ["bearing_temp_c", "acoustic_db", "vibration_kurtosis", "vibration_rms_mm_s"]
+AGREE_Z = 3.0
+AGREE_NAMES = ["agree6h", "agree24h", "min_z6h", "min_z24h", "mean_z24h"]
+
+
+def spread_z(x, floor: float = 1e-4):
+    """Each zone's value in units of the spread of ALL zones in the same window (robust: median and MAD).
+
+    Drift, noise and shared disturbances make every zone's deviation larger; dividing by the other zones' spread
+    removes that scenario-wide level, so a deviation counts for what it is against what is normal right now.
+    """
+    med = nan_median(x)
+    mad = 1.4826 * nan_median(np.abs(x - med[:, None]))
+    return (x - med[:, None]) / np.maximum(mad, floor)[:, None]
+
+
 def zone_feature_names() -> list:
     names = []
     for sig in ZONE_SIGNALS:
         names += [f"{sig}__{k}" for k in ("dev10", "dev1h", "dev6h", "dev24h", "rise1h", "rise6h", "nb6h",
-                                          "peak1h", "spread1h")]
-    return names + ["missing_share", "missing_share_6h", "any_flat", "run_share", "run_share_1h", "run_share_24h",
-                    "is_carry", "is_loading", "is_unloading", "throughput", "belt_speed", "temp_reference"]
+                                          "peak1h", "spread1h", "z6h", "z24h")]
+    return names + AGREE_NAMES + ["missing_share", "missing_share_6h", "any_flat", "run_share", "run_share_1h",
+                                  "run_share_24h", "is_carry", "is_loading", "is_unloading", "throughput", "belt_speed",
+                                  "temp_reference"]
 
 
 def drive_feature_names() -> list:
@@ -167,12 +186,23 @@ def rolling_features(table: dict, layout: dict) -> dict:
     W, Z = len(run_share), len(is_carry)
     running = run_share >= RUNNING_SHARE
     cols = []
+    key_z6, key_z24 = [], []
 
     for sig in ZONE_SIGNALS:
         dev = table[f"z_{sig}_dev"]                                   # deviation from the zone's peers
         d1, d6, d24 = (roll_mean(dev, k) for k in ROLLS.values())
+        z6, z24 = spread_z(d6), spread_z(d24)                        # the same, in units of the other zones' spread
+        if sig in AGREE_SIGNALS:
+            key_z6.append(z6)
+            key_z24.append(z24)
         cols += [dev, d1, d6, d24, d1 - d24, d6 - d24, d6 - _neighbour_mean(d6),
-                 roll_max(table[f"z_{sig}_peak_dev"], ROLLS["1h"]), roll_mean(table[f"z_{sig}_spread"], ROLLS["1h"])]
+                 roll_max(table[f"z_{sig}_peak_dev"], ROLLS["1h"]), roll_mean(table[f"z_{sig}_spread"], ROLLS["1h"]),
+                 z6, z24]
+    z6s, z24s = np.stack(key_z6), np.stack(key_z24)                  # (signals, W, Z)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        cols += [(z6s > AGREE_Z).sum(axis=0).astype(np.float64), (z24s > AGREE_Z).sum(axis=0).astype(np.float64),
+                 np.nanmin(z6s, axis=0), np.nanmin(z24s, axis=0), np.nanmean(z24s, axis=0)]
 
     n_missing = sum(table[f"z_{s}_nmiss"].astype(np.float64) for s in ZONE_SIGNALS) / (WINDOW_MIN * len(ZONE_SIGNALS))
     any_flat = np.maximum.reduce([table[f"z_{s}_flat"] for s in ZONE_SIGNALS]).astype(np.float64)

@@ -37,10 +37,23 @@ STRESS_OVERRIDES = {
 }
 
 
+def _levels(noise, drift, shared) -> dict:
+    """Exactly these messiness levels, nothing random."""
+    return {"noise_random": [noise, noise], "drift_random": [drift, drift], "shared_random": [shared, shared]}
+
+
+# (noise x, drift x, shared noise x) for each validation scenario: quiet, mixed, noisy, drifting, shared, all high.
+VALIDATION_LEVELS = [(1.0, 0.0, 0.0), (3.0, 1.5, 1.5), (5.0, 0.0, 0.0), (2.0, 3.0, 0.0), (2.0, 0.0, 3.0),
+                     (4.0, 3.0, 3.0)]
+
+
 def default_specs() -> list:
     """name, split, seed, days, overrides. The demo scenario is added by scripts/find_demo_seed.py."""
     specs = [(f"train_{i:02d}", "train", 100 + i, 30, {}) for i in range(1, 9)]
-    specs += [(f"val_{i:02d}", "validation", 200 + i, 30, {}) for i in (1, 2)]
+    # Validation is stratified, not random: the thresholds are tuned here, so it must cover the whole range of
+    # sensor messiness the other splits draw from (noise 1 to 5x, drift 0 to 3x, shared noise 0 to 3x).
+    specs += [(f"val_{i:02d}", "validation", 200 + i, 30, {"signals": _levels(*levels)})
+              for i, levels in enumerate(VALIDATION_LEVELS, start=1)]
     specs += [(f"test_{i:02d}", "test", 300 + i, 30, {}) for i in (1, 2)]
     specs += [("stress_01", "stress", 401, 30, STRESS_OVERRIDES)]
     return [dict(name=n, split=s, seed=seed, days=d, overrides=o) for n, s, seed, d, o in specs]

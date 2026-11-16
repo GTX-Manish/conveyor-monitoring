@@ -2,10 +2,10 @@
   "split": "test",
   "call_horizon_hours": 72.0,
   "faults": 12,
-  "caught": 10,
-  "open_at_failure": 10,
-  "false_alerts": 13,
-  "calls": 8,
-  "calls_came_true": 8,
-  "faults_called": 8
+  "caught": 9,
+  "open_at_failure": 9,
+  "false_alerts": 0,
+  "calls": 7,
+  "calls_came_true": 7,
+  "faults_called": 7
 }

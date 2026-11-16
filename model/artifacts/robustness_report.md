@@ -10,38 +10,38 @@ The saved model, with its thresholds frozen, scored on fresh 30-day scenarios th
 
 | Case | Faults | Caught | Alert still open at failure | False alerts | Alert precision | Calls | Came true within 72 h | Early | False calls |
 |---|---|---|---|---|---|---|---|---|---|
-| like training (everything random) | 8 | 7 | 7 | 0 | 1.00 | 6 | 6 | 0 | 0 |
+| like training (everything random) | 8 | 6 | 6 | 0 | 1.00 | 6 | 6 | 0 | 0 |
 | faults 0.5 to 0.75 of normal strength | 8 | 7 | 7 | 0 | 1.00 | 3 | 3 | 0 | 0 |
-| faults 0.2 to 0.4 of normal strength | 8 | 2 | 2 | 5 | 0.29 | 0 | 0 | 0 | 0 |
-| slow, nearly linear growth | 8 | 8 | 7 | 6 | 0.57 | 7 | 5 | 2 | 0 |
-| very late, sharp growth | 8 | 6 | 6 | 0 | 1.00 | 5 | 5 | 0 | 0 |
-| clean: no noise change, no drift, no shared noise | 8 | 8 | 8 | 0 | 1.00 | 5 | 4 | 1 | 0 |
-| noise fixed at 5x (top of training range) | 8 | 8 | 8 | 0 | 1.00 | 7 | 7 | 0 | 0 |
-| noise fixed at 8x (beyond training range) | 8 | 8 | 8 | 0 | 1.00 | 7 | 7 | 0 | 0 |
-| noise fixed at 12x (far beyond) | 8 | 8 | 7 | 1 | 0.89 | 4 | 4 | 0 | 0 |
-| drift fixed at 3x (top of training range) | 8 | 4 | 4 | 9 | 0.31 | 2 | 2 | 0 | 0 |
-| drift fixed at 6x (beyond training range) | 8 | 4 | 3 | 98 | 0.04 | 13 | 2 | 1 | 10 |
-| drift fixed at 10x (far beyond) | 8 | 4 | 3 | 250 | 0.02 | 51 | 5 | 1 | 45 |
-| shared noise fixed at 3x (top of training range) | 8 | 6 | 6 | 0 | 1.00 | 1 | 1 | 0 | 0 |
-| shared noise fixed at 6x (beyond training range) | 8 | 8 | 8 | 2 | 0.80 | 8 | 8 | 0 | 0 |
-| all three at the top of the training range | 8 | 5 | 5 | 29 | 0.15 | 3 | 3 | 0 | 0 |
+| faults 0.2 to 0.4 of normal strength | 8 | 1 | 0 | 0 | 1.00 | 0 | 0 | 0 | 0 |
+| slow, nearly linear growth | 8 | 7 | 6 | 0 | 1.00 | 3 | 2 | 1 | 0 |
+| very late, sharp growth | 8 | 8 | 8 | 0 | 1.00 | 5 | 5 | 0 | 0 |
+| clean: no noise change, no drift, no shared noise | 8 | 8 | 8 | 0 | 1.00 | 7 | 7 | 0 | 0 |
+| noise fixed at 5x (top of training range) | 8 | 8 | 8 | 0 | 1.00 | 8 | 8 | 0 | 0 |
+| noise fixed at 8x (beyond training range) | 8 | 8 | 8 | 0 | 1.00 | 7 | 6 | 1 | 0 |
+| noise fixed at 12x (far beyond) | 8 | 8 | 8 | 1 | 0.89 | 5 | 5 | 0 | 0 |
+| drift fixed at 3x (top of training range) | 8 | 3 | 3 | 0 | 1.00 | 1 | 1 | 0 | 0 |
+| drift fixed at 6x (beyond training range) | 8 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| drift fixed at 10x (far beyond) | 8 | 0 | 0 | 1 | 0.00 | 0 | 0 | 0 | 0 |
+| shared noise fixed at 3x (top of training range) | 8 | 8 | 8 | 1 | 0.89 | 3 | 3 | 0 | 0 |
+| shared noise fixed at 6x (beyond training range) | 8 | 8 | 8 | 11 | 0.42 | 8 | 8 | 0 | 0 |
+| all three at the top of the training range | 8 | 3 | 3 | 1 | 0.75 | 3 | 3 | 0 | 0 |
 
 ## Drive
 
 | Case | Faults | Caught | Alert still open at failure | False alerts | Alert precision | Calls | Came true within 72 h | Early | False calls |
 |---|---|---|---|---|---|---|---|---|---|
-| like training (everything random) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
+| like training (everything random) | 2 | 0 | 0 | 0 | – | 0 | 0 | 0 | 0 |
 | faults 0.5 to 0.75 of normal strength | 2 | 2 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| faults 0.2 to 0.4 of normal strength | 2 | 1 | 0 | 5 | 0.17 | 6 | 1 | 0 | 5 |
+| faults 0.2 to 0.4 of normal strength | 2 | 1 | 0 | 2 | 0.33 | 3 | 1 | 0 | 2 |
 | slow, nearly linear growth | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
-| very late, sharp growth | 2 | 1 | 1 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| very late, sharp growth | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | clean: no noise change, no drift, no shared noise | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | noise fixed at 5x (top of training range) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
-| noise fixed at 8x (beyond training range) | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
+| noise fixed at 8x (beyond training range) | 2 | 0 | 0 | 0 | – | 0 | 0 | 0 | 0 |
 | noise fixed at 12x (far beyond) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | drift fixed at 3x (top of training range) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | drift fixed at 6x (beyond training range) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
-| drift fixed at 10x (far beyond) | 2 | 2 | 2 | 5 | 0.29 | 7 | 2 | 0 | 5 |
+| drift fixed at 10x (far beyond) | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |
 | shared noise fixed at 3x (top of training range) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | shared noise fixed at 6x (beyond training range) | 2 | 1 | 1 | 0 | 1.00 | 1 | 1 | 0 | 0 |
 | all three at the top of the training range | 2 | 2 | 2 | 0 | 1.00 | 2 | 2 | 0 | 0 |

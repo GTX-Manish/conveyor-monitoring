@@ -225,3 +225,24 @@
   - **What is not fixed:** nothing here makes the model drift-robust and validation does not span the conditions the
     test scenarios draw. Options: more validation scenarios that cover the range, features that separate a slow
     sensor wander from a growing fault, or per-sensor baselines. This is the next decision.
+- **Wider validation, then drift-robust features** (user: "make sure the model predicts the data pretty well").
+  - **Validation is now stratified, not random:** 6 scenarios (`val_01` to `val_06`, seeds 201 to 206) at fixed
+    levels of (noise, drift, shared noise) = quiet, (3, 1.5, 1.5), (5, 0, 0), (2, 3, 0), (2, 0, 3), (4, 3, 3), so the
+    thresholds are tuned on the whole range the other splits draw from. 30 bearing and 6 drive events instead of 10
+    and 2. Test is untouched. The threshold candidates were extended above 0.999 (up to 0.99999).
+  - **Wide validation alone fixed precision and cost recall.** Held-out test bearing alerts: 0 false alerts
+    (was 13) but only 6 of 10 caught (was 8). Diagnosis: with drift at 1.5x to 3x, healthy windows' abnormal scores
+    reach 0.96 to 0.98 while real faults' fall to 0.06 to 0.17, so no threshold separates them.
+  - **New features** (`model/features.py`): each zone's 6 h and 24 h deviation in units of the spread of all zones
+    in the same window (robust median and MAD; removes the scenario-wide noise and drift level), and a count of how
+    many of heat, noise, impact spikes and vibration agree (a drifting sensor moves one signal on its own, a fault
+    moves several). 72 zone features, up from 57. Training and live use the same function (test still passes).
+  - **Result, held-out test, seed 1 (one seed to save time):** bearing alerts **8 of 10 caught, 0 false alerts**
+    (recall 0.80, precision 1.00); stress 7 of 8, 0 false; validation 26 of 30, 0 false. Failure calls are
+    precise (6 of 6 on test) but rare: recall 0.57 on validation, 0.60 on test, 0.50 on stress.
+  - **Robustness** (`model/artifacts/robustness_report.md`): false alerts are gone almost everywhere (drift 3x: 0, all
+    three at the top of their ranges: 1, against 9 and 29 before). **The cost is recall under drift:** drift at 3x
+    catches 3 of 8 bearing faults, all three at the top of their ranges 3 of 8, and faults at 0.2 to 0.4 of normal
+    strength 1 of 8. The model now stays quiet when it cannot tell a weak fault from drift.
+  - **Drive model unchanged and weak:** 1 of 6 on validation, 1 of 2 on test (2 of 2 on stress). It trained on 8
+    events; at the thresholds tuned on validation it rarely fires.

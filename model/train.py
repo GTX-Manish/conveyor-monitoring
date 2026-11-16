@@ -102,7 +102,7 @@ def grids(df: pd.DataFrame, boosters: dict, group: str) -> dict:
 
 def candidates() -> np.ndarray:
     return np.round(np.concatenate([np.arange(0.05, 0.9, 0.05), np.arange(0.9, 0.995, 0.01),
-                                    [0.995, 0.997, 0.999]]), 3)
+                                    [0.995, 0.997, 0.999, 0.9995, 0.9999, 0.99995, 0.99999]]), 5)
 
 
 def tune(val_grids: list) -> dict:
