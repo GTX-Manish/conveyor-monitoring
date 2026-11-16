@@ -572,3 +572,11 @@ def test_saving_one_group_leaves_the_other_groups_files_untouched(tmp_path):
     assert meta["thresholds"]["drive"]["abnormal"] == 0.7 and meta["trained_on"]["drive"] == ["a", "d1"]
     assert meta["trained_on"]["zone"] == ["a"] and meta["version"] == "lgbm-w10-seed1-drive2"
     assert meta["zone_features"] == meta_before["zone_features"]
+
+
+def test_fresh_test_scenarios_are_in_no_training_or_tuning_path():
+    from model.train import training_splits
+    for group in ("zone", "drive"):
+        assert not {"test", "test_fresh", "stress", "validation"} & set(training_splits(group, ("train_drive",)))
+    source = (REPO / "model" / "train.py").read_text()
+    assert "test_fresh" not in source and "test_0" not in source

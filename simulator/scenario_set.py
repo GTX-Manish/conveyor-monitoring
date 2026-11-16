@@ -61,6 +61,10 @@ def default_specs() -> list:
               for i in range(1, 7)]
     specs += [(f"test_{i:02d}", "test", 300 + i, 30, {}) for i in (1, 2)]
     specs += [("stress_01", "stress", 401, 30, STRESS_OVERRIDES)]
+    # Fresh test (final day): new seeds, scored once with the frozen models. The drive rate is boosted to 3 per 30 days
+    # (default 1) so there are enough drive events to judge; everything else is default and random.
+    specs += [(f"test_{i:02d}", "test_fresh", 500 + i - 2, 30, {"faults": {"drive_overheat": {"per_30d": 3.0}}})
+              for i in range(3, 7)]
     return [dict(name=n, split=s, seed=seed, days=d, overrides=o) for n, s, seed, d, o in specs]
 
 

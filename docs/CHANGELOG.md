@@ -275,3 +275,17 @@
     drive is now warned, 1.6 h before it failed), 0 missed, 0 false alarms; 3 failure calls, all true within 72 h
     (Z107 31.7 h before failure, Z064 4.6 h, drive 1.6 h). Z065 was alerted only 1.0 h before it failed and got no
     call. Before: 3 of 4 warned, the drive missed. Tests: 109 passed, 3 skipped.
+- **Final day, step 2: fresh untouched test, scored once (all criteria met).** Criteria were committed first
+  (`fc1a6e6`, before any scenario existed). Scenarios `test_03` to `test_06` (seeds 501 to 504, split `test_fresh`,
+  default settings with `faults.drive_overheat.per_30d: 3`; noise 2.6x, 2.8x, 3.8x, 2.6x; drift 1.9x, 1.5x, 2.4x, 1.4x;
+  shared 2.9x, 2.9x, 2.5x, 0.5x). Scored once with the frozen models (`score.py --frozen --fresh`); no crash
+  re-run; artifact hashes equal `hashes_frozen.txt` before and after.
+  - **Bearings:** 16 of 20 caught, 0 false alerts, alert precision 1.00, alert recall 0.80 (criteria: at least
+    0.90 and 0.75, met). Failure calls: 10, all true within 72 h; call recall 0.50 (10 of 20), median 14.2 h from call
+    to failure.
+  - **Drive:** 6 of 12 caught, 0 false alerts, alert recall 0.50 (criterion: at least 0.50, **met exactly**). Calls: 6,
+    all true; median 5.6 h from call to failure.
+  - Per scenario, bearings caught: 3, 5, 3, 5 of 5; drive: 1, 2, 1, 2 of 3. The old test scenarios (8 of 10 bearings,
+    2 of 2 drive) were used for diagnosis, so the fresh numbers are the ones to quote.
+  - Caveats: 20 bearing and 12 drive faults; the drive rate is boosted to 3 per 30 days; failure calls miss about half
+    the faults (weak faults raise no call); the drive result sits exactly on the bar.
