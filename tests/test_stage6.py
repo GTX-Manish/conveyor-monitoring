@@ -36,8 +36,11 @@ def mini(tmp_path_factory):
 
 def test_default_set_has_unique_seeds_and_disjoint_splits():
     specs = default_specs()
-    assert len(specs) == 17 and len({s["seed"] for s in specs}) == 17 and len({s["name"] for s in specs}) == 17
-    assert [sum(s["split"] == k for s in specs) for k in ("train", "validation", "test", "stress")] == [8, 6, 2, 1]
+    assert len(specs) == 23 and len({s["seed"] for s in specs}) == 23 and len({s["name"] for s in specs}) == 23
+    assert [sum(s["split"] == k for s in specs) for k in ("train", "train_drive", "validation", "test", "stress")] == [
+        8, 6, 6, 2, 1]
+    drive = [s for s in specs if s["split"] == "train_drive"]
+    assert all(s["overrides"] == {"faults": {"drive_overheat": {"per_30d": 4.0}}} for s in drive)
     val = [s["overrides"]["signals"] for s in specs if s["split"] == "validation"]
     assert max(v["noise_random"][0] for v in val) >= 5 and max(v["drift_random"][0] for v in val) >= 3
     assert max(v["shared_random"][0] for v in val) >= 3 and min(v["noise_random"][0] for v in val) == 1

@@ -526,3 +526,49 @@ def test_read_only_connections_cannot_write(engine):
     with pytest.raises(Exception):
         con.execute("DELETE FROM zones")
     con.close()
+
+
+# ---- final-day handover: the zone model must never move when the drive model is retrained ----------------------
+
+def test_the_zone_model_never_trains_on_extra_splits():
+    from model.train import training_splits
+    assert training_splits("zone") == ("train",)
+    assert training_splits("zone", ("train_drive", "test_fresh")) == ("train",)       # asked, refused
+    assert training_splits("drive") == ("train",)
+    assert training_splits("drive", ("train_drive",)) == ("train", "train_drive")
+
+
+def test_saving_one_group_leaves_the_other_groups_files_untouched(tmp_path):
+    import hashlib
+
+    import lightgbm as lgb
+
+    from model.train import save
+    rng = np.random.default_rng(0)
+    x, y = rng.normal(size=(200, 3)), rng.integers(0, 2, 200)
+
+    def boosters():
+        return {k: lgb.train({"verbose": -1, "num_threads": 1, "objective": "binary", "min_data_in_leaf": 5},
+                             lgb.Dataset(x, label=y), num_boost_round=3) for k in ("abnormal", "classifier", "regressor")}
+
+    def thresholds(a):
+        return {"abnormal": a, "predicted_failure": a, "abnormal_met_target": True, "predicted_failure_met_target": True,
+                "abnormal_sweep": [], "predicted_failure_sweep": []}
+
+    both = {"boosters": {"zone": boosters(), "drive": boosters()}, "thresholds": {"zone": thresholds(0.9),
+            "drive": thresholds(0.5)}, "splits": {"train": ["a"]}, "trained_on": {"zone": ["a"], "drive": ["a"]}}
+    save(both, 1, tmp_path)
+    digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()  # noqa: E731
+    zone_before = {p.name: digest(p) for p in tmp_path.glob("zone_*.txt")}
+    meta_before = json.loads((tmp_path / "meta.json").read_text())
+    assert len(zone_before) == 3
+
+    only_drive = {"boosters": {"drive": boosters()}, "thresholds": {"drive": thresholds(0.7)}, "splits": {"train": ["a"]},
+                  "trained_on": {"drive": ["a", "d1"]}}
+    save(only_drive, 1, tmp_path, version_suffix="-drive2")
+    assert {p.name: digest(p) for p in tmp_path.glob("zone_*.txt")} == zone_before          # byte-identical
+    meta = json.loads((tmp_path / "meta.json").read_text())
+    assert meta["thresholds"]["zone"] == meta_before["thresholds"]["zone"]                  # zone thresholds untouched
+    assert meta["thresholds"]["drive"]["abnormal"] == 0.7 and meta["trained_on"]["drive"] == ["a", "d1"]
+    assert meta["trained_on"]["zone"] == ["a"] and meta["version"] == "lgbm-w10-seed1-drive2"
+    assert meta["zone_features"] == meta_before["zone_features"]

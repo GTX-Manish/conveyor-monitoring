@@ -1,5 +1,5 @@
 {
-  "version": "lgbm-w10-seed1",
+  "version": "lgbm-w10-seed1-drive2",
   "window_minutes": 10,
   "seed": 1,
   "zone_features": [
@@ -206,42 +206,60 @@
       }
     },
     "drive": {
-      "abnormal": 0.95,
+      "abnormal": 0.96,
       "predicted_failure": 0.05,
       "abnormal_met_target": true,
       "predicted_failure_met_target": true,
       "abnormal_validation": {
         "events": 6,
-        "detected": 1,
-        "open_at_failure": 1,
-        "alerts": 1,
-        "true_alerts": 1,
+        "detected": 4,
+        "open_at_failure": 4,
+        "alerts": 4,
+        "true_alerts": 4,
         "false_alerts": 0,
         "false_alerts_in_hard_negative_periods": null,
-        "threshold": 0.95,
-        "detection_rate": 0.16666666666666666,
-        "median_lead_hours": 0.3333333333333333,
+        "threshold": 0.96,
+        "detection_rate": 0.6666666666666666,
+        "median_lead_hours": 1.8333333333333333,
         "false_alert_share": 0.0,
         "precision": 1.0,
         "false_alerts_per_asset_per_month": 0.0,
         "met_target": true
       },
       "predicted_failure_validation": {
-        "calls": 1,
-        "came_true": 1,
+        "calls": 4,
+        "came_true": 4,
         "early": 0,
         "false": 0,
         "events": 6,
-        "events_called": 1,
-        "events_called_in_time": 1,
+        "events_called": 4,
+        "events_called_in_time": 4,
         "threshold": 0.05,
         "share_came_true": 1.0,
         "precision": 1.0,
-        "recall": 0.16666666666666666,
-        "median_hours_call_to_failure": 0.2666666805744171,
-        "median_eta_error_hours": 4.809845397238408,
+        "recall": 0.6666666666666666,
+        "median_hours_call_to_failure": 1.6999999582767487,
+        "median_eta_error_hours": 2.8686499003514987,
         "met_target": true
       }
     }
+  },
+  "trained_on": {
+    "drive": [
+      "train_01",
+      "train_02",
+      "train_03",
+      "train_04",
+      "train_05",
+      "train_06",
+      "train_07",
+      "train_08",
+      "train_drive_01",
+      "train_drive_02",
+      "train_drive_03",
+      "train_drive_04",
+      "train_drive_05",
+      "train_drive_06"
+    ]
   }
 }

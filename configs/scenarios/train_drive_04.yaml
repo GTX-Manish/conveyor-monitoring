@@ -1,0 +1,191 @@
+# split: train_drive
+scenario: train_drive_04
+seed: 604
+days: 30
+start: '2026-01-01 00:00:00'
+step_seconds: 60
+layout:
+  belt_length_m: 6000.0
+  belt_speed_ms: 4.0
+  zone_spacing_m: 50.0
+  section_length_m: 500.0
+  unloading_position_m: 3000.0
+  loading_zone_length_m: 100.0
+  incline_deg:
+  - -10.0
+  - 15.0
+  terrain_sigma_zones: 6.0
+  curve_radius_m:
+  - 300.0
+  - 800.0
+  curve_zones: 2
+  temp_bias_sd_c: 0.8
+  vib_scale_sigma: 0.05
+  loading_vib_factor: 1.25
+  offset_bias_sd_mm: 3.0
+conditions:
+  day_start_hour: 5.0
+  run_hours: 18.0
+  ramp_minutes: 5.0
+  speed_ar_phi: 0.99
+  speed_ar_sd: 0.004
+  load_mean_05_13: 0.8
+  load_mean_13_21: 0.85
+  load_mean_21_05: 0.65
+  load_ar_phi: 0.995
+  load_ar_sd: 0.06
+  load_clip:
+  - 0.3
+  - 1.0
+  max_throughput_tph: 3000.0
+  ambient_mean_c: 30.0
+  ambient_daily_amp_c: 10.0
+  ambient_peak_hour: 15.0
+  ambient_season_amp_c: 3.0
+  ambient_ar_phi: 0.999
+  ambient_ar_sd: 0.5
+  dust_base: 0.3
+  dust_running_gain: 0.15
+  dust_ar_phi: 0.999
+  dust_ar_sd: 0.03
+signals:
+  noise_scale: 1.0
+  noise_random:
+  - 1.0
+  - 5.0
+  drift_scale: 1.0
+  drift_random:
+  - 0.0
+  - 3.0
+  drift_phi: 0.9998
+  drift_temp_c: 1.5
+  drift_acoustic_db: 1.5
+  drift_vib_frac: 0.04
+  drift_kurtosis: 0.2
+  drift_offset_mm: 2.0
+  shared_scale: 1.0
+  shared_random:
+  - 0.0
+  - 3.0
+  shared_temp_phi: 0.999
+  shared_temp_c: 1.5
+  shared_acoustic_phi: 0.95
+  shared_acoustic_db: 1.0
+  shared_vib_phi: 0.98
+  shared_vib_frac: 0.03
+  shared_kurtosis_phi: 0.97
+  shared_kurtosis: 0.1
+  return_load_factor: 0.15
+  temp_speed_c: 5.0
+  temp_load_c: 7.0
+  temp_tau_min: 20.0
+  temp_noise_c: 0.3
+  vib_speed_lin: 0.6
+  vib_speed_quad: 0.9
+  vib_load: 0.5
+  vib_dust_gain: 0.3
+  vib_log_noise: 0.04
+  vib_floor: 0.02
+  kurt_base: 3.0
+  kurt_noise: 0.12
+  kurt_dust_gain: 0.5
+  acoustic_base_db: 42.0
+  acoustic_speed_db: 14.0
+  acoustic_load_db: 4.0
+  acoustic_noise_db: 1.2
+  offset_ar_phi: 0.98
+  offset_ar_sd_mm: 1.5
+  offset_curve_gain: 1.0
+  offset_noise_mm: 0.5
+  motor_speed_a: 140.0
+  motor_load_a: 230.0
+  motor_lift_gain: 5.0
+  motor_noise_a: 4.0
+  motor_rated_a: 400.0
+  motor_temp_rise_c: 30.0
+  motor_temp_tau_min: 25.0
+  gearbox_temp_rise_c: 22.0
+  gearbox_temp_tau_min: 40.0
+  drive_temp_noise_c: 0.3
+  slip_base: 0.0025
+  slip_load: 0.0007
+  slip_noise: 0.0003
+  tension_base_kn: 110.0
+  tension_speed_kn: 10.0
+  tension_load_kn: 45.0
+  tension_noise_kn: 1.5
+faults:
+  idler_bearing:
+    per_30d: 5.0
+    min_days: 3.0
+    max_days: 14.0
+    repair_hours: 2.0
+    temp_c: 25.0
+    temp_exp: 2.0
+    acoustic_db: 10.0
+    acoustic_exp: 1.5
+    vib_gain: 0.5
+    vib_exp: 2.0
+    kurtosis_add: 1.5
+    current_a: 1.5
+    current_exp: 3.0
+  drive_overheat:
+    per_30d: 4.0
+    min_hours: 6.0
+    max_hours: 48.0
+    repair_hours: 2.0
+    motor_temp_c: 35.0
+    gearbox_temp_c: 20.0
+    exp: 1.3
+    current_a: 6.0
+    current_exp: 2.0
+  strength:
+  - 0.3
+  - 1.5
+  signal_mix:
+  - 0.5
+  - 1.5
+  exponent:
+  - 1.5
+  - 3.5
+  min_start_hours: 24.0
+  min_end_margin_hours: 12.0
+  same_asset_gap_hours: 24.0
+hard_negatives:
+  heavy_load:
+    per_30d: 4.0
+    min_hours: 6.0
+    max_hours: 12.0
+    load:
+    - 0.95
+    - 1.0
+  heat_wave:
+    per_30d: 1.0
+    min_days: 1.0
+    max_days: 3.0
+    offset_c:
+    - 6.0
+    - 10.0
+    edge_hours: 3.0
+  dusty:
+    per_30d: 2.0
+    min_hours: 4.0
+    max_hours: 24.0
+    dust:
+    - 0.8
+    - 0.9
+  startup_vib_gain: 1.3
+  startup_minutes: 10
+labels:
+  early_below: 0.3
+  horizon_hours: 24.0
+messiness:
+  missing_rate: 0.01
+  outages_per_30d: 6.0
+  outage_hours:
+  - 1.0
+  - 6.0
+  stuck_per_30d: 4.0
+  stuck_hours:
+  - 2.0
+  - 48.0

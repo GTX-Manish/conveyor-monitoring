@@ -54,6 +54,11 @@ def default_specs() -> list:
     # sensor messiness the other splits draw from (noise 1 to 5x, drift 0 to 3x, shared noise 0 to 3x).
     specs += [(f"val_{i:02d}", "validation", 200 + i, 30, {"signals": _levels(*levels)})
               for i, levels in enumerate(VALIDATION_LEVELS, start=1)]
+    # Extra drive-fault scenarios for the drive model only (handover, final day). The fault stream is shared, so raising
+    # the drive rate inside train_01 to train_08 would also change their bearing faults; separate scenarios leave the
+    # zone model, every existing scenario and the demo untouched.
+    specs += [(f"train_drive_{i:02d}", "train_drive", 600 + i, 30, {"faults": {"drive_overheat": {"per_30d": 4.0}}})
+              for i in range(1, 7)]
     specs += [(f"test_{i:02d}", "test", 300 + i, 30, {}) for i in (1, 2)]
     specs += [("stress_01", "stress", 401, 30, STRESS_OVERRIDES)]
     return [dict(name=n, split=s, seed=seed, days=d, overrides=o) for n, s, seed, d, o in specs]

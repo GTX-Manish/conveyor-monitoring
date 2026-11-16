@@ -124,14 +124,23 @@ def tune(val_grids: list) -> dict:
             "predicted_failure_sweep": [{k: v for k, v in r.items() if k not in drop} for r in fail["sweep"]]}
 
 
-def train(data_dir: Path, seed: int = 1, log=print) -> dict:
+def training_splits(group: str, extra_drive_splits=()) -> tuple:
+    """The split names a group trains on. EXPLICIT: the zone model trains on `train` and nothing else, whatever is
+    passed, so scenarios added for other purposes (train_drive, test_fresh) can never leak into it."""
+    return ("train",) + (tuple(extra_drive_splits) if group == "drive" else ())
+
+
+def train(data_dir: Path, seed: int = 1, log=print, groups=("zone", "drive"), extra_drive_splits=()) -> dict:
     index = json.loads((data_dir / "model" / "index.json").read_text())
     split = lambda s: sorted(n for n, r in index.items() if r["split"] == s)  # noqa: E731
     out = {"boosters": {}, "thresholds": {}, "val_grids": {}, "splits": {s: split(s) for s in
-                                                                         ("train", "validation", "test", "stress")}}
-    for group in ("zone", "drive"):
+                                                                         ("train", "validation", "test", "stress")},
+           "trained_on": {}}
+    for group in groups:
         t0 = time.perf_counter()
-        df = training_rows(data_dir, split("train"), group, seed)
+        names = [n for s in training_splits(group, extra_drive_splits) for n in split(s)]
+        out["trained_on"][group] = names
+        df = training_rows(data_dir, names, group, seed)
         boosters = fit_group(df, group, seed)
         rows = len(df)
         del df
@@ -148,28 +157,45 @@ def train(data_dir: Path, seed: int = 1, log=print) -> dict:
     return out
 
 
-def save(result: dict, seed: int, directory=ARTIFACTS) -> None:
+def save(result: dict, seed: int, directory=ARTIFACTS, version_suffix: str = "") -> None:
+    """Write the models and meta.json. When `result` holds only some groups, only those groups' model files are
+    written and only their thresholds and training lists change in meta.json: the other group's files are not
+    touched at all (byte-identical), which is how the drive model is retrained without moving the zone model."""
     directory = Path(directory)
     directory.mkdir(parents=True, exist_ok=True)
-    for group in ("zone", "drive"):
+    groups = list(result["boosters"])
+    for group in groups:
         for kind in KINDS:
             result["boosters"][group][kind].save_model(str(directory / f"{group}_{kind}.txt"))
     thresholds = {g: {k: v for k, v in t.items() if not k.endswith("_sweep")} for g, t in result["thresholds"].items()}
-    meta = {"version": f"lgbm-w{WINDOW_MIN}-seed{seed}", "window_minutes": WINDOW_MIN, "seed": seed,
-            "zone_features": zone_feature_names(), "drive_features": drive_feature_names(),
-            "assets": len(ASSETS), "drive_asset": DRIVE, "target_precision": TARGET_PRECISION,
-            "call_horizon_hours": CALL_HORIZON_HOURS,
-            "normal_keep": NORMAL_KEEP, "params": PARAMS, "splits": result["splits"], "thresholds": thresholds}
-    (directory / "meta.json").write_text(json.dumps(meta, indent=2))
+    meta_path = directory / "meta.json"
+    if set(groups) != {"zone", "drive"} and meta_path.exists():
+        meta = json.loads(meta_path.read_text())
+        meta["thresholds"].update(thresholds)
+        meta["trained_on"] = {**meta.get("trained_on", {}), **result.get("trained_on", {})}
+    else:
+        meta = {"version": f"lgbm-w{WINDOW_MIN}-seed{seed}", "window_minutes": WINDOW_MIN, "seed": seed,
+                "zone_features": zone_feature_names(), "drive_features": drive_feature_names(),
+                "assets": len(ASSETS), "drive_asset": DRIVE, "target_precision": TARGET_PRECISION,
+                "call_horizon_hours": CALL_HORIZON_HOURS, "normal_keep": NORMAL_KEEP, "params": PARAMS,
+                "splits": result["splits"], "thresholds": thresholds, "trained_on": result.get("trained_on", {})}
+    if version_suffix:
+        meta["version"] = f"lgbm-w{WINDOW_MIN}-seed{seed}{version_suffix}"
+    meta_path.write_text(json.dumps(meta, indent=2))
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Train models and tune thresholds.")
     ap.add_argument("--data", default="data")
     ap.add_argument("--seed", type=int, default=1)
+    ap.add_argument("--groups", nargs="+", default=["zone", "drive"], choices=["zone", "drive"],
+                    help="train only these groups; the other group's files are left untouched")
+    ap.add_argument("--extra-drive-splits", nargs="*", default=[],
+                    help="extra splits the DRIVE model also trains on (never the zone model)")
+    ap.add_argument("--version-suffix", default="", help="appended to the model version string")
     args = ap.parse_args(argv)
-    result = train(Path(args.data), args.seed)
-    save(result, args.seed)
+    result = train(Path(args.data), args.seed, groups=tuple(args.groups), extra_drive_splits=tuple(args.extra_drive_splits))
+    save(result, args.seed, version_suffix=args.version_suffix)
     print(f"saved models and thresholds to {ARTIFACTS}")
     return 0
 

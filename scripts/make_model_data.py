@@ -65,7 +65,7 @@ def window_labels(scenario_dir: Path, n_windows: int) -> dict:
     }
 
 
-def build(scenario_dir: Path, out_dir: Path, name: str) -> dict:
+def build(scenario_dir: Path, out_dir: Path, name: str, groups=("zone", "drive")) -> dict:
     zone_vals, belt_vals, run_state, facts, window_end = public_blocks(scenario_dir)
     table = window_aggregates(zone_vals, belt_vals, run_state, facts)
     del zone_vals, belt_vals
@@ -87,8 +87,10 @@ def build(scenario_dir: Path, out_dir: Path, name: str) -> dict:
     for frame in (zone, drive):
         frame.insert(0, "scenario", name)
     out_dir.mkdir(parents=True, exist_ok=True)
-    zone.to_parquet(out_dir / f"{name}_zone.parquet", index=False)
-    drive.to_parquet(out_dir / f"{name}_drive.parquet", index=False)
+    if "zone" in groups:
+        zone.to_parquet(out_dir / f"{name}_zone.parquet", index=False)
+    if "drive" in groups:
+        drive.to_parquet(out_dir / f"{name}_drive.parquet", index=False)
     return {"name": name, "windows": n, "zone_rows": len(zone),
             "advanced_rows": int((zone["stage"] == 2).sum()), "fail24_rows": int(zone["fails_within_24h"].sum())}
 
@@ -106,7 +108,9 @@ def main(argv=None):
         if args.only and r["name"] not in args.only:
             continue
         t0 = time.perf_counter()
-        info = build(data / r["name"], data / "model", r["name"])
+        # scenarios made only to train the drive model get no zone table: nothing may train a zone model on them
+        groups = ("drive",) if r["split"] == "train_drive" else ("zone", "drive")
+        info = build(data / r["name"], data / "model", r["name"], groups)
         index[r["name"]] = {**info, "split": r["split"]}
         path.write_text(json.dumps(index, indent=2))   # after every scenario, so an interrupted run loses little
         print(f"{r['name']}: {info['zone_rows']:,} zone rows, {info['advanced_rows']:,} advanced, "

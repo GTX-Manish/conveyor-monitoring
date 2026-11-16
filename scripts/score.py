@@ -11,6 +11,7 @@ import json
 import sys
 from pathlib import Path
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
@@ -36,7 +37,7 @@ def baseline_scores(df: pd.DataFrame, group: str) -> dict:
     return {"Fixed motor-temperature limit": shape(df["temp_reference"] + df["motor_temp_c__dev10"])}
 
 
-def evaluate_method(scenario_grids: dict, key, splits: dict) -> dict:
+def evaluate_method(scenario_grids: dict, key, splits: dict, scored=SPLITS) -> dict:
     """Tune on validation, freeze, score every split. key: grid name or a function grid -> (W, A) scores."""
     get = (lambda g: g[key]) if isinstance(key, str) else key
     # the model's alerts are held open while failure within 24 h is likely; the baselines have no such score
@@ -53,7 +54,7 @@ def evaluate_method(scenario_grids: dict, key, splits: dict) -> dict:
                                               0.99995, 0.99999]))
     tuned = tune_threshold(val, cand)
     out = {"threshold": tuned["threshold"], "met_target": tuned["met_target"]}
-    for split in SPLITS:
+    for split in scored:
         parts = [score(get(g), tuned["threshold"], g["run_share"], g["stage"], g["fault_id"], g["hard_negative"],
                        g["months"], hold=hold(g)) for n, g in scenario_grids.items() if n in splits[split]]
         out[split] = pooled(parts) if parts else None
@@ -74,20 +75,55 @@ def run_seed(data: Path, seed: int, save_artifacts: bool) -> dict:
     result = train(data, seed)
     if save_artifacts:
         save(result, seed)
-    out = {}
+    return evaluate_result(data, result)[0]
+
+
+def load_frozen(data: Path) -> dict:
+    """The saved models and thresholds as a `result` for evaluate_result. Nothing is trained and nothing is written.
+
+    The threshold sweeps (only used for the report's trade-off tables) are recomputed from the saved boosters on the
+    validation scenarios, and the recomputed thresholds must equal the saved ones, or the artifacts are not what the
+    report would claim."""
+    from model.train import tune
+    meta = json.loads((ARTIFACTS / "meta.json").read_text())
+    index = json.loads((data / "model" / "index.json").read_text())
+    splits = {s: sorted(n for n, r in index.items() if r["split"] == s)
+              for s in ("train", "train_drive", "validation", "test", "stress", "test_fresh")}
+    result = {"boosters": {}, "thresholds": {}, "splits": splits, "trained_on": meta.get("trained_on", {})}
     for group in ("zone", "drive"):
-        names = [n for s in SPLITS for n in result["splits"][s]]
+        result["boosters"][group] = {k: lgb.Booster(model_file=str(ARTIFACTS / f"{group}_{k}.txt"))
+                                     for k in ("abnormal", "classifier", "regressor")}
+        val = [grids(pd.read_parquet(data / "model" / f"{n}_{group}.parquet"), result["boosters"][group], group)
+               for n in splits["validation"]]
+        tuned = tune(val)
+        saved = meta["thresholds"][group]
+        if tuned["abnormal"] != saved["abnormal"] or tuned["predicted_failure"] != saved["predicted_failure"]:
+            raise RuntimeError(f"{group}: thresholds recomputed from the saved models "
+                               f"({tuned['abnormal']}, {tuned['predicted_failure']}) differ from meta.json "
+                               f"({saved['abnormal']}, {saved['predicted_failure']}); the artifacts are inconsistent")
+        result["thresholds"][group] = tuned
+    return result
+
+
+def evaluate_result(data: Path, result: dict, scored=SPLITS):
+    """Score a `result` (trained or loaded). Returns (numbers, per-scenario grids), the grids for per-scenario detail."""
+    out, all_grids = {}, {}
+    for group in ("zone", "drive"):
+        names = [n for s in ("validation", *scored) for n in result["splits"][s]]
+        names = list(dict.fromkeys(names))
         frames = {n: pd.read_parquet(data / "model" / f"{n}_{group}.parquet") for n in names}
         g = {n: grids(df, result["boosters"][group], group) for n, df in frames.items()}
-        methods = {"LightGBM `abnormal` model": evaluate_method(g, "p_abnormal", result["splits"])}
+        methods = {"LightGBM `abnormal` model": evaluate_method(g, "p_abnormal", result["splits"], scored)}
+        if methods["LightGBM `abnormal` model"]["threshold"] != result["thresholds"][group]["abnormal"]:
+            raise RuntimeError(f"{group}: the alert threshold used for scoring differs from the saved one")
         base = {n: baseline_scores(df, group) for n, df in frames.items()}
         for name in next(iter(base.values())):
             for n in g:
                 g[n][name] = base[n][name]
-            methods[name] = evaluate_method(g, (lambda grid, name=name: grid[name]), result["splits"])
+            methods[name] = evaluate_method(g, (lambda grid, name=name: grid[name]), result["splits"], scored)
         thr = result["thresholds"][group]
         calls, rows = {}, {}
-        for split in SPLITS:
+        for split in scored:
             part = [g[n] for n in result["splits"][split]]
             calls[split] = pooled_calls([score_calls(
                 x["p_abnormal"], thr["abnormal"], x["p_fail_24h"], thr["predicted_failure"], x["run_share"],
@@ -101,8 +137,9 @@ def run_seed(data: Path, seed: int, save_artifacts: bool) -> dict:
                       "alert_threshold": thr["abnormal"],
                       "failure_call_threshold": thr["predicted_failure"],
                       "failure_call_target_met": thr["predicted_failure_met_target"],
-                      "eta_median_abs_error_hours": {s: regressor_error(g, result["splits"][s]) for s in SPLITS}}
-    return out
+                      "eta_median_abs_error_hours": {s: regressor_error(g, result["splits"][s]) for s in scored}}
+        all_grids[group] = g
+    return out, all_grids
 
 
 def fmt(v, digits=2):
@@ -256,11 +293,103 @@ def summary(run: dict) -> dict:
     return out
 
 
+FRESH = "test_fresh"
+FRESH_REPORT = ARTIFACTS / "fresh_test_report.md"
+RESULTS_MARK = "## Results (scored once)"
+
+
+def write_fresh_report(data: Path, result: dict, out: dict, grids_by_group: dict, path: Path = FRESH_REPORT) -> None:
+    """Results of the fresh test scenarios, appended below the criteria that were committed before any scoring.
+
+    Only reads the frozen models' outputs; scoring logic is `model.evaluate.score` and `score_calls`, unchanged."""
+    if not path.exists() or "Criteria set before scoring" not in path.read_text():
+        raise RuntimeError(f"{path} must exist with its 'Criteria set before scoring' section before scoring")
+    head = path.read_text().split(RESULTS_MARK)[0].rstrip() + "\n"
+    names = result["splits"][FRESH]
+    if not names:
+        raise RuntimeError("no test_fresh scenarios in data/model/index.json")
+    H = CALL_HORIZON_HOURS
+    lines = [RESULTS_MARK, "", "Frozen models, one scoring run. Generated by `python -m scripts.score --frozen --fresh`.",
+             "",
+             "### Scenarios", "", "| Scenario | Seed | Noise x | Drift x | Shared x | Bearing faults | Drive faults |",
+             "|---|---|---|---|---|---|---|"]
+    for n in names:
+        meta = json.loads((data / n / "truth" / "run_meta.json").read_text())
+        lines.append(f"| {n} | {meta['seed']} | {meta['noise_scale_effective']:.2f} | {meta['drift_scale_effective']:.2f} | "
+                     f"{meta['shared_scale_effective']:.2f} | {meta['fault_counts']['idler_bearing']} | "
+                     f"{meta['fault_counts']['drive_overheat']} |")
+    lines += ["", "The drive fault rate in these scenarios is boosted to 3 per 30 days (default is 1) so there are enough "
+              "drive events to judge; all other settings are at default.", "",
+              f"### Precision and recall at a glance (split `{FRESH}`)", "",
+              f"| Asset | Faults | Alerts caught | False alerts | Alert precision | Alert recall | Calls | "
+              f"Calls true within {H:.0f} h | Call precision | Call recall |", "|---|---|---|---|---|---|---|---|---|---|"]
+    verdict = {}
+    for group, name in (("zone", "Bearings"), ("drive", "Drive")):
+        a = out[group]["methods"]["LightGBM `abnormal` model"][FRESH]
+        c = out[group]["failure_calls"][FRESH]
+        verdict[group] = (a["precision"], a["detection_rate"])
+        lines.append(f"| {name} | {a['events']} | {a['detected']} | {a['false_alerts']} | {fmt(a['precision'])} | "
+                     f"{fmt(a['detection_rate'])} | {c['calls']} | {c['came_true']} | {fmt(c['precision'])} | "
+                     f"{fmt(c['recall'])} ({c['events_called_in_time']} of {c['events']}) |")
+    lines += ["", "### Hours from failure call to failure", ""]
+    for group, name in (("zone", "Bearings"), ("drive", "Drive")):
+        c = out[group]["failure_calls"][FRESH]
+        lines.append(f"- {name}: median {fmt(c['median_hours_call_to_failure'], 1)} h; each call: "
+                     + (", ".join(f"{h:.1f}" for h in sorted(c["hours_list"])) or "none"))
+    lines += ["", "### Per scenario", "",
+              "| Scenario | Bearings caught | Bearing false alerts | Drive caught | Drive false alerts |",
+              "|---|---|---|---|---|"]
+    for n in names:
+        cells = []
+        for group in ("zone", "drive"):
+            x = grids_by_group[group][n]
+            thr = result["thresholds"][group]
+            s = score(x["p_abnormal"], thr["abnormal"], x["run_share"], x["stage"], x["fault_id"], x["hard_negative"], 1.0,
+                      hold=x["p_fail_24h"] >= HOLD_P_FAIL)
+            cells += [f"{s['detected']} of {s['events']}", str(s["false_alerts"])]
+        lines.append(f"| {n} | " + " | ".join(cells) + " |")
+    zp, zr = verdict["zone"]
+    _, dr = verdict["drive"]
+    ok = lambda b: "met" if b else "**not met**"  # noqa: E731
+    lines += ["", "### Against the criteria set in advance", "", "| Criterion | Result | |", "|---|---|---|",
+              f"| Bearings alert recall at least 0.75 | {fmt(zr)} | {ok(zr >= 0.75)} |",
+              f"| Bearings alert precision at least 0.90 | {fmt(zp)} | {ok(zp >= 0.90)} |",
+              f"| Drive alert recall at least 0.50 | {fmt(dr)} | {ok(dr >= 0.50)} |"]
+    old = out["zone"]["methods"]["LightGBM `abnormal` model"]["test"]
+    olddrive = out["drive"]["methods"]["LightGBM `abnormal` model"]["test"]
+    lines += ["", "For comparison, the old test scenarios (test_01 and test_02, used for diagnosis in V7 and V8, so no "
+              f"longer clean): bearings {old['detected']} of {old['events']} caught with {old['false_alerts']} false "
+              f"alerts; drive {olddrive['detected']} of {olddrive['events']} caught with {olddrive['false_alerts']} "
+              "false alerts.", ""]
+    path.write_text(head + "\n" + "\n".join(lines))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Score models and baselines per event.")
     ap.add_argument("--data", default="data")
     ap.add_argument("--seeds", type=int, nargs="+", default=[1])
+    ap.add_argument("--frozen", action="store_true",
+                    help="score the saved models and thresholds: nothing is trained, nothing in model/artifacts is "
+                         "overwritten except the standard report files")
+    ap.add_argument("--fresh", action="store_true",
+                    help="with --frozen: score only the test_fresh split into fresh_test_report.md and write nothing else")
     args = ap.parse_args(argv)
+    if args.fresh and not args.frozen:
+        ap.error("--fresh needs --frozen")
+    if args.frozen:
+        result = load_frozen(Path(args.data))
+        if args.fresh:
+            out, grids_by_group = evaluate_result(Path(args.data), result, scored=("test", FRESH))
+            write_fresh_report(Path(args.data), result, out, grids_by_group)
+            print(f"wrote {FRESH_REPORT}")
+            return 0
+        runs = {1: evaluate_result(Path(args.data), result)[0]}
+        args.seeds = [1]
+        report(runs, ARTIFACTS / "eval_report.md")
+        (ARTIFACTS / "eval.json").write_text(json.dumps(runs, indent=2, default=float))
+        (ARTIFACTS / "summary.json").write_text(json.dumps(summary(runs[1]), indent=2))
+        print(f"wrote {ARTIFACTS / 'eval_report.md'} from the saved models (nothing was trained)")
+        return 0
     runs = {}
     for i, seed in enumerate(args.seeds):
         runs[seed] = run_seed(Path(args.data), seed, save_artifacts=(i == 0))

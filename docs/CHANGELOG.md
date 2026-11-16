@@ -246,3 +246,32 @@
     strength 1 of 8. The model now stays quiet when it cannot tell a weak fault from drift.
   - **Drive model unchanged and weak:** 1 of 6 on validation, 1 of 2 on test (2 of 2 on stress). It trained on 8
     events; at the thresholds tuned on validation it rarely fires.
+- **Final day, step 1: drive model retrained on more drive events (kept).** Six new scenarios `train_drive_01` to
+  `_06` (seeds 601 to 606, split `train_drive`, `faults.drive_overheat.per_30d: 4`, everything else default including
+  random noise, drift, shared noise and fault strengths) placed 4 drive events each, 24 in total. They are separate
+  scenarios because the fault stream is shared: raising the drive rate in `train_01` to `train_08` would also have
+  changed their bearing faults. `scripts/make_model_data.py` builds drive-only tables for them (no zone tables).
+  `model/train.py` gained explicit training splits (`training_splits`: the zone model trains on `train` only, tested),
+  `--groups drive --extra-drive-splits train_drive` and a partial `save` that does not touch the other group's files
+  (tested). Only the three drive models were trained, with the existing settings and seed 1 (model version
+  `lgbm-w10-seed1-drive2`; 58,478 training rows), and the drive thresholds were retuned on the six existing
+  validation scenarios with the unchanged rule.
+  - **Decision rule, written before looking:** keep only if validation drive alert recall is at least 3 of 6 and
+    drive false alerts at most 1. **Result: 4 of 6 caught, 0 false alerts, precision 1.00 (alert threshold 0.96, call
+    threshold 0.05; 4 of 4 calls true). Kept.** One attempt, no second tuning round.
+  - **Zone models byte-identical:** sha256 of `zone_abnormal.txt`, `zone_classifier.txt` and `zone_regressor.txt`
+    equal `hashes_before.txt` (`hashes_frozen.txt` written after step 1). The frozen evaluation's zone section is
+    identical to the previous one, and the zone rows of the robustness report are identical.
+  - **`scripts/score.py --frozen`** scores the saved models and thresholds without training or saving anything
+    (it recomputes the threshold sweeps from the saved models and refuses to run if they differ from `meta.json`).
+    Without it, `score.py` retrains, which would have overwritten the zone models.
+  - **Drive, before and after (alerts caught / false alerts):** validation 1 of 6 / 0 became 4 of 6 / 0; test 1 of 2
+    became 2 of 2 / 0; stress 2 of 2 / 0 unchanged (alert open at failure 1 of 2). The drive's validation recall is
+    0.67 and test recall 1.00, on 2 test events; test and stress did not decide.
+  - **Drive robustness rows** (15 cases, caught of 2, false alerts): no case got worse; 0 false alerts everywhere (it
+    was 2 for weak faults); noise 8x 0 to 2, noise 12x 1 to 2, very late growth 1 to 2, shared noise 6x 1 to 2, weak
+    faults 1 to 0 (but 0 false alerts instead of 2).
+  - **Demo (`demo_01`, seed 1015, not re-picked), final model:** 4 failures, 4 with an alert open at failure (the
+    drive is now warned, 1.6 h before it failed), 0 missed, 0 false alarms; 3 failure calls, all true within 72 h
+    (Z107 31.7 h before failure, Z064 4.6 h, drive 1.6 h). Z065 was alerted only 1.0 h before it failed and got no
+    call. Before: 3 of 4 warned, the drive missed. Tests: 109 passed, 3 skipped.
