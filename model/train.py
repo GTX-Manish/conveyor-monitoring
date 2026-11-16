@@ -126,7 +126,7 @@ def tune(val_grids: list) -> dict:
 
 def training_splits(group: str, extra_drive_splits=()) -> tuple:
     """The split names a group trains on. EXPLICIT: the zone model trains on `train` and nothing else, whatever is
-    passed, so scenarios added for other purposes (train_drive, test_fresh) can never leak into it."""
+    passed, so scenarios added for other purposes (extra drive training, the fresh test) can never leak into it."""
     return ("train",) + (tuple(extra_drive_splits) if group == "drive" else ())
 
 
