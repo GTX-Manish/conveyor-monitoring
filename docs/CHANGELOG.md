@@ -319,3 +319,6 @@
 - **Found in the clean run, fixed: `make demo` no longer rewrites the scenario report.** `make demo-data` builds only the
   demo, and `scenario_set` then rewrote `docs/scenario_set_report.md` from the one scenario on disk, wiping 26 rows and
   leaving a reviewer's clone dirty. The report is now rewritten only when every configured scenario is on disk (tested).
+- **First CI run failed, fixed: `pytest.ini`.** CI runs a plain `pytest`, which does not put the project folder on the
+  import path, so `tests/conftest.py` could not import `simulator`. Local runs used `python -m pytest`, which does, so
+  it never showed. `pytest.ini` sets `pythonpath = .` and `testpaths = tests`; a plain `pytest` now passes locally.
