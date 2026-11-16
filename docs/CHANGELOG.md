@@ -289,3 +289,14 @@
     2 of 2 drive) were used for diagnosis, so the fresh numbers are the ones to quote.
   - Caveats: 20 bearing and 12 drive faults; the drive rate is boosted to 3 per 30 days; failure calls miss about half
     the faults (weak faults raise no call); the drive result sits exactly on the bar.
+- **Final day, step 3 (partly done): local clean-clone dry run and hygiene.** Not the handover's run: there is no GitHub
+  remote and no README yet, so the clone was made from the local repository. Fresh clone, new Python 3.12 venv
+  (`uv pip install -r requirements.txt`, 11 s with a warm cache; `make setup` itself was not run), `make demo-data` (13 s,
+  seed 1015), `scripts.demo`: first prediction 20 s after the server and replay started, `/api/health` OK, the
+  dashboard served from the committed `frontend/dist` (no Node), replay ran to the end, all seven views loaded in
+  headless Chrome with no console error lines. Hygiene: no tracked files under `data/`, `.git` 16 MB, no `torch` or
+  `ultralytics`, no absolute paths in code or config, `frontend/dist` identical to a fresh build, all files the
+  backend loads are in `model/artifacts/`. Screenshots for the README in `docs/screenshots/`: `overview.png`,
+  `loop_map_alerts.png`, `alerts.png`, `predictions.png`, `data_health.png`, `track_record.png` (each under 80 KB).
+  Still to do when the remote and the README exist: CI on the pushed commit, the README's commands run literally in a
+  fresh clone of the GitHub remote, and `make test` and `ruff` in that clone.
