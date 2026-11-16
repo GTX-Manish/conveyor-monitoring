@@ -309,3 +309,7 @@
   unless a failure call is active on that asset (status `predicted_failure`); used in the one place labels are set,
   `backend/engine.py` `_model_alert`. Numeric severity, thresholds and the status rule are unchanged; data-quality
   alerts stay `medium`. The Alerts tab says "Critical is shown only when a failure is predicted within 72 h."
+- **Fix 3: `make setup` finds Python 3.12 or fails clearly.** Order: `python3.12` on the PATH (venv plus pip), else uv
+  (`uv venv --python 3.12`, then `uv pip install`), else it stops with a message naming what to install. It checks the
+  new `.venv` is 3.12 and never falls back to another version. Checked: with neither on the PATH it prints the message
+  and exits without creating `.venv`; with only uv it builds a 3.12 environment (70 s with a warm cache).
