@@ -313,3 +313,6 @@
   (`uv venv --python 3.12`, then `uv pip install`), else it stops with a message naming what to install. It checks the
   new `.venv` is 3.12 and never falls back to another version. Checked: with neither on the PATH it prints the message
   and exits without creating `.venv`; with only uv it builds a 3.12 environment (70 s with a warm cache).
+- **Fix 4: CI runs on either branch name.** Checked: `.github/workflows/ci.yml` already triggers with
+  `on: [push, pull_request]` and no branch filter, so it runs for `master` and `main`; no edit was needed. CI itself
+  cannot run until the user adds a remote; both jobs' commands were run locally in the clean clone instead.
