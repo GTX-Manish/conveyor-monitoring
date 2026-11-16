@@ -261,7 +261,11 @@ def build_set(config_dir=CONFIG_DIR, out="data", only=None, workers=1, force=Fal
     result = {"scenarios": all_rows, "totals": split_totals(all_rows), "errors": errors, "warnings": warnings,
               "built": [j[0] for j in jobs], "skipped": skipped}
     (out / "scenario_set.json").write_text(json.dumps(result, indent=2))
-    if report_path:
+    n_configs = len(list(Path(config_dir).glob("*.yaml")))
+    if report_path and len(all_rows) < n_configs:
+        # e.g. `make demo` builds only the demo: rewriting the committed report from one scenario would wipe it
+        log(f"report not rewritten: only {len(all_rows)} of {n_configs} scenarios are on disk")
+    elif report_path:
         demo = next((r for r in all_rows if r["split"] == "demo"), None)
         note_file = Path(config_dir) / "demo_01.rules.md"
         note = note_file.read_text() if demo and note_file.exists() else None

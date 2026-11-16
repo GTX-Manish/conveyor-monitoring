@@ -316,3 +316,6 @@
 - **Fix 4: CI runs on either branch name.** Checked: `.github/workflows/ci.yml` already triggers with
   `on: [push, pull_request]` and no branch filter, so it runs for `master` and `main`; no edit was needed. CI itself
   cannot run until the user adds a remote; both jobs' commands were run locally in the clean clone instead.
+- **Found in the clean run, fixed: `make demo` no longer rewrites the scenario report.** `make demo-data` builds only the
+  demo, and `scenario_set` then rewrote `docs/scenario_set_report.md` from the one scenario on disk, wiping 26 rows and
+  leaving a reviewer's clone dirty. The report is now rewritten only when every configured scenario is on disk (tested).

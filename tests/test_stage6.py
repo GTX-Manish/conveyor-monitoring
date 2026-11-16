@@ -140,3 +140,15 @@ def test_schedule_only_scan_matches_the_full_generation():
         (s.type, s.zone, s.start, s.end) for s in scn.sensor_fault_events]
     real = scn.hard_negatives[scn.hard_negatives["type"] != "startup_transient"]
     assert [(h.type, ts[h.start]) for h in hard_negs] == list(zip(real["type"], pd.DatetimeIndex(real["start_time"])))
+
+
+def test_a_partial_build_does_not_rewrite_the_report(tmp_path):
+    """`make demo` builds one scenario; it must not overwrite the committed scenario report with that one row."""
+    cfg_dir, out, report = tmp_path / "configs", tmp_path / "data", tmp_path / "report.md"
+    for spec in MINI:
+        write_config(spec, cfg_dir)
+    report.write_text("the committed report\n")
+    build_set(cfg_dir, out, only=["train_01"], report_path=report, log=lambda m: None)
+    assert report.read_text() == "the committed report\n"
+    build_set(cfg_dir, out, report_path=report, log=lambda m: None)     # the whole set present: written
+    assert "| `train_01` | train | 101 |" in report.read_text() and "| `stress_01` |" in report.read_text()
