@@ -6,6 +6,8 @@ roughly when. A camera layer finds cracks in belt images and tracks each crack b
 that comes round every lap is reported once. The dashboard shows the status of every sensor point, active alerts,
 model predictions, camera detections and how well the model has done so far.
 
+![The dashboard's Overview tab: the 120 sensor points as a belt map, with one zone flagged by the model](docs/screenshots/overview.png)
+
 ## Quick start
 
 You need Python 3.12 (or [uv](https://docs.astral.sh/uv/), which `make setup` uses to fetch 3.12). Node is not
@@ -199,30 +201,79 @@ surface.
 
 ## Dashboard
 
-The screenshots are from `make demo`, paused on day 12 (14:07; Overview and Vision at 14:13, after the demo images
-were changed), except the track record, which is from the end of the replay.
+The dashboard is one page with seven tabs, one per question. The top bar shows the simulated time and has Play/Pause
+and 1×/3× speed buttons. "Tour" opens a one-minute guided walkthrough, which also opens on the first visit. The
+screenshots are from `make demo`, paused on day 12 (Overview and Vision at 14:13 after the demo images were changed,
+the others at 14:07), except the track record, which is from the end of the replay.
+
+### Overview: is anything wrong?
 
 ![Overview](docs/screenshots/overview.png)
-Overview: the status of every sensor point on the belt map, with Zone 107 flagged by the model.
+
+**The belt map.** The map shows all 120 sensor points as a loop. The carry side is on top (zones 1 to 60, loading on
+the left), the return side is below, and the drive sits on the right. Each block has one of four statuses:
+- green, normal;
+- amber with a dot, the model sees unusual behaviour;
+- red with "!", a failure is predicted within 72 hours;
+- grey stripes with "?", the sensors are silent or stuck, so the status is unknown.
+
+Here Zone 107 is flagged by the model. Clicking any block opens that zone.
+
+**Below the map:**
+- the model's accuracy so far in this run, plus the fresh-test result;
+- the camera counts;
+- a short "needs attention" list.
+
+### Alerts: what exactly is wrong?
 
 ![Alerts](docs/screenshots/alerts.png)
-Active anomalies: type, location, severity, time to failure, and what the model saw.
+
+One card per problem, most serious first: what is wrong, where, how serious, and when the part is expected to fail.
+Each model alert lists what the model saw, in plain sentences, so an engineer can judge it. "Critical" is used only
+when a failure is predicted within 72 hours.
+
+### Predictions: what will fail, and when?
 
 ![Predictions](docs/screenshots/predictions.png)
-Model predictions: what will fail, where, and when.
+
+The parts the model flags right now, with their failure risk score, how unusual they look, and the expected failure
+time. A tick box also shows the next most at-risk parts.
+
+### Track record: were the predictions right?
 
 ![Track record](docs/screenshots/track_record.png)
-Track record at the end: each prediction checked against the repair records.
+
+When a repair ends, a repair record arrives saying what failed and when. This tab sets each record against what the
+model had said: warned in time, missed, or a false alarm. The model never sees these records. This is the end of the
+demo: 4 of 4 failures had an alert open, with no false alarms.
+
+### Zone details: show me one zone
 
 ![Zone details](docs/screenshots/zone.png)
-Zone details: one zone's status, open alert, and model output over time.
+
+Everything about one zone or the drive: its status, failure risk, estimated time to failure, the state of its five
+sensors and any open alert. The chart plots the model output or one sensor at a time, over 6 hours to 7 days. Gaps in
+a line are missing data; they are never filled in.
+
+### Data health: can I trust the sensors?
 
 ![Data health](docs/screenshots/data_health.png)
-Data health: bad input caught on the way in, and sensors that went silent or stuck.
+
+What went wrong on the way in, counted live: missing values, impossible values, duplicates, rejected rows and late
+rows. Below are the sensors that are silent or stuck right now, and every sensor event so far.
+
+### Vision: what do the belt cameras see?
 
 ![Vision](docs/screenshots/vision.png)
-Vision detections: confirmed crack locations with their best capture, the splice inspect list, and the latest
-detections.
+
+**Confirmed crack locations.** One card per place on the belt. Each card shows the best capture with the detector's
+boxes, the belt coordinate, the cameras that saw it, and "seen on X of Y laps".
+
+**At a splice: inspect.** Anything near a splice joint is listed separately for a person to check. The entry at
+1000 m here is a splice the model fires on every lap.
+
+**Below:** the latest detections, and a strip with the detector's test numbers, marked "public dataset, not linked to
+the sensors".
 
 ## Assumptions
 
