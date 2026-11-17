@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import {
-  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, VisionStatus, assetName, get, hours,
+  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, VisionStatus, assetName, freshTestSentence, get, hours,
   post, simTime,
 } from "./api";
 import { Detail } from "./Detail";
@@ -57,7 +57,8 @@ export default function App() {
     select(asset === "DRIVE" ? { kind: "drive" } : { kind: "zone", zone: parseInt(asset.slice(1), 10) });
   const control = async (body: { action?: string; speed?: number }) => {
     await post("/api/replay", body);
-    qc.invalidateQueries({ queryKey: ["status"] });
+    if (body.action === "restart") qc.invalidateQueries();      // a fresh run: every view starts again
+    else qc.invalidateQueries({ queryKey: ["status"] });
   };
   const closeTour = useCallback(() => {
     setTourStep(null);
@@ -113,7 +114,9 @@ function TopBar({ status, origin, onControl, onTour }: {
 }) {
   const { state, speed } = status.replay;
   const playing = state === "playing";
-  const label: Record<string, string> = { idle: "Waiting for data", playing: "Playing", paused: "Paused", finished: "Replay finished" };
+  const label: Record<string, string> = {
+    idle: "Waiting for data", playing: "Playing", paused: "Paused", finished: "Replay finished", restarting: "Restarting…",
+  };
   return (
     <header className="sticky top-0 z-10 flex flex-wrap items-center gap-x-6 gap-y-2 bg-surface py-3">
       <h1 className="text-base font-semibold">Conveyor monitoring</h1>
@@ -123,7 +126,7 @@ function TopBar({ status, origin, onControl, onTour }: {
           <div className="tabular text-lg font-semibold leading-tight">{simTime(status.sim_ts, origin)}</div>
         </div>
         <div className="flex items-center gap-1.5">
-          <button onClick={() => onControl({ action: playing ? "pause" : "play" })} disabled={state === "finished" || state === "idle"}
+          <button onClick={() => onControl({ action: playing ? "pause" : "play" })} disabled={state === "finished" || state === "idle" || state === "restarting"}
             className="rounded border border-line px-3 py-1.5 text-sm font-medium hover:bg-raised disabled:opacity-40">
             {playing ? "❚❚ Pause" : "▶ Play"}
           </button>
@@ -133,6 +136,9 @@ function TopBar({ status, origin, onControl, onTour }: {
               {v}×
             </button>
           ))}
+          <button onClick={() => onControl({ action: "restart" })} disabled={state === "restarting" || state === "idle"}
+            title="Start the simulation again from day 1"
+            className="rounded border border-line px-3 py-1.5 text-sm hover:bg-raised disabled:opacity-40">↺ Restart</button>
           <span className="ml-1 text-sm text-ink2">{label[state] ?? state}</span>
         </div>
       </div>
@@ -246,7 +252,7 @@ function Accuracy({ onOpen }: { onOpen: () => void }) {
         ))}
       </dl>
       <p className="mt-2 text-xs text-ink3">
-        Checked against repair records.{f ? ` Fresh test: ${f.assets.bearings.alerts_caught} of ${f.assets.bearings.faults} bearing faults caught, ${f.assets.bearings.false_alerts + f.assets.drive.false_alerts} false alerts.` : ""}
+        Checked against repair records. {f && freshTestSentence(f)}
       </p>
     </section>
   );

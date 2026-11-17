@@ -104,6 +104,7 @@ class Engine:
                        "is_unloading": np.array([bool(r["is_unloading"]) for r in self.layout_rows])}
 
         self.lock = threading.RLock()            # guards the in-memory state read by the API
+        self.closed = False
         # ingest state
         self.seen = {}                           # ts -> bool (Z,) zones already stored for that minute
         self.belt_seen = set()
@@ -184,6 +185,7 @@ class Engine:
         with self.lock:
             self._commit()
             self.con.close()
+            self.closed = True                   # requests that were already waiting are dropped quietly
 
     def submit(self, kind: str, payload):
         """Process one item now, holding the writer lock. Every change to the database goes through here.
@@ -195,6 +197,8 @@ class Engine:
         """
         t0 = time.perf_counter()
         with self.lock:
+            if self.closed:                      # replaced by a restart while this request waited
+                return None
             try:
                 result = self.handle(kind, payload)
                 if self.pending_commits >= self.commit_every or kind != "ingest":

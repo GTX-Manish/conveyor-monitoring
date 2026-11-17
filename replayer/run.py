@@ -28,6 +28,7 @@ REPO = Path(__file__).resolve().parents[1]
 OUT_OF_RANGE = {"vibration_rms_mm_s": 999.0, "vibration_kurtosis": -5.0, "bearing_temp_c": 1500.0,
                 "acoustic_db": -20.0, "belt_offset_mm": 9999.0}
 UNKNOWN_ZONE = 999
+RESTART_EXIT = 3          # exit code when a restart was asked for, so scripts/demo.py starts a new replay
 
 
 def load_public(scenario_dir: Path):
@@ -147,6 +148,8 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
                 while state["state"] == "paused":
                     time.sleep(0.3)
                     state = client.get("/api/replay").json()
+                if state["state"] == "restarting":
+                    break
                     t_wall, t_sim = time.time(), sim_ts          # do not race to catch up after a pause
                 rate = state["speed"] * 3600.0                   # simulated seconds per real second
                 due = t_wall + (sim_ts - t_sim) / rate
@@ -156,6 +159,9 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
                 elif delay < -1.0:
                     t_wall, t_sim = time.time(), sim_ts          # running behind: re-anchor, do not burst
             reply = client.post("/api/ingest", json=body).json()["replay"]
+            if reply["state"] == "restarting":       # the dashboard asked for a restart: stop; the demo runner starts again
+                state = {**state, **reply}
+                break
             if reply["speed"] != state["speed"]:
                 t_wall, t_sim = time.time(), sim_ts
             state = {**state, **reply}
@@ -172,11 +178,13 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
             if due:
                 client.post("/api/work_orders", json={"orders": due})
                 orders_sent += len(due)
-        client.post("/api/replay", json={"action": "finished"})
+        if state["state"] != "restarting":
+            client.post("/api/replay", json={"action": "finished"})
     finally:
         if own:
             client.close()
     summary = {"scenario": scenario, "batches_sent": sent, "inject_faults": inject, **injector.counts,
+               "restarted": state["state"] == "restarting",
                "work_orders_sent": orders_sent, "captures_sent": captures_sent}
     (scenario_dir / "replayer_injected.json").write_text(json.dumps(summary, indent=2))
     log(f"replay finished: {sent} batches in {time.time() - started:.0f} s; {injector.counts}")
@@ -195,9 +203,9 @@ def main(argv=None):
     ap.add_argument("--speed", type=float, help="simulated hours per real second")
     ap.add_argument("--max-minutes", type=int)
     args = ap.parse_args(argv)
-    run(args.scenario, args.url, Path(args.data), settings, args.inject_faults, args.max_minutes, args.speed,
-        work_orders=args.work_orders)
-    return 0
+    summary = run(args.scenario, args.url, Path(args.data), settings, args.inject_faults, args.max_minutes, args.speed,
+                  work_orders=args.work_orders)
+    return RESTART_EXIT if summary["restarted"] else 0
 
 
 if __name__ == "__main__":

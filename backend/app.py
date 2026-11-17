@@ -73,7 +73,7 @@ class CapturesBody(BaseModel):
 
 
 class ReplayBody(BaseModel):
-    action: Optional[str] = None      # 'play' | 'pause' | 'finished'
+    action: Optional[str] = None      # 'play' | 'pause' | 'finished' | 'restart'
     speed: Optional[float] = None     # simulated hours per real second
 
 
@@ -85,9 +85,12 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     async def lifespan(app: FastAPI):
         if engine is None:
             scenario_dir = REPO / server["data_dir"] / server["scenario"]
-            app.state.engine = Engine(REPO / server["db_path"], load_layout(scenario_dir), settings,
-                                      load_models(), server["scenario"])
+            layout, models = load_layout(scenario_dir), load_models()
+            # A restart builds a fresh engine (and an empty database) the same way.
+            app.state.make_engine = lambda: Engine(REPO / server["db_path"], layout, settings, models, server["scenario"])
+            app.state.engine = app.state.make_engine()
         else:
+            app.state.make_engine = None
             app.state.engine = engine
         app.state.engine.start()
         yield
@@ -109,6 +112,8 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         # Processed here, on the server's own thread, before the reply is sent: the sender cannot outrun the
         # engine, and no second thread competes for the interpreter (see Engine.submit).
         e = eng()
+        if e.replay["state"] == "restarting":       # a restart was asked for: the replayer starts again from the top
+            return {"accepted": False, "replay": e.replay}
         e.submit("ingest", {"batch": body.batch, "belt": body.belt})
         return {"accepted": True, "replay": e.replay}
 
@@ -116,6 +121,8 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     async def work_orders(body: WorkOrdersBody):
         """Repair records. Used only to score past predictions; the model never sees them."""
         e = eng()
+        if e.replay["state"] == "restarting":
+            return {"received": 0}
         for order in body.orders:
             e.submit("work_order", order)
         return {"received": len(body.orders)}
@@ -123,6 +130,20 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     @app.post("/api/replay")
     def set_replay(body: ReplayBody):
         e = eng()
+        if body.action == "restart":
+            # Start the run again: a fresh engine and database; the demo runner starts a new replayer when it sees
+            # "restarting", and the replayer sets "playing" when it begins.
+            if app.state.make_engine is None:
+                raise HTTPException(409, "restart is only available when the backend builds its own engine")
+            speed = e.replay["speed"]
+            with e.lock:
+                e.replay["state"] = "restarting"
+                e.stop()
+            new = app.state.make_engine()
+            new.replay.update(state="restarting", speed=speed)
+            new.start()
+            app.state.engine = new
+            return get_replay()
         change = {}
         if body.speed is not None:
             if not 0 < body.speed <= settings["replay"]["max_speed"]:
@@ -132,7 +153,7 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         if body.action is not None:
             states = {"play": "playing", "pause": "paused", "finished": "finished"}
             if body.action not in states:
-                raise HTTPException(422, "action must be play, pause or finished")
+                raise HTTPException(422, "action must be play, pause, finished or restart")
             change["state"] = states[body.action]
         if change:
             e.submit("replay", change)
@@ -278,6 +299,8 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
     # confirmed ones away from splices, and a separate list of everything at a splice, which a person inspects.
     @app.post("/api/captures")
     async def captures(body: CapturesBody):
+        if eng().replay["state"] == "restarting":
+            return {"enabled": eng().vision.enabled, "accepted": 0, "restarting": True}
         result = eng().submit("captures", body.captures)
         return result if result is not None else {"enabled": eng().vision.enabled, "accepted": 0, "error": True}
 

@@ -14,6 +14,8 @@ from pathlib import Path
 import httpx
 import yaml
 
+from replayer.run import RESTART_EXIT
+
 REPO = Path(__file__).resolve().parents[1]
 
 
@@ -28,6 +30,18 @@ def wait_for_health(url: str, seconds: float = 60.0) -> dict:
             pass
         time.sleep(0.5)
     raise RuntimeError(f"the backend did not answer at {url}/api/health within {seconds:.0f} s")
+
+
+def wait_for_restart(url: str, backend) -> bool:
+    """After a replay ends, wait until the dashboard asks for a restart (True) or the backend stops (False)."""
+    while backend.poll() is None:
+        try:
+            if httpx.get(f"{url}/api/replay", timeout=2.0).json()["state"] == "restarting":
+                return True
+        except (httpx.HTTPError, ValueError, KeyError):
+            pass
+        time.sleep(1.0)
+    return False
 
 
 def main(argv=None):
@@ -65,17 +79,21 @@ def main(argv=None):
             cmd.append("--inject-faults")
         if args.speed:
             cmd += ["--speed", str(args.speed)]
-        procs.append(subprocess.Popen(cmd, cwd=REPO))
-        procs[1].wait()
-        print(f"replay finished. The dashboard stays up at {url}; press Ctrl-C to stop.", flush=True)
-        procs[0].wait()
+        procs.append(None)
+        while True:
+            procs[1] = subprocess.Popen(cmd, cwd=REPO)
+            if procs[1].wait() != RESTART_EXIT:
+                print(f"replay finished. The dashboard stays up at {url}; press Ctrl-C to stop.", flush=True)
+                if not wait_for_restart(url, procs[0]):
+                    break                        # the backend stopped
+            print("restart requested: replaying from the start", flush=True)
     except KeyboardInterrupt:
         print("\nstopping")
     finally:
-        for p in reversed(procs):
+        for p in reversed([p for p in procs if p is not None]):
             if p.poll() is None:
                 p.send_signal(signal.SIGINT)
-        for p in procs:
+        for p in [p for p in procs if p is not None]:
             try:
                 p.wait(timeout=15)
             except subprocess.TimeoutExpired:

@@ -147,16 +147,7 @@ export interface FreshTest {
 /** One sentence for the Overview, built only from the fresh-test file's numbers. */
 export function freshTestSentence(f: FreshTest): string {
   const b = f.assets.bearings, d = f.assets.drive;
-  const faults = b.faults + d.faults, wrong = b.false_alerts + d.false_alerts;
-  const calls = b.calls + d.calls, right = b.calls_true + d.calls_true, called = b.faults_called + d.faults_called;
-  const pctOf = (n: number, of: number) => `${Math.round((100 * n) / Math.max(of, 1))}%`;
-  return `Fresh test, ${faults} simulated faults in scenarios never used for training, tuning or diagnosis: `
-    + `bearings ${b.alerts_caught} of ${b.faults} caught (${pctOf(b.alerts_caught, b.faults)}), `
-    + `drive ${d.alerts_caught} of ${d.faults} caught (${pctOf(d.alerts_caught, d.faults)}), `
-    + `${wrong} false alert${wrong === 1 ? "" : "s"}. `
-    + `${calls} failure predictions were made and ${right === calls ? "all came true" : `${right} came true`} `
-    + `within ${f.call_horizon_hours} h; ${2 * called === faults ? "half the faults got one" : `${called} of ${faults} faults got one`}. `
-    + "Simulated data only.";
+  return `Fresh test: ${b.alerts_caught} of ${b.faults} bearing faults caught, ${b.false_alerts + d.false_alerts} false alerts.`;
 }
 
 /** Held-out test figures from the offline evaluation (scripts/score.py). Not shown in the dashboard: the old test
