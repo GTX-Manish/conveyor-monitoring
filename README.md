@@ -278,9 +278,11 @@ vision/      detector wrapper, de-duplication rules, evaluation, dataset prepara
 
 ## AI usage
 
-My AI chat logs go in `ai_usage/`. I used Claude Code throughout: to plan the build, write the code, tests and
-reports, and check the results. I set the scope, made the design calls, corrected the plans when they were wrong, and
-reviewed what came back before committing it.
+I used Claude.ai for research, the dataset and model search, and plan reviews. I used Claude Code to build: planning
+each stage, writing the code, tests and reports, and checking the results. I set the scope, made the design calls,
+corrected the plans when they were wrong, and reviewed what came back before committing it. The decisions and how
+they paid off are in [ai_usage/how_i_used_ai.md](ai_usage/how_i_used_ai.md); the chat links and logs are listed in
+[ai_usage/links.md](ai_usage/links.md).
 
 ## Credits and licences
 
