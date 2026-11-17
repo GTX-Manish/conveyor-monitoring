@@ -1,0 +1,34 @@
+{
+ "model_file": "vision/artifacts/best.onnx",
+ "sha256": "236f930ac26456807c0c9fb852b50155fa96d6cbcd2658ba6b0f1a009871529c",
+ "bytes": 12419173,
+ "source_repo": "https://github.com/JSNN15/conveyor_crack_detection_2026",
+ "source_commit": "73cc79f6583ad3d267da63f4e3453c69ab62d1c9",
+ "assembled_from": [
+  {
+   "file": "model.onnx.part0",
+   "git_blob": "ef0a25c6f0af215340869ed64399b0094de82ce4",
+   "bytes": 6209586
+  },
+  {
+   "file": "model.onnx.part1",
+   "git_blob": "26b43cabdd389a193d08bac3aac49a0bd414a473",
+   "bytes": 6209587
+  }
+ ],
+ "assembly": "part0 then part1, concatenated byte for byte (as the author's det.js does)",
+ "author": "Julián Neira Nova",
+ "license": "AGPL-3.0 (text: vision/artifacts/LICENSE-AGPL-3.0.txt, from the source repo)",
+ "credit": "The crack detector is a YOLOv8 model trained on BeltCrack by Julián Neira Nova (github.com/JSNN15/conveyor_crack_detection_2026, AGPL-3.0).",
+ "model": {
+  "framework": "Ultralytics YOLOv8 (export metadata: ultralytics 8.3.40, 2026-11-08)",
+  "classes": {
+   "0": "grieta (crack)"
+  },
+  "input": "images [1, 3, 384, 640] float32",
+  "output": "output0 [1, 5, 5040]: cx, cy, w, h, score in input pixels",
+  "metadata_description": "Ultralytics c2_e5 model trained on full.yaml"
+ },
+ "author_preprocessing": "det.js: letterbox to 640 x 384, scale min(640/W, 384/H), rounded sizes, centred, pad 114, RGB/255; conf 0.3, NMS IoU 0.45",
+ "training_frames": "unknown: the source repo does not say which BeltCrack frames were used for training; its README reports results on 9 held-out videos without naming them"
+}

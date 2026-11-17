@@ -322,3 +322,10 @@
 - **First CI run failed, fixed: `pytest.ini`.** CI runs a plain `pytest`, which does not put the project folder on the
   import path, so `tests/conftest.py` could not import `simulator`. Local runs used `python -m pytest`, which does, so
   it never showed. `pytest.ini` sets `pythonpath = .` and `testpaths = tests`; a plain `pytest` now passes locally.
+- **Vision: pretrained crack detector.** `vision/artifacts/best.onnx` is the YOLOv8 BeltCrack model by Julián Neira
+  Nova (github.com/JSNN15/conveyor_crack_detection_2026, commit `73cc79f`, AGPL-3.0; notice, licence text and
+  `model_source.json` next to it). Our own BeltCrackDet replication needed about 74 GPU-hours, more than the budget.
+  `vision/detector.py` (onnxruntime, CPU) follows the author's preprocessing. `vision/evaluate.py` chose the threshold
+  on 9kd val (0.363, max F1) and scored 9kd test once: mAP50 26.9, mAP50-95 13.7, P 45.9 / R 28.2 at the threshold.
+  Val (73.3 mAP50) is likely in the author's training data. See `docs/VISION_REPORT.md`. New pins: onnxruntime,
+  pillow. The looping-belt layer and the Vision tab are not built yet.
