@@ -1,0 +1,361 @@
+{
+  "root": "beltcrack_data/BeltCrack14ks",
+  "n_image_files": 9645,
+  "paper": {
+    "sequences": {
+      "train": 18,
+      "val": 5,
+      "test": 6
+    },
+    "images": {
+      "train": 8773,
+      "val": 2596,
+      "test": 2718
+    },
+    "boxes_per_image": 2.65,
+    "9kd_total": {
+      "images": 9645,
+      "sequences": 42
+    },
+    "14ks_total": {
+      "images": 14087,
+      "sequences": 29
+    }
+  },
+  "top_level": [
+    "images",
+    "json"
+  ],
+  "annotation_files": [],
+  "layout": {
+    "format": "labelme json per image",
+    "train": {
+      "json_dir": "json/train",
+      "json_files": 5736,
+      "json_without_image": 0,
+      "shape_types": {
+        "polygon": 7790
+      },
+      "labels": {
+        "crack": 7790
+      },
+      "imagePath_first_component": {
+        "..": 5736
+      },
+      "boxes_outside_image": 0
+    },
+    "val": {
+      "json_dir": "json/val",
+      "json_files": 1961,
+      "json_without_image": 0,
+      "shape_types": {
+        "polygon": 2615
+      },
+      "labels": {
+        "crack": 2615
+      },
+      "imagePath_first_component": {
+        "..": 1961
+      },
+      "boxes_outside_image": 0
+    },
+    "test": {
+      "json_dir": "json/test",
+      "json_files": 1948,
+      "json_without_image": 0,
+      "shape_types": {
+        "polygon": 2482
+      },
+      "labels": {
+        "crack": 2482
+      },
+      "imagePath_first_component": {
+        "..": 1948
+      },
+      "boxes_outside_image": 0
+    }
+  },
+  "image_sizes": {
+    "3840x2160": 7807,
+    "2160x3840": 1398,
+    "1920x1080": 440
+  },
+  "label_size_mismatches": 0,
+  "images_per_split_folder": {
+    "test": 1948,
+    "train": 5736,
+    "val": 1961
+  },
+  "embedded_image_check": {
+    "sampled": 60,
+    "same_as_jpg": 60,
+    "different": []
+  },
+  "counts": {
+    "train": {
+      "images": 5736,
+      "sequences": 23,
+      "boxes": 7790,
+      "boxes_per_image": 1.358,
+      "images_without_boxes": 0,
+      "per_sequence": {
+        "images/train/data1": 440,
+        "images/train/data10": 49,
+        "images/train/data11": 35,
+        "images/train/data12": 334,
+        "images/train/data13": 16,
+        "images/train/data14": 104,
+        "images/train/data15": 447,
+        "images/train/data16": 202,
+        "images/train/data17": 300,
+        "images/train/data18": 541,
+        "images/train/data19": 838,
+        "images/train/data2": 224,
+        "images/train/data20": 344,
+        "images/train/data21": 235,
+        "images/train/data22": 421,
+        "images/train/data23": 229,
+        "images/train/data3": 117,
+        "images/train/data4": 175,
+        "images/train/data5": 150,
+        "images/train/data6": 44,
+        "images/train/data7": 119,
+        "images/train/data8": 235,
+        "images/train/data9": 137
+      },
+      "frame_names_numeric": true
+    },
+    "val": {
+      "images": 1961,
+      "sequences": 10,
+      "boxes": 2615,
+      "boxes_per_image": 1.334,
+      "images_without_boxes": 0,
+      "per_sequence": {
+        "images/val/data24": 126,
+        "images/val/data25": 220,
+        "images/val/data26": 137,
+        "images/val/data27": 244,
+        "images/val/data28": 256,
+        "images/val/data29": 197,
+        "images/val/data30": 328,
+        "images/val/data31": 23,
+        "images/val/data32": 172,
+        "images/val/data33": 258
+      },
+      "frame_names_numeric": true
+    },
+    "test": {
+      "images": 1948,
+      "sequences": 9,
+      "boxes": 2482,
+      "boxes_per_image": 1.274,
+      "images_without_boxes": 0,
+      "per_sequence": {
+        "images/test/data34": 323,
+        "images/test/data35": 171,
+        "images/test/data36": 115,
+        "images/test/data37": 247,
+        "images/test/data38": 334,
+        "images/test/data39": 133,
+        "images/test/data40": 216,
+        "images/test/data41": 104,
+        "images/test/data42": 305
+      },
+      "frame_names_numeric": true
+    }
+  },
+  "leakage": {
+    "sequences_in_train_and_val": [],
+    "images_in_train_and_val": 0,
+    "sequences_in_train_and_test": [],
+    "images_in_train_and_test": 0,
+    "sequences_in_val_and_test": [],
+    "images_in_val_and_test": 0,
+    "neighbouring_frames_within_a_sequence_bits": {
+      "p0": 1.0,
+      "p5": 9.0,
+      "p25": 20.0,
+      "p50": 33.0,
+      "p75": 57.0,
+      "p95": 116.0,
+      "p100": 204.0
+    },
+    "nearest_train_frame_val": {
+      "bits_to_nearest_train_frame": {
+        "p0": 36.0,
+        "p5": 54.0,
+        "p25": 80.0,
+        "p50": 87.0,
+        "p75": 93.0,
+        "p95": 103.0,
+        "p100": 113.0
+      },
+      "frames_within_40_bits": 5,
+      "of": 1961,
+      "by_sequence_pair": {
+        "images/val/data28 ~ images/train/data5": 5
+      },
+      "examples": [
+        [
+          "images/val/data28/104.jpg",
+          "images/train/data5/105.jpg",
+          40
+        ],
+        [
+          "images/val/data28/173.jpg",
+          "images/train/data5/96.jpg",
+          40
+        ],
+        [
+          "images/val/data28/186.jpg",
+          "images/train/data5/119.jpg",
+          36
+        ],
+        [
+          "images/val/data28/251.jpg",
+          "images/train/data5/39.jpg",
+          38
+        ],
+        [
+          "images/val/data28/67.jpg",
+          "images/train/data5/119.jpg",
+          39
+        ]
+      ]
+    },
+    "nearest_train_frame_test": {
+      "bits_to_nearest_train_frame": {
+        "p0": 62.0,
+        "p5": 75.0,
+        "p25": 92.0,
+        "p50": 97.0,
+        "p75": 101.0,
+        "p95": 105.0,
+        "p100": 111.0
+      },
+      "frames_within_40_bits": 0,
+      "of": 1948,
+      "by_sequence_pair": {},
+      "examples": []
+    }
+  },
+  "box_sizes": {
+    "train": {
+      "640": {
+        "short_side_px": {
+          "p0": 3.49,
+          "p5": 8.33,
+          "p25": 15.19,
+          "p50": 26.73,
+          "p75": 56.94,
+          "p95": 141.2,
+          "p100": 341.67
+        },
+        "share_short_side_under_8px": 0.0413
+      },
+      "960": {
+        "short_side_px": {
+          "p0": 5.23,
+          "p5": 12.5,
+          "p25": 22.79,
+          "p50": 40.1,
+          "p75": 85.42,
+          "p95": 211.8,
+          "p100": 512.5
+        },
+        "share_short_side_under_8px": 0.0031
+      }
+    },
+    "val": {
+      "640": {
+        "short_side_px": {
+          "p0": 3.97,
+          "p5": 8.33,
+          "p25": 16.18,
+          "p50": 25.49,
+          "p75": 42.1,
+          "p95": 125.4,
+          "p100": 310.64
+        },
+        "share_short_side_under_8px": 0.0424
+      },
+      "960": {
+        "short_side_px": {
+          "p0": 5.95,
+          "p5": 12.5,
+          "p25": 24.26,
+          "p50": 38.24,
+          "p75": 63.14,
+          "p95": 188.09,
+          "p100": 465.96
+        },
+        "share_short_side_under_8px": 0.0054
+      }
+    },
+    "test": {
+      "640": {
+        "short_side_px": {
+          "p0": 3.57,
+          "p5": 7.94,
+          "p25": 17.79,
+          "p50": 33.99,
+          "p75": 56.02,
+          "p95": 99.83,
+          "p100": 144.92
+        },
+        "share_short_side_under_8px": 0.052
+      },
+      "960": {
+        "short_side_px": {
+          "p0": 5.36,
+          "p5": 11.9,
+          "p25": 26.68,
+          "p50": 50.99,
+          "p75": 84.03,
+          "p95": 149.74,
+          "p100": 217.38
+        },
+        "share_short_side_under_8px": 0.0048
+      }
+    }
+  },
+  "frames_with_empty_label": 0,
+  "unlisted": {
+    "frames": 0,
+    "by_split": {},
+    "sequences": {}
+  },
+  "vs_paper": {
+    "train": {
+      "images": [
+        5736,
+        8773
+      ],
+      "sequences": [
+        23,
+        18
+      ]
+    },
+    "val": {
+      "images": [
+        1961,
+        2596
+      ],
+      "sequences": [
+        10,
+        5
+      ]
+    },
+    "test": {
+      "images": [
+        1948,
+        2718
+      ],
+      "sequences": [
+        9,
+        6
+      ]
+    }
+  }
+}

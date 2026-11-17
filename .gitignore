@@ -4,3 +4,9 @@ __pycache__/
 *.pyc
 .venv/
 node_modules/
+dataset/
+beltcrack_data/
+beltcrack_yolo*/
+runs/
+beltcrack_yolo*.zip
+vision/artifacts/audit/
