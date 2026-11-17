@@ -19,6 +19,7 @@ from vision.defects import CONFIRM_LAPS, CONFIRM_RATIO, DefectTracker, circ_dist
 REPO = Path(__file__).resolve().parents[1]
 DEMO_CONFIG = REPO / "configs" / "scenarios" / "demo_01.yaml"
 SENSOR_FIXTURE = Path(__file__).parent / "fixtures" / "demo_01_sensor_sha256.json"
+LAYOUT_FIXTURE = Path(__file__).parent / "fixtures" / "demo_01_layout.json"
 SETTINGS = yaml.safe_load((REPO / "configs" / "app.yaml").read_text())
 
 
@@ -40,11 +41,23 @@ def test_vision_stream_is_appended_last():
 
 
 def test_demo_sensor_files_are_byte_identical(demo):
-    """The demo's sensor output must not change because of vision: same bytes as before it was added."""
+    """The demo's sensor output must not change because of vision: same bytes as before it was added. The layout is
+    compared by value: its float64 columns can differ in the last bit between machines (seen on a CI runner), which
+    changes its bytes but not the layout."""
     _, _, root = demo
     expected = json.loads(SENSOR_FIXTURE.read_text())["files"]
-    got = {name: hashlib.sha256((root / "public" / name).read_bytes()).hexdigest() for name in expected}
-    assert got == expected
+    got = {name: hashlib.sha256((root / "public" / name).read_bytes()).hexdigest() for name in expected
+           if name != "layout.parquet"}
+    assert got == {k: v for k, v in expected.items() if k != "layout.parquet"}
+    fx = json.loads(LAYOUT_FIXTURE.read_text())
+    layout = pd.read_parquet(root / "public" / "layout.parquet")
+    assert {c: str(t) for c, t in layout.dtypes.items()} == fx["dtypes"]
+    for col, values in fx["columns"].items():
+        if layout[col].dtype.kind == "f":
+            np.testing.assert_allclose(layout[col].to_numpy(), np.array(values, dtype=float), rtol=0, atol=1e-9,
+                                       equal_nan=True, err_msg=col)
+        else:
+            assert layout[col].tolist() == values, col
 
 
 # ------------------------------------------------------------------ captures
