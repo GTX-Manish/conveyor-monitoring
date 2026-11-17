@@ -176,13 +176,15 @@ captures. The table below shows both rules (`vision/artifacts/dedup_eval.json`):
 | Crack locations found | 3 of 4 | 3 of 4 |
 | Duplicates | 0 | 0 |
 | Crack 0.7 m from a splice | found, in the inspect list | found, in the inspect list |
-| Laps to confirm | 2, 3, 4 | 2, 3, 4 |
+| Laps to confirm | 2, 3, 5 | 2, 3, 5 |
 | False confirmed defects at the end | 4 | 0 |
 | False entries in the inspect list | 1 | 1 |
 
 The missed crack is on a chevron-pattern belt (sequence `data39`), where the model never fires. The false inspect
-entry is the splice at 3500 m, which fires on every lap; that is what the inspect list is for. Under the new rule,
-the 4 false locations are confirmed for a while early on, before their ratio drops.
+entry is the splice at 1000 m, which fires on every lap; that is what the inspect list is for. Under the new rule,
+one false location is confirmed for a while early on, before its ratio drops. I picked the demo's images by eye: two
+side-view sequences (`data34`, `data38`) are left out, and clean images come only from sequences that show belt
+surface.
 
 **What I chose not to solve:**
 - **Drifting position error.** A real encoder drifts and a belt stretches, so position error grows between
@@ -193,15 +195,15 @@ the 4 false locations are confirmed for a while early on, before their ratio dro
   sensors would only show agreement I had wired in myself.
 - **Return-side cameras.**
 - **Every lap.** Cameras record one full lap per running day, not every lap. Recording every lap would need thousands
-  of dataset frames in the repo; this way the demo uses 72 images (2.6 MB).
+  of dataset frames in the repo; this way the demo uses 72 images (2.5 MB).
 
 ## Dashboard
 
-The screenshots are from `make demo`, paused at day 12, 14:07, except the track record, which is from the end of the
-replay.
+The screenshots are from `make demo`, paused on day 12 (14:07; Overview and Vision at 14:13, after the demo images
+were changed), except the track record, which is from the end of the replay.
 
 ![Overview](docs/screenshots/overview.png)
-Overview: the status of every sensor point on the belt map, with Zone 107 in red (predicted failure).
+Overview: the status of every sensor point on the belt map, with Zone 107 flagged by the model.
 
 ![Alerts](docs/screenshots/alerts.png)
 Active anomalies: type, location, severity, time to failure, and what the model saw.
@@ -255,7 +257,7 @@ Where the brief was open, I chose these. The numbers live in `configs/` so they 
 - **The confirmation rule rests on one tuning run** with two detectable cracks, and its margin is thin. The weakest
   real crack was seen on 54% of its laps, the worst false location on 46%. I would retune R on more runs, or on real
   inspection records.
-- **Persistent false hits** (like the splice at 3500 m) pass any lap-based rule. Only a person, or a model trained on
+- **Persistent false hits** (like the splice at 1000 m) pass any lap-based rule. Only a person, or a model trained on
   the client's splices, can clear them.
 
 ## Repo layout

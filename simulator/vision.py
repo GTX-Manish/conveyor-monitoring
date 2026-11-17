@@ -52,6 +52,11 @@ FRAME_SIZE = (640, 360)            # 1024 x 576 test frames reduced to fit the d
 CLEAN_POOL = 16
 JPEG_QUALITY = 85
 PAD_GREY = 114                     # the detector's letterbox colour
+# Chosen by eye for the demo: data34 and data38 are side views (rollers and steel fill the frame, the crack is a few
+# pixels), so no crack location uses them; clean images come only from the four sequences that show belt surface edge
+# to edge (the others include machinery, an object in front of the camera or pavement).
+DEMO_EXCLUDED_SEQUENCES = ("data34", "data38")
+CLEAN_SOURCE_SEQUENCES = ("data35", "data37", "data40", "data42")
 CAPTURE_COLUMNS = ["capture_id", "ts", "station", "ground_position_m", "belt_coordinate_m", "image"]
 TRUTH_COLUMNS = ["capture_id", "location_id", "kind", "lap", "source"]
 
@@ -81,7 +86,7 @@ def coordinate_under(station_m: float, travel_m, length: float):
 
 def place_locations(rng, catalog: dict, length: float) -> list[dict]:
     splices = np.arange(0.0, length, SPLICE_SPACING_M)
-    seqs = sorted(catalog["sequences"])
+    seqs = sorted(s for s in catalog["sequences"] if s not in DEMO_EXCLUDED_SEQUENCES)
     n_cracks = int(rng.integers(N_CRACKS[0], N_CRACKS[1] + 1))
     chosen = [seqs[i] for i in rng.choice(len(seqs), n_cracks, replace=False)]
     pool = len(catalog["clean_pool"])
@@ -192,7 +197,7 @@ def _clean_pool(info: dict, seqs: dict, rng, margin: int = 10) -> list[dict]:
     """CLEAN_POOL box-free FRAME_SIZE crops, spread over the sequences, at most one per frame."""
     from PIL import Image
     pool, used = [], set()
-    order = list(seqs)
+    order = [s for s in seqs if s in CLEAN_SOURCE_SEQUENCES]
     while len(pool) < CLEAN_POOL:
         seq = order[len(pool) % len(order)]
         for _ in range(500):

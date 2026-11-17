@@ -1974,8 +1974,8 @@
  },
  "clean_pool": [
   {
-   "file": "frames/0e0d6ebc600b.jpg",
-   "source": "test/data34/150.jpg",
+   "file": "frames/cca7d3dcd59f.jpg",
+   "source": "test/data35/79.jpg",
    "crop_xywh": [
     276,
     156,
@@ -1984,71 +1984,101 @@
    ]
   },
   {
-   "file": "frames/830d525c695f.jpg",
-   "source": "test/data35/33.jpg",
+   "file": "frames/7fd6885effe6.jpg",
+   "source": "test/data37/76.jpg",
    "crop_xywh": [
-    145,
-    177,
+    239,
+    39,
     640,
     360
    ]
   },
   {
-   "file": "frames/07c80f43b8a8.jpg",
-   "source": "test/data36/58.jpg",
+   "file": "frames/c04a68e75cb0.jpg",
+   "source": "test/data40/1.jpg",
    "crop_xywh": [
-    17,
-    71,
+    326,
+    194,
     640,
     360
    ]
   },
   {
-   "file": "frames/6837ba7ebd01.jpg",
-   "source": "test/data37/157.jpg",
+   "file": "frames/04a26b162912.jpg",
+   "source": "test/data42/238.jpg",
    "crop_xywh": [
-    199,
-    71,
+    324,
+    152,
     640,
     360
    ]
   },
   {
-   "file": "frames/9ec63824c95c.jpg",
-   "source": "test/data38/276.jpg",
+   "file": "frames/555f5ae6bd4c.jpg",
+   "source": "test/data35/21.jpg",
    "crop_xywh": [
-    203,
-    154,
+    105,
+    99,
     640,
     360
    ]
   },
   {
-   "file": "frames/9271823d023f.jpg",
-   "source": "test/data39/66.jpg",
+   "file": "frames/e560fe34fa05.jpg",
+   "source": "test/data37/148.jpg",
+   "crop_xywh": [
+    161,
+    206,
+    640,
+    360
+   ]
+  },
+  {
+   "file": "frames/f3d9e354d11d.jpg",
+   "source": "test/data40/19.jpg",
    "crop_xywh": [
     382,
-    178,
+    127,
     640,
     360
    ]
   },
   {
-   "file": "frames/c30cedb45038.jpg",
-   "source": "test/data40/133.jpg",
+   "file": "frames/0498305e472d.jpg",
+   "source": "test/data42/231.jpg",
    "crop_xywh": [
-    322,
-    186,
+    139,
+    108,
     640,
     360
    ]
   },
   {
-   "file": "frames/1a2274727ebb.jpg",
-   "source": "test/data41/36.jpg",
+   "file": "frames/02b189c9b8a9.jpg",
+   "source": "test/data35/35.jpg",
    "crop_xywh": [
-    176,
-    214,
+    256,
+    211,
+    640,
+    360
+   ]
+  },
+  {
+   "file": "frames/722c949876f9.jpg",
+   "source": "test/data37/135.jpg",
+   "crop_xywh": [
+    285,
+    143,
+    640,
+    360
+   ]
+  },
+  {
+   "file": "frames/646fa4fe280c.jpg",
+   "source": "test/data40/3.jpg",
+   "crop_xywh": [
+    268,
+    160,
     640,
     360
    ]
@@ -2064,16 +2094,6 @@
    ]
   },
   {
-   "file": "frames/982f8cff4e4c.jpg",
-   "source": "test/data34/79.jpg",
-   "crop_xywh": [
-    180,
-    127,
-    640,
-    360
-   ]
-  },
-  {
    "file": "frames/3bcd722c4018.jpg",
    "source": "test/data35/43.jpg",
    "crop_xywh": [
@@ -2084,51 +2104,31 @@
    ]
   },
   {
-   "file": "frames/227ae0f25f43.jpg",
-   "source": "test/data36/8.jpg",
+   "file": "frames/b4e3bf54c7f7.jpg",
+   "source": "test/data37/155.jpg",
    "crop_xywh": [
-    179,
-    191,
+    160,
+    165,
     640,
     360
    ]
   },
   {
-   "file": "frames/4ed3be88cf0f.jpg",
-   "source": "test/data37/240.jpg",
+   "file": "frames/622b769398e4.jpg",
+   "source": "test/data40/124.jpg",
    "crop_xywh": [
-    371,
-    48,
+    124,
+    168,
     640,
     360
    ]
   },
   {
-   "file": "frames/58d82a8ae8e4.jpg",
-   "source": "test/data38/166.jpg",
+   "file": "frames/0f078d70373f.jpg",
+   "source": "test/data42/239.jpg",
    "crop_xywh": [
-    146,
-    13,
-    640,
-    360
-   ]
-  },
-  {
-   "file": "frames/da5870660b15.jpg",
-   "source": "test/data39/27.jpg",
-   "crop_xywh": [
+    38,
     122,
-    28,
-    640,
-    360
-   ]
-  },
-  {
-   "file": "frames/56544ef13133.jpg",
-   "source": "test/data40/19.jpg",
-   "crop_xywh": [
-    317,
-    184,
     640,
     360
    ]
@@ -2136,116 +2136,60 @@
  ],
  "frames": [
   {
-   "file": "frames/1fb9f4e9868e.jpg",
-   "source": "test/data34/115.jpg"
+   "file": "frames/a89a145ba564.jpg",
+   "source": "test/data35/105.jpg"
   },
   {
-   "file": "frames/70b48129f55d.jpg",
-   "source": "test/data34/131.jpg"
+   "file": "frames/31d0471ecd0f.jpg",
+   "source": "test/data35/118.jpg"
   },
   {
-   "file": "frames/99ed060b3141.jpg",
-   "source": "test/data34/159.jpg"
+   "file": "frames/296ce31bbc95.jpg",
+   "source": "test/data35/12.jpg"
   },
   {
-   "file": "frames/6da99d0a61a3.jpg",
-   "source": "test/data34/189.jpg"
+   "file": "frames/53d1e7721e6f.jpg",
+   "source": "test/data35/121.jpg"
   },
   {
-   "file": "frames/6acaac864927.jpg",
-   "source": "test/data34/217.jpg"
+   "file": "frames/6e4298454e9b.jpg",
+   "source": "test/data35/133.jpg"
   },
   {
-   "file": "frames/d0eee94dafbc.jpg",
-   "source": "test/data34/22.jpg"
+   "file": "frames/8d2cde6fea87.jpg",
+   "source": "test/data35/149.jpg"
   },
   {
-   "file": "frames/adbf2fa5bedc.jpg",
-   "source": "test/data34/236.jpg"
+   "file": "frames/a4ec1135c483.jpg",
+   "source": "test/data35/35.jpg"
   },
   {
-   "file": "frames/d1c50157e18b.jpg",
-   "source": "test/data34/256.jpg"
+   "file": "frames/c507896c4b1e.jpg",
+   "source": "test/data35/36.jpg"
   },
   {
-   "file": "frames/51a8c15bd7e5.jpg",
-   "source": "test/data34/273.jpg"
+   "file": "frames/4368cb5da3c3.jpg",
+   "source": "test/data35/54.jpg"
   },
   {
-   "file": "frames/29ed9cf379be.jpg",
-   "source": "test/data34/299.jpg"
+   "file": "frames/8c3a1f137b23.jpg",
+   "source": "test/data35/55.jpg"
   },
   {
-   "file": "frames/7323c1d8cade.jpg",
-   "source": "test/data34/314.jpg"
-  },
-  {
-   "file": "frames/e6c6e1a91158.jpg",
-   "source": "test/data34/45.jpg"
-  },
-  {
-   "file": "frames/90e0c1e78c54.jpg",
-   "source": "test/data34/64.jpg"
-  },
-  {
-   "file": "frames/6766726cd008.jpg",
-   "source": "test/data34/94.jpg"
-  },
-  {
-   "file": "frames/b1559e1e412d.jpg",
-   "source": "test/data35/108.jpg"
-  },
-  {
-   "file": "frames/3dfb5685536c.jpg",
-   "source": "test/data35/111.jpg"
-  },
-  {
-   "file": "frames/2edacc18a909.jpg",
-   "source": "test/data35/138.jpg"
-  },
-  {
-   "file": "frames/b1c746a45b44.jpg",
-   "source": "test/data35/158.jpg"
-  },
-  {
-   "file": "frames/96acdea5385b.jpg",
-   "source": "test/data35/22.jpg"
-  },
-  {
-   "file": "frames/0ba429c0447c.jpg",
-   "source": "test/data35/32.jpg"
-  },
-  {
-   "file": "frames/6242dbae1c1f.jpg",
-   "source": "test/data35/38.jpg"
-  },
-  {
-   "file": "frames/bb4fbfd3e020.jpg",
-   "source": "test/data35/59.jpg"
-  },
-  {
-   "file": "frames/5d8b6723f5cb.jpg",
-   "source": "test/data35/6.jpg"
-  },
-  {
-   "file": "frames/38f25e2945ea.jpg",
-   "source": "test/data35/61.jpg"
-  },
-  {
-   "file": "frames/2fa827433aaf.jpg",
-   "source": "test/data35/76.jpg"
+   "file": "frames/af6b3de74301.jpg",
+   "source": "test/data35/75.jpg"
   },
   {
    "file": "frames/aac16311d975.jpg",
    "source": "test/data35/8.jpg"
   },
   {
-   "file": "frames/c574dc3e31b9.jpg",
-   "source": "test/data35/87.jpg"
+   "file": "frames/c9318b0962da.jpg",
+   "source": "test/data35/84.jpg"
   },
   {
-   "file": "frames/566203d49eb0.jpg",
-   "source": "test/data35/91.jpg"
+   "file": "frames/ae598192d753.jpg",
+   "source": "test/data35/92.jpg"
   },
   {
    "file": "frames/07f17e44f920.jpg",
@@ -2358,6 +2302,62 @@
   {
    "file": "frames/a753cdceeb7c.jpg",
    "source": "test/data39/86.jpg"
+  },
+  {
+   "file": "frames/56585f8e933d.jpg",
+   "source": "test/data42/117.jpg"
+  },
+  {
+   "file": "frames/9957b4d303c8.jpg",
+   "source": "test/data42/12.jpg"
+  },
+  {
+   "file": "frames/8f404ff16819.jpg",
+   "source": "test/data42/144.jpg"
+  },
+  {
+   "file": "frames/e73aa77600ed.jpg",
+   "source": "test/data42/164.jpg"
+  },
+  {
+   "file": "frames/52ff09efeb1f.jpg",
+   "source": "test/data42/185.jpg"
+  },
+  {
+   "file": "frames/4afdfeef38ea.jpg",
+   "source": "test/data42/209.jpg"
+  },
+  {
+   "file": "frames/d0a9cae6a000.jpg",
+   "source": "test/data42/238.jpg"
+  },
+  {
+   "file": "frames/1b1f44327ee1.jpg",
+   "source": "test/data42/253.jpg"
+  },
+  {
+   "file": "frames/84e6f6ca71a5.jpg",
+   "source": "test/data42/268.jpg"
+  },
+  {
+   "file": "frames/668c52690e1d.jpg",
+   "source": "test/data42/28.jpg"
+  },
+  {
+   "file": "frames/3f1c9bfcf51b.jpg",
+   "source": "test/data42/285.jpg"
+  },
+  {
+   "file": "frames/4598652347a7.jpg",
+   "source": "test/data42/44.jpg"
+  },
+  {
+   "file": "frames/ebccac07f502.jpg",
+   "source": "test/data42/65.jpg"
+  },
+  {
+   "file": "frames/06d30d15315b.jpg",
+   "source": "test/data42/93.jpg"
   }
  ]
 }

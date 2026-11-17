@@ -24,7 +24,7 @@
     2,
     null,
     3,
-    4
+    5
    ]
   },
   {
@@ -38,13 +38,13 @@
    "duplicates": 0,
    "false_locations": 1,
    "false_confirmed_defects": 0,
-   "false_defects_confirmed_for_a_while": 4,
+   "false_defects_confirmed_for_a_while": 1,
    "false_locations_at_splice": 1,
    "laps_to_confirm": [
     2,
     null,
     3,
-    4
+    5
    ]
   }
  ],
@@ -64,64 +64,64 @@
  "false_locations": 1,
  "false_locations_at_splice": 1,
  "false_confirmed_defects": 0,
- "false_defects_confirmed_for_a_while": 4,
+ "false_defects_confirmed_for_a_while": 1,
  "laps_to_confirm": [
   2,
   null,
   3,
-  4
+  5
  ],
  "single_frame_false_detections": {
-  "captures_with_a_false_detection": 60,
+  "captures_with_a_false_detection": 54,
   "clean_captures": 672,
-  "detections": 60,
+  "detections": 54,
   "at_splices": 42,
-  "at_clean_locations": 18,
-  "removed_by_confirmation": 18,
-  "captures_removed_by_confirmation": 18
+  "at_clean_locations": 12,
+  "removed_by_confirmation": 12,
+  "captures_removed_by_confirmation": 12
  },
  "reported": {
   "defects": [
    {
-    "defect_id": 5,
-    "belt_coordinate_m": 5262.37,
-    "laps": 11,
-    "laps_looked": 13,
-    "stations": [
-     "CAM1",
-     "CAM2",
-     "CAM3"
-    ],
-    "n_captures": 33,
-    "n_detections": 48,
-    "first_ts": 1767356171,
-    "last_ts": 1768393743,
-    "confirmed": true,
-    "confirmed_ts": 1767442702,
-    "best_capture_id": 556,
-    "best_score": 0.6987,
-    "at_splice": false,
-    "splice_m": null,
-    "splice_distance_m": null
-   },
-   {
-    "defect_id": 2,
-    "belt_coordinate_m": 4851.53,
-    "laps": 8,
+    "defect_id": 3,
+    "belt_coordinate_m": 5262.44,
+    "laps": 9,
     "laps_looked": 14,
     "stations": [
      "CAM1",
      "CAM2",
      "CAM3"
     ],
-    "n_captures": 24,
-    "n_detections": 24,
-    "first_ts": 1767269550,
+    "n_captures": 27,
+    "n_detections": 27,
+    "first_ts": 1767269447,
+    "last_ts": 1768220926,
+    "confirmed": true,
+    "confirmed_ts": 1767442702,
+    "best_capture_id": 243,
+    "best_score": 0.5464,
+    "at_splice": false,
+    "splice_m": null,
+    "splice_distance_m": null
+   },
+   {
+    "defect_id": 7,
+    "belt_coordinate_m": 4851.69,
+    "laps": 6,
+    "laps_looked": 11,
+    "stations": [
+     "CAM1",
+     "CAM2",
+     "CAM3"
+    ],
+    "n_captures": 18,
+    "n_detections": 33,
+    "first_ts": 1767528005,
     "last_ts": 1768393845,
     "confirmed": true,
-    "confirmed_ts": 1767528005,
-    "best_capture_id": 628,
-    "best_score": 0.5844,
+    "confirmed_ts": 1767614571,
+    "best_capture_id": 245,
+    "best_score": 0.604,
     "at_splice": false,
     "splice_m": null,
     "splice_distance_m": null
@@ -129,8 +129,8 @@
   ],
   "at_splice": [
    {
-    "defect_id": 3,
-    "belt_coordinate_m": 3499.98,
+    "defect_id": 1,
+    "belt_coordinate_m": 1000.04,
     "laps": 14,
     "laps_looked": 14,
     "stations": [
@@ -140,18 +140,18 @@
     ],
     "n_captures": 42,
     "n_detections": 42,
-    "first_ts": 1767269887,
-    "last_ts": 1768394183,
+    "first_ts": 1767269014,
+    "last_ts": 1768393309,
     "confirmed": true,
-    "confirmed_ts": 1767356614,
-    "best_capture_id": 27,
-    "best_score": 0.3724,
+    "confirmed_ts": 1767355734,
+    "best_capture_id": 3,
+    "best_score": 0.5188,
     "at_splice": true,
-    "splice_m": 3500.0,
-    "splice_distance_m": 0.02
+    "splice_m": 1000.0,
+    "splice_distance_m": 0.04
    },
    {
-    "defect_id": 1,
+    "defect_id": 2,
     "belt_coordinate_m": 499.33,
     "laps": 11,
     "laps_looked": 14,
@@ -185,7 +185,7 @@
    "laps_captured": 14,
    "found": true,
    "reported_as": [
-    1
+    2
    ],
    "reported_coordinate_m": 499.33,
    "laps_seen": 11,
@@ -209,15 +209,15 @@
    "near_splice": false,
    "true_coordinate_m": 5262.36,
    "captures": 42,
-   "captures_with_detection": 33,
+   "captures_with_detection": 27,
    "laps_captured": 14,
    "found": true,
    "reported_as": [
-    5
+    3
    ],
-   "reported_coordinate_m": 5262.37,
-   "laps_seen": 11,
-   "laps_looked": 13,
+   "reported_coordinate_m": 5262.44,
+   "laps_seen": 9,
+   "laps_looked": 14,
    "listed": "defects",
    "confirmed": true,
    "laps_to_confirm": 3
@@ -227,18 +227,18 @@
    "near_splice": false,
    "true_coordinate_m": 4851.52,
    "captures": 42,
-   "captures_with_detection": 24,
+   "captures_with_detection": 18,
    "laps_captured": 14,
    "found": true,
    "reported_as": [
-    2
+    7
    ],
-   "reported_coordinate_m": 4851.53,
-   "laps_seen": 8,
-   "laps_looked": 14,
+   "reported_coordinate_m": 4851.69,
+   "laps_seen": 6,
+   "laps_looked": 11,
    "listed": "defects",
    "confirmed": true,
-   "laps_to_confirm": 4
+   "laps_to_confirm": 5
   }
  ],
  "notes": [
@@ -249,95 +249,52 @@
   "reported": {
    "defects": [
     {
-     "defect_id": 5,
-     "belt_coordinate_m": 5262.37,
-     "laps": 11,
-     "laps_looked": 13,
+     "defect_id": 3,
+     "belt_coordinate_m": 5262.44,
+     "laps": 9,
+     "laps_looked": 14,
      "stations": [
       "CAM1",
       "CAM2",
       "CAM3"
      ],
-     "n_captures": 33,
-     "n_detections": 48,
-     "first_ts": 1767356171,
-     "last_ts": 1768393743,
+     "n_captures": 27,
+     "n_detections": 27,
+     "first_ts": 1767269447,
+     "last_ts": 1768220926,
      "confirmed": true,
      "confirmed_ts": 1767442702,
-     "best_capture_id": 556,
-     "best_score": 0.6987,
-     "at_splice": false,
-     "splice_m": null,
-     "splice_distance_m": null
-    },
-    {
-     "defect_id": 2,
-     "belt_coordinate_m": 4851.53,
-     "laps": 8,
-     "laps_looked": 14,
-     "stations": [
-      "CAM1",
-      "CAM2",
-      "CAM3"
-     ],
-     "n_captures": 24,
-     "n_detections": 24,
-     "first_ts": 1767269550,
-     "last_ts": 1768393845,
-     "confirmed": true,
-     "confirmed_ts": 1767528005,
-     "best_capture_id": 628,
-     "best_score": 0.5844,
-     "at_splice": false,
-     "splice_m": null,
-     "splice_distance_m": null
-    },
-    {
-     "defect_id": 4,
-     "belt_coordinate_m": 2334.97,
-     "laps": 5,
-     "laps_looked": 14,
-     "stations": [
-      "CAM1",
-      "CAM2",
-      "CAM3"
-     ],
-     "n_captures": 6,
-     "n_detections": 6,
-     "first_ts": 1767270551,
-     "last_ts": 1768306612,
-     "confirmed": true,
-     "confirmed_ts": 1767355775,
-     "best_capture_id": 71,
-     "best_score": 0.4672,
-     "at_splice": false,
-     "splice_m": null,
-     "splice_distance_m": null
-    },
-    {
-     "defect_id": 6,
-     "belt_coordinate_m": 5472.39,
-     "laps": 5,
-     "laps_looked": 13,
-     "stations": [
-      "CAM2",
-      "CAM3"
-     ],
-     "n_captures": 5,
-     "n_detections": 5,
-     "first_ts": 1767356495,
-     "last_ts": 1768220874,
-     "confirmed": true,
-     "confirmed_ts": 1767443025,
-     "best_capture_id": 100,
-     "best_score": 0.4672,
+     "best_capture_id": 243,
+     "best_score": 0.5464,
      "at_splice": false,
      "splice_m": null,
      "splice_distance_m": null
     },
     {
      "defect_id": 7,
-     "belt_coordinate_m": 4274.61,
+     "belt_coordinate_m": 4851.69,
+     "laps": 6,
+     "laps_looked": 11,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 18,
+     "n_detections": 33,
+     "first_ts": 1767528005,
+     "last_ts": 1768393845,
+     "confirmed": true,
+     "confirmed_ts": 1767614571,
+     "best_capture_id": 245,
+     "best_score": 0.604,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 6,
+     "belt_coordinate_m": 4274.78,
      "laps": 4,
      "laps_looked": 13,
      "stations": [
@@ -345,36 +302,76 @@
       "CAM2",
       "CAM3"
      ],
-     "n_captures": 4,
-     "n_detections": 4,
-     "first_ts": 1767357173,
-     "last_ts": 1768307257,
+     "n_captures": 5,
+     "n_detections": 5,
+     "first_ts": 1767356797,
+     "last_ts": 1768220798,
      "confirmed": true,
-     "confirmed_ts": 1767614715,
-     "best_capture_id": 512,
-     "best_score": 0.4672,
+     "confirmed_ts": 1767960853,
+     "best_capture_id": 109,
+     "best_score": 0.5188,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 4,
+     "belt_coordinate_m": 2335.27,
+     "laps": 3,
+     "laps_looked": 14,
+     "stations": [
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 3,
+     "n_detections": 3,
+     "first_ts": 1767270926,
+     "last_ts": 1768133246,
+     "confirmed": true,
+     "confirmed_ts": 1767962091,
+     "best_capture_id": 58,
+     "best_score": 0.5188,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 5,
+     "belt_coordinate_m": 1704.2,
+     "laps": 2,
+     "laps_looked": 13,
+     "stations": [
+      "CAM1"
+     ],
+     "n_captures": 2,
+     "n_detections": 2,
+     "first_ts": 1767355557,
+     "last_ts": 1767961498,
+     "confirmed": true,
+     "confirmed_ts": 1767961498,
+     "best_capture_id": 66,
+     "best_score": 0.5188,
      "at_splice": false,
      "splice_m": null,
      "splice_distance_m": null
     },
     {
      "defect_id": 8,
-     "belt_coordinate_m": 1703.73,
-     "laps": 3,
-     "laps_looked": 7,
+     "belt_coordinate_m": 5472.28,
+     "laps": 2,
+     "laps_looked": 5,
      "stations": [
       "CAM1",
-      "CAM2",
-      "CAM3"
+      "CAM2"
      ],
-     "n_captures": 3,
-     "n_detections": 3,
-     "first_ts": 1767875464,
-     "last_ts": 1768306016,
+     "n_captures": 2,
+     "n_detections": 2,
+     "first_ts": 1768047071,
+     "last_ts": 1768306955,
      "confirmed": true,
-     "confirmed_ts": 1768047263,
-     "best_capture_id": 474,
-     "best_score": 0.3724,
+     "confirmed_ts": 1768306955,
+     "best_capture_id": 555,
+     "best_score": 0.5188,
      "at_splice": false,
      "splice_m": null,
      "splice_distance_m": null
@@ -382,8 +379,8 @@
    ],
    "at_splice": [
     {
-     "defect_id": 3,
-     "belt_coordinate_m": 3499.98,
+     "defect_id": 1,
+     "belt_coordinate_m": 1000.04,
      "laps": 14,
      "laps_looked": 14,
      "stations": [
@@ -393,18 +390,18 @@
      ],
      "n_captures": 42,
      "n_detections": 42,
-     "first_ts": 1767269887,
-     "last_ts": 1768394183,
+     "first_ts": 1767269014,
+     "last_ts": 1768393309,
      "confirmed": true,
-     "confirmed_ts": 1767356614,
-     "best_capture_id": 27,
-     "best_score": 0.3724,
+     "confirmed_ts": 1767355734,
+     "best_capture_id": 3,
+     "best_score": 0.5188,
      "at_splice": true,
-     "splice_m": 3500.0,
-     "splice_distance_m": 0.02
+     "splice_m": 1000.0,
+     "splice_distance_m": 0.04
     },
     {
-     "defect_id": 1,
+     "defect_id": 2,
      "belt_coordinate_m": 499.33,
      "laps": 11,
      "laps_looked": 14,
@@ -438,7 +435,7 @@
     "laps_captured": 14,
     "found": true,
     "reported_as": [
-     1
+     2
     ],
     "reported_coordinate_m": 499.33,
     "laps_seen": 11,
@@ -462,15 +459,15 @@
     "near_splice": false,
     "true_coordinate_m": 5262.36,
     "captures": 42,
-    "captures_with_detection": 33,
+    "captures_with_detection": 27,
     "laps_captured": 14,
     "found": true,
     "reported_as": [
-     5
+     3
     ],
-    "reported_coordinate_m": 5262.37,
-    "laps_seen": 11,
-    "laps_looked": 13,
+    "reported_coordinate_m": 5262.44,
+    "laps_seen": 9,
+    "laps_looked": 14,
     "listed": "defects",
     "confirmed": true,
     "laps_to_confirm": 3
@@ -480,26 +477,26 @@
     "near_splice": false,
     "true_coordinate_m": 4851.52,
     "captures": 42,
-    "captures_with_detection": 24,
+    "captures_with_detection": 18,
     "laps_captured": 14,
     "found": true,
     "reported_as": [
-     2
+     7
     ],
-    "reported_coordinate_m": 4851.53,
-    "laps_seen": 8,
-    "laps_looked": 14,
+    "reported_coordinate_m": 4851.69,
+    "laps_seen": 6,
+    "laps_looked": 11,
     "listed": "defects",
     "confirmed": true,
-    "laps_to_confirm": 4
+    "laps_to_confirm": 5
    }
   ],
   "single_frame_false_detections": {
-   "captures_with_a_false_detection": 60,
+   "captures_with_a_false_detection": 54,
    "clean_captures": 672,
-   "detections": 60,
+   "detections": 54,
    "at_splices": 42,
-   "at_clean_locations": 18,
+   "at_clean_locations": 12,
    "removed_by_confirmation": 0,
    "captures_removed_by_confirmation": 0
   }
