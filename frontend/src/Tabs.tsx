@@ -37,7 +37,7 @@ export function AnomaliesTab({ alerts, origin, onSelect }: { alerts: Alert[]; or
   return (
     <div>
       <div className="mb-2 flex items-center justify-between text-xs text-ink2">
-        <span>Most serious first. Click a card to open its zone. Critical is shown only when a failure is predicted within 72 h.</span>
+        <span>Most serious first. Click a card to open its zone.</span>
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} />Also show past alerts</label>
       </div>
       {shown.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No {showClosed ? "" : "open "}alerts. The belt looks healthy.</p>}
@@ -79,7 +79,7 @@ export function PredictionsTab({ status, layout, origin, onSelect }: {
         <span>{flagged.length === 0 ? "The model flags nothing right now." : `The model flags ${flagged.length} of ${status.assets.length} parts.`} Last checked {simTime(status.scored_ts, origin)}.</span>
         <label className="flex items-center gap-1.5"><input type="checkbox" checked={showAll} onChange={(e) => setShowAll(e.target.checked)} />Also show the next most at risk</label>
       </div>
-      {rows.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No part is expected to fail. Tick the box above to see the parts the model ranks highest anyway.</p>}
+      {rows.length === 0 && <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">No part is expected to fail.</p>}
       <table className={`w-full text-sm ${rows.length === 0 ? "hidden" : ""}`}>
         <thead className="text-left text-xs text-ink3">
           <tr><th className="py-1 font-normal">Where</th><th className="font-normal">What the model says</th><th className="font-normal">Failure risk score</th>
@@ -140,8 +140,7 @@ export function DataHealthTab({ stats, health, origin, onSelect }: {
           ))}
         </dl>
         <p className="mt-1.5 text-xs text-ink3">
-          {count(t.batches)} batches, processed up to {simTime(stats?.watermark_ts, origin)}. The simulator only produces missing values;
-          the replayer adds duplicates, out-of-range values, unknown zones and out-of-order batches on purpose.
+          {count(t.batches)} batches, processed up to {simTime(stats?.watermark_ts, origin)}.
         </p>
       </div>
       <div>
@@ -206,12 +205,11 @@ function DefectCard({ d, origin }: { d: VisionDefect; origin: number | null }) {
       </div>
       {d.at_splice && (
         <p className="mt-0.5 text-ink2">
-          {metres(d.splice_distance_m)} from the splice at {metres(d.splice_m)}{d.confirmed ? "" : " · not confirmed"}
+          {metres(d.splice_distance_m)} from the splice at {metres(d.splice_m)}
         </p>
       )}
       <p className="mt-0.5 text-xs text-ink3">
-        Cameras {d.stations.join(", ")} · {count(d.n_detections)} boxes in {count(d.n_captures)} captures · first seen {simTime(d.first_ts, origin)},
-        last {simTime(d.last_ts, origin)}. Shown: the capture with the highest score ({d.best_score.toFixed(2)}).
+        {d.stations.join(", ")} · first seen {simTime(d.first_ts, origin)} · last {simTime(d.last_ts, origin)}
       </p>
     </li>
   );
@@ -237,35 +235,25 @@ export function VisionTab({ origin }: { origin: number | null }) {
   return (
     <div className="space-y-5">
       <p className="text-xs text-ink3">
-        Three cameras ({(s?.stations ?? []).map((x) => `${x.station} at ${x.ground_position_m.toFixed(0)} m`).join(", ") || "none yet"}) photograph
-        the carry side. The belt loops, so the same spot passes every camera once per lap. Each detection is placed at the belt coordinate
-        under the camera, and detections within {s?.settings.merge_m ?? 2} m of each other are one location, however many laps and cameras
-        saw it. A location is confirmed while it has been seen on at least {s?.confirm_laps ?? 2} laps and on at least {pct(s?.confirm_ratio ?? 0.5)} of
-        the laps a camera looked at it, so a spot the model fires on now and then drops out. {count(s?.counts.captures)} captures so far,
-        {" "}{count(s?.counts.with_detections)} with a detection.
+        Cameras {(s?.stations ?? []).map((x) => `${x.station} (${x.ground_position_m.toFixed(0)} m)`).join(", ") || "starting"}. Each crack is
+        tracked by its position on the belt, so it is listed once however many laps see it. {count(s?.counts.captures)} captures so far.
       </p>
 
       <section>
-        <h3 className="mb-1 text-sm font-semibold">Crack locations, confirmed ({d?.defects.length ?? 0})</h3>
+        <h3 className="mb-1 text-sm font-semibold">Crack locations ({d?.defects.length ?? 0})</h3>
         {(d?.defects.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-line py-6 text-center text-sm text-ink3">
-            None confirmed yet.{d && d.unconfirmed > 0 ? ` ${d.unconfirmed} location${d.unconfirmed === 1 ? " has" : "s have"} detections but too few to confirm.` : ""}
+            None yet.
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{d!.defects.map((x) => <DefectCard key={x.defect_id} d={x} origin={origin} />)}</ul>
-        )}
-        {d && d.defects.length > 0 && d.unconfirmed > 0 && (
-          <p className="mt-1 text-xs text-ink3">{d.unconfirmed} more location{d.unconfirmed === 1 ? " has" : "s have"} detections but not enough laps to confirm, so {d.unconfirmed === 1 ? "it is" : "they are"} not listed.</p>
         )}
       </section>
 
       <section>
         <h3 className="mb-1 text-sm font-semibold">At a splice: inspect ({d?.at_splice.length ?? 0})</h3>
-        <p className="mb-2 text-xs text-ink3">
-          Anything within {s?.settings.splice_m ?? 1.5} m of a splice (joints every {s?.settings.splice_spacing_m ?? 500} m) is listed here for a person
-          to look at, confirmed or not, and never dropped: a joint can look like a crack to the model, and a real crack can sit next to a joint.
-        </p>
-        {(d?.at_splice.length ?? 0) === 0 ? <p className="text-sm text-ink3">Nothing at a splice so far.</p> : (
+        <p className="mb-2 text-xs text-ink3">Detections at a splice joint, for a person to check.</p>
+        {(d?.at_splice.length ?? 0) === 0 ? <p className="text-sm text-ink3">None.</p> : (
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{d!.at_splice.map((x) => <DefectCard key={x.defect_id} d={x} origin={origin} />)}</ul>
         )}
       </section>
@@ -290,15 +278,8 @@ export function VisionTab({ origin }: { origin: number | null }) {
       </section>
 
       <section className="rounded-lg border border-line p-3 text-xs text-ink2">
-        <div className="mb-1 font-semibold text-ink">Public dataset, not linked to the sensors</div>
-        {ev ? (
-          <p>
-            {ev.credit} On the {ev.split} split ({count(ev.images)} frames) it scores mAP50 {pct(ev.map50)}; at the
-            threshold used here ({ev.threshold}), {pct(ev.precision)} of its detections are cracks and it finds {pct(ev.recall)} of crack boxes, per frame.
-            The images come from {ev.dataset}, placed at simulated belt coordinates. They have nothing to do with the sensor readings, and no
-            sensor alert uses them.
-          </p>
-        ) : <p>The detector's evaluation file is missing.</p>}
+        <div className="mb-1 font-semibold text-ink">Public image dataset</div>
+        {ev && <p>{ev.credit} Images: {ev.dataset}.</p>}
       </section>
     </div>
   );
@@ -336,13 +317,11 @@ export function TrackRecordTab({ origin, onSelect }: { origin: number | null; on
         ))}
       </dl>
       <p className="text-xs text-ink3">
-        A prediction can only be checked after the fact. When a repair ends, a repair record arrives (in a plant, a closed
-        work order) saying which part failed and when. Each record is compared here with what the model had said. The model
-        never sees these records. The demo is one curated scenario; the full evaluation is in the project's evaluation report.
+        Each repair record is compared with what the model had said.
       </p>
       {rows.length === 0 ? (
         <p className="rounded-lg border border-line py-8 text-center text-sm text-ink3">
-          Nothing to check yet. Cases appear here once a part has failed and been repaired, or an alert has closed.
+          Nothing to check yet.
         </p>
       ) : (
         <ul className="space-y-2">

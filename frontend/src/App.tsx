@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import {
-  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, VisionStatus, assetName, freshTestSentence, get, hours,
+  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, VisionStatus, assetName, get, hours,
   post, simTime,
 } from "./api";
 import { Detail } from "./Detail";
@@ -97,7 +97,7 @@ export default function App() {
       </main>
 
       <p className="mt-8 text-xs text-ink3">
-        All data comes from a simulator. Times are simulated time. {s.model_version ? `Model ${s.model_version}.` : "No model is loaded."}
+        Simulated data. {s.model_version ? `Model ${s.model_version}.` : ""}
       </p>
       {tourStep != null && <Tour step={tourStep} onStep={setTourStep} onClose={closeTour} setTab={setTab} />}
     </div>
@@ -167,7 +167,7 @@ function Overview({ layout, status, open, origin, selection, onSelect, onSelectA
           {open.length > 0 && <button onClick={onSeeAll} className="text-sm text-ink2 underline underline-offset-2 hover:text-ink">See all alerts</button>}
         </div>
         {top.length === 0 ? (
-          <p className="text-sm text-ink3">Nothing right now. Problems appear here as soon as the model or a sensor check finds one.</p>
+          <p className="text-sm text-ink3">Nothing right now.</p>
         ) : (
           <ul>
             {top.map((a) => (
@@ -202,7 +202,7 @@ function BeltSurface({ onOpen }: { onOpen: () => void }) {
         <>
           <span><span className="tabular text-2xl font-semibold">{c.defects}</span> crack location{c.defects === 1 ? "" : "s"} confirmed</span>
           <span><span className="tabular text-2xl font-semibold">{c.at_splice}</span> at a splice, to inspect</span>
-          <span className="text-xs text-ink3">public image dataset, not linked to the sensors</span>
+          
         </>
       ) : <span className="text-ink3">Not enabled in this run: {v.reason}</span>}
       <button onClick={onOpen} className="ml-auto text-sm text-ink2 underline underline-offset-2 hover:text-ink">Open Vision</button>
@@ -246,8 +246,7 @@ function Accuracy({ onOpen }: { onOpen: () => void }) {
         ))}
       </dl>
       <p className="mt-2 text-xs text-ink3">
-        Checked against repair records, which arrive after each repair. {s && s.failures > 0 ? `This rests on ${s.failures} failure${s.failures === 1 ? "" : "s"} in one demo scenario. ` : ""}
-        {f && freshTestSentence(f)}
+        Checked against repair records.{f ? ` Fresh test: ${f.assets.bearings.alerts_caught} of ${f.assets.bearings.faults} bearing faults caught, ${f.assets.bearings.false_alerts + f.assets.drive.false_alerts} false alerts.` : ""}
       </p>
     </section>
   );
