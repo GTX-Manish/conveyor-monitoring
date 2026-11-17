@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 from common.ids import ASSETS, BELT_SIGNALS, ZONE_SIGNALS, asset_zone
 from model.alerting import CALL_HORIZON_HOURS
+from vision.defects import CONFIRM_LAPS
 
 from .engine import Engine, connect
 
@@ -64,6 +65,11 @@ class IngestBody(BaseModel):
 
 class WorkOrdersBody(BaseModel):
     orders: list[dict] = Field(default_factory=list)   # {asset, kind, failed_ts, repaired_ts}, sent after a repair
+
+
+class CapturesBody(BaseModel):
+    # {capture_id, ts, station, ground_position_m, belt_coordinate_m, image}; checked one by one in backend/vision.py
+    captures: list[Any] = Field(default_factory=list)
 
 
 class ReplayBody(BaseModel):
@@ -267,15 +273,91 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         return {"totals": e.ingest_totals(), "watermark_ts": e.watermark,
                 "recent": query("SELECT * FROM ingest_log ORDER BY batch_id DESC LIMIT 20")}
 
-    # ---------------------------------------------------------------- vision placeholders
-    # The camera pipeline is not built yet. These endpoints exist so the dashboard and a later vision
-    # component can be wired in without changing the API.
-    def not_enabled():
-        return {"enabled": False, "reason": "The camera pipeline is not part of this run.", "items": []}
+    # ---------------------------------------------------------------- vision
+    # Camera captures go through the engine like sensor batches. Defects are belt locations (vision/defects.py):
+    # confirmed ones away from splices, and a separate list of everything at a splice, which a person inspects.
+    @app.post("/api/captures")
+    async def captures(body: CapturesBody):
+        result = eng().submit("captures", body.captures)
+        return result if result is not None else {"enabled": eng().vision.enabled, "accepted": 0, "error": True}
 
-    app.get("/api/vision/status")(not_enabled)
-    app.get("/api/vision/detections")(not_enabled)
-    app.get("/api/vision/defects")(not_enabled)
+    def vision_off():
+        v = eng().vision
+        return None if v.enabled else {"enabled": False, "reason": v.reason}
+
+    def boxes_by_capture(ids: list) -> dict:
+        if not ids:
+            return {}
+        out: dict = {}
+        marks = ",".join("?" * len(ids))
+        for r in query(f"SELECT capture_id, bbox FROM vision_detections WHERE capture_id IN ({marks}) "
+                       "ORDER BY score DESC", ids):
+            out.setdefault(r["capture_id"], []).append(json.loads(r["bbox"]))
+        return out
+
+    def capture_view(c: dict, boxes: dict) -> dict:
+        return {"capture_id": c["capture_id"], "ts": c["ts"], "station": c["station"],
+                "ground_position_m": c["ground_position_m"], "belt_coordinate_m": c["belt_coordinate_m"],
+                "image_w": c["image_w"], "image_h": c["image_h"], "boxes": boxes.get(c["capture_id"], []),
+                "image_url": f"/api/vision/image/{c['capture_id']}"}
+
+    @app.get("/api/vision/status")
+    def vision_status():
+        v = eng().vision
+        counts = query("SELECT COUNT(*) AS captures, COALESCE(SUM(n_detections > 0), 0) AS with_detections, "
+                       "COALESCE(SUM(n_detections), 0) AS detections, COALESCE(SUM(status = 'image_missing'), 0) "
+                       "AS image_missing FROM captures")[0]
+        loc = query("SELECT COALESCE(SUM(confirmed = 1 AND at_splice = 0), 0) AS defects, "
+                    "COALESCE(SUM(at_splice), 0) AS at_splice, COALESCE(SUM(confirmed = 0 AND at_splice = 0), 0) "
+                    "AS unconfirmed FROM vision_defects")[0]
+        stations = query("SELECT station, ground_position_m, COUNT(*) AS captures FROM captures GROUP BY station "
+                         "ORDER BY ground_position_m")
+        return {"enabled": v.enabled, "reason": v.reason, "threshold": v.threshold() if v.enabled else None,
+                "counts": {**counts, **loc}, "stations": stations, "evaluation": v.evaluation(),
+                "settings": {k: v.cfg.get(k) for k in ("merge_m", "splice_m", "splice_spacing_m", "belt_length_m")},
+                "confirm_laps": CONFIRM_LAPS}
+
+    @app.get("/api/vision/detections")
+    def vision_detections(limit: int = 20):
+        off = vision_off()
+        if off:
+            return {**off, "items": []}
+        rows = query("SELECT c.*, d.at_splice, d.confirmed FROM captures c LEFT JOIN vision_defects d USING (defect_id) "
+                     "WHERE c.n_detections > 0 ORDER BY c.ts DESC, c.capture_id DESC LIMIT ?", (min(max(limit, 1), 200),))
+        boxes = boxes_by_capture([r["capture_id"] for r in rows])
+        return {"enabled": True, "items": [{**capture_view(r, boxes), "defect_id": r["defect_id"],
+                                            "at_splice": bool(r["at_splice"]), "confirmed": bool(r["confirmed"]),
+                                            "max_score": max((b["score"] for b in boxes.get(r["capture_id"], [])),
+                                                             default=None)} for r in rows]}
+
+    @app.get("/api/vision/defects")
+    def vision_defects():
+        off = vision_off()
+        if off:
+            return {**off, "defects": [], "at_splice": [], "unconfirmed": 0}
+        rows = query("SELECT * FROM vision_defects ORDER BY laps DESC, defect_id")
+        best = {r["capture_id"]: r for r in query(
+            "SELECT * FROM captures WHERE capture_id IN (SELECT best_capture_id FROM vision_defects)")}
+        boxes = boxes_by_capture(list(best))
+
+        def view(r):
+            b = best.get(r["best_capture_id"])
+            return {**{k: r[k] for k in ("defect_id", "belt_coordinate_m", "laps", "laps_looked", "n_captures",
+                                         "n_detections", "first_ts", "last_ts", "confirmed_ts", "best_score",
+                                         "splice_m", "splice_distance_m")},
+                    "stations": json.loads(r["stations"]), "confirmed": bool(r["confirmed"]),
+                    "at_splice": bool(r["at_splice"]), "best_capture": capture_view(b, boxes) if b else None}
+        return {"enabled": True, "defects": [view(r) for r in rows if r["confirmed"] and not r["at_splice"]],
+                "at_splice": [view(r) for r in rows if r["at_splice"]],
+                "unconfirmed": sum(1 for r in rows if not r["confirmed"] and not r["at_splice"])}
+
+    @app.get("/api/vision/image/{capture_id}")
+    def vision_image(capture_id: int):
+        rows = query("SELECT image_path FROM captures WHERE capture_id = ?", (capture_id,))
+        path = eng().vision.image_path(rows[0]["image_path"]) if rows else None
+        if path is None:
+            raise HTTPException(404, "no image for this capture")
+        return FileResponse(path, media_type="image/jpeg")
 
     if FRONTEND.is_dir():   # the built dashboard, so a reviewer needs only Python
         app.mount("/assets", StaticFiles(directory=FRONTEND / "assets"), name="assets")

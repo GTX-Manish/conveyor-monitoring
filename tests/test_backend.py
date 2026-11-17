@@ -519,9 +519,10 @@ def test_api_and_replayer_end_to_end(scenario, tmp_path):
         assert client.get("/api/model/fresh-test").status_code == 404
         (tmp_path / "fresh.json").write_text('{"split": "test_fresh", "assets": {"bearings": {"faults": 20}}}')
         assert client.get("/api/model/fresh-test").json()["assets"]["bearings"]["faults"] == 20
-        for path in ("status", "detections", "defects"):   # vision placeholders: present, empty, saying so
-            assert client.get(f"/api/vision/{path}").json() == {
-                "enabled": False, "reason": "The camera pipeline is not part of this run.", "items": []}
+        vision = client.get("/api/vision/status").json()        # 10 h replayed: the first recorded lap is after 12:00
+        assert vision["enabled"] is True and vision["counts"]["captures"] == 0 and sent["captures_sent"] == 0
+        assert client.get("/api/vision/defects").json() == {"enabled": True, "defects": [], "at_splice": [],
+                                                            "unconfirmed": 0}
 
 
 def test_read_only_connections_cannot_write(engine):

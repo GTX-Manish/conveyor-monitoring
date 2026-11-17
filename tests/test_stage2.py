@@ -179,12 +179,12 @@ def test_fault_run_is_deterministic(pair):
 
 
 def test_fault_truth_stays_out_of_public(pair, tmp_path):
-    from simulator.io import PUBLIC_COLUMNS, write_scenario
+    from simulator.io import PUBLIC_COLUMNS, VISION_PUBLIC_COLUMNS, write_scenario
     kind, scn, _ = pair
     root = write_scenario(scn, config_from_dict({"scenario": f"s2_{kind}"}), tmp_path)
     assert (root / "truth" / "faults.parquet").exists()
     assert sorted(p.name for p in (root / "public").iterdir()) == sorted(
-        [f"{n}.parquet" for n in PUBLIC_COLUMNS] + ["manifest.json"])
+        [f"{n}.parquet" for n in [*PUBLIC_COLUMNS, *VISION_PUBLIC_COLUMNS]] + ["manifest.json"])
     public_text = (root / "public" / "manifest.json").read_text()
     assert scn.events[0].fault_id not in public_text and "fault" not in public_text
     assert set(scn.belt_wide["run_state"].unique()) <= {"stopped", "ramp", "running"}  # no "repair" state

@@ -1,8 +1,8 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import {
-  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, assetName, freshTestSentence, get, hours, post,
-  simTime,
+  Alert, FreshTest, IngestStats, Layout, Outcomes, SEVERITY_VAR, SensorHealth, StatusReply, VisionStatus, assetName, freshTestSentence, get, hours,
+  post, simTime,
 } from "./api";
 import { Detail } from "./Detail";
 import { RacetrackMap } from "./RacetrackMap";
@@ -16,7 +16,7 @@ export const TABS = ["Overview", "Alerts", "Predictions", "Track record", "Zone 
 export type TabName = (typeof TABS)[number];
 const TAB_HINT: Record<TabName, string> = {
   Overview: "Is anything wrong?", Alerts: "What exactly is wrong?", Predictions: "What will fail, and when?",
-  "Track record": "Were the predictions right?", "Zone details": "Show me one zone", "Data health": "Can I trust the sensors?", Vision: "Belt surface cameras",
+  "Track record": "Were the predictions right?", "Zone details": "Show me one zone", "Data health": "Can I trust the sensors?", Vision: "What do the belt cameras see?",
 };
 const TOUR_SEEN = "conveyor-tour-seen";
 
@@ -86,13 +86,14 @@ export default function App() {
       <main data-tour={tab === "Overview" ? undefined : "panel"}>
         <p className="mb-3 text-sm text-ink2">{TAB_HINT[tab]}</p>
         {tab === "Overview" && <Overview layout={layout.data} status={s} open={open} origin={origin} selection={selection}
-          onSelect={select} onSelectAsset={selectAsset} onSeeAll={() => setTab("Alerts")} onTrackRecord={() => setTab("Track record")} />}
+          onSelect={select} onSelectAsset={selectAsset} onSeeAll={() => setTab("Alerts")} onTrackRecord={() => setTab("Track record")}
+          onVision={() => setTab("Vision")} />}
         {tab === "Alerts" && <AnomaliesTab alerts={alerts.data?.alerts ?? []} origin={origin} onSelect={selectAsset} />}
         {tab === "Predictions" && <PredictionsTab status={s} layout={layout.data} origin={origin} onSelect={selectAsset} />}
         {tab === "Track record" && <TrackRecordTab origin={origin} onSelect={selectAsset} />}
         {tab === "Zone details" && <Detail layout={layout.data} status={s} alerts={open} selection={selection} onSelect={setSelection} origin={origin} />}
         {tab === "Data health" && <DataHealthTab stats={stats.data} health={health.data} origin={origin} onSelect={selectAsset} />}
-        {tab === "Vision" && <VisionTab />}
+        {tab === "Vision" && <VisionTab origin={origin} />}
       </main>
 
       <p className="mt-8 text-xs text-ink3">
@@ -146,9 +147,10 @@ function TopBar({ status, origin, onControl, onTour }: {
   );
 }
 
-function Overview({ layout, status, open, origin, selection, onSelect, onSelectAsset, onSeeAll, onTrackRecord }: {
+function Overview({ layout, status, open, origin, selection, onSelect, onSelectAsset, onSeeAll, onTrackRecord, onVision }: {
   layout: Layout; status: StatusReply; open: Alert[]; origin: number | null; selection: Selection;
   onSelect: (s: Selection) => void; onSelectAsset: (asset: string) => void; onSeeAll: () => void; onTrackRecord: () => void;
+  onVision: () => void;
 }) {
   const top = open.slice(0, 5);
   const headline = open.length === 0 ? "Everything looks normal."
@@ -158,6 +160,7 @@ function Overview({ layout, status, open, origin, selection, onSelect, onSelectA
       <h2 className="text-xl font-semibold">{headline}</h2>
       <RacetrackMap layout={layout} status={status} selection={selection} onSelect={onSelect} />
       <Accuracy onOpen={onTrackRecord} />
+      <BeltSurface onOpen={onVision} />
       <section data-tour="attention" className="rounded-lg border border-line p-4">
         <div className="mb-2 flex items-baseline justify-between">
           <h3 className="text-sm font-semibold">Needs attention</h3>
@@ -183,6 +186,27 @@ function Overview({ layout, status, open, origin, selection, onSelect, onSelectA
         )}
       </section>
     </div>
+  );
+}
+
+/** Camera findings in one line: confirmed crack locations and splices to inspect. */
+function BeltSurface({ onOpen }: { onOpen: () => void }) {
+  const q = useQuery({ queryKey: ["vision-status"], queryFn: () => get<VisionStatus>("/api/vision/status"), refetchInterval: 4000 });
+  const v = q.data;
+  if (!v) return null;
+  const c = v.counts;
+  return (
+    <section data-tour="cameras" className="flex flex-wrap items-baseline gap-x-6 gap-y-1 rounded-lg border border-line p-4 text-sm">
+      <h3 className="text-sm font-semibold">Belt surface cameras</h3>
+      {v.enabled ? (
+        <>
+          <span><span className="tabular text-2xl font-semibold">{c.defects}</span> crack location{c.defects === 1 ? "" : "s"} confirmed</span>
+          <span><span className="tabular text-2xl font-semibold">{c.at_splice}</span> at a splice, to inspect</span>
+          <span className="text-xs text-ink3">public image dataset, not linked to the sensors</span>
+        </>
+      ) : <span className="text-ink3">Not enabled in this run: {v.reason}</span>}
+      <button onClick={onOpen} className="ml-auto text-sm text-ink2 underline underline-offset-2 hover:text-ink">Open Vision</button>
+    </section>
   );
 }
 

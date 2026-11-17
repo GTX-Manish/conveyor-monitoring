@@ -1,8 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
-  Alert, IngestStats, Layout, Outcome, Outcomes, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, alertText, assetName, count, get, hours,
-  pct, simTime,
+  Alert, CaptureView, IngestStats, Layout, Outcome, Outcomes, SEVERITY_VAR, SIGNAL_LABEL, SensorHealth, StatusReply, VisionDefect, VisionDefects,
+  VisionDetection, VisionStatus, alertText, assetName, count, get, hours, pct, simTime,
 } from "./api";
 import { StatusChip } from "./Detail";
 
@@ -179,15 +179,126 @@ export function DataHealthTab({ stats, health, origin, onSelect }: {
   );
 }
 
-export function VisionTab() {
-  const q = useQuery({ queryKey: ["vision"], queryFn: () => get<{ enabled: boolean; reason: string }>("/api/vision/status"), refetchInterval: 30000 });
+const metres = (m: number | null | undefined) => (m == null ? "–" : `${m.toFixed(1)} m`);
+
+/** A capture with the detector's boxes drawn over it (boxes are in image pixels). */
+function CaptureImage({ c }: { c: CaptureView }) {
+  const w = c.image_w ?? 640, h = c.image_h ?? 360;
   return (
-    <div className="py-6 text-center text-sm text-ink2">
-      <p className="font-medium text-ink">Vision is not enabled in this run.</p>
-      <p className="mx-auto mt-1 max-w-md">
-        {q.data?.reason ?? "The camera pipeline is not part of this run."} The belt-surface defect detector will show
-        its detections here, and mark defects on the map, once it is added. The sensor pipeline above does not depend on it.
+    <div className="relative overflow-hidden rounded border border-line bg-raised" style={{ aspectRatio: `${w} / ${h}` }}>
+      <img src={c.image_url} alt={`Capture ${c.capture_id} from ${c.station}`} className="block h-full w-full" loading="lazy" />
+      {c.boxes.map((b, i) => (
+        <span key={i} className="absolute border-2" title={`score ${b.score.toFixed(2)}`}
+          style={{ left: `${(100 * b.x1) / w}%`, top: `${(100 * b.y1) / h}%`, width: `${(100 * (b.x2 - b.x1)) / w}%`,
+                   height: `${(100 * (b.y2 - b.y1)) / h}%`, borderColor: "var(--st-failure)" }} />
+      ))}
+    </div>
+  );
+}
+
+function DefectCard({ d, origin }: { d: VisionDefect; origin: number | null }) {
+  return (
+    <li className="rounded-lg border border-line p-3 text-sm">
+      {d.best_capture && <CaptureImage c={d.best_capture} />}
+      <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-3">
+        <span className="font-medium">Belt coordinate {metres(d.belt_coordinate_m)}</span>
+        <span className="tabular text-ink2">seen on {d.laps} of {d.laps_looked} laps</span>
+      </div>
+      {d.at_splice && (
+        <p className="mt-0.5 text-ink2">
+          {metres(d.splice_distance_m)} from the splice at {metres(d.splice_m)}{d.confirmed ? "" : " · seen on one lap so far"}
+        </p>
+      )}
+      <p className="mt-0.5 text-xs text-ink3">
+        Cameras {d.stations.join(", ")} · {count(d.n_detections)} boxes in {count(d.n_captures)} captures · first seen {simTime(d.first_ts, origin)},
+        last {simTime(d.last_ts, origin)}. Shown: the capture with the highest score ({d.best_score.toFixed(2)}).
       </p>
+    </li>
+  );
+}
+
+/** What the belt cameras see: crack locations merged across laps, the splice list, and the latest detections. */
+export function VisionTab({ origin }: { origin: number | null }) {
+  const status = useQuery({ queryKey: ["vision-status"], queryFn: () => get<VisionStatus>("/api/vision/status"), refetchInterval: 4000 });
+  const defects = useQuery({ queryKey: ["vision-defects"], queryFn: () => get<VisionDefects>("/api/vision/defects"), refetchInterval: 4000 });
+  const feed = useQuery({
+    queryKey: ["vision-detections"], queryFn: () => get<{ items: VisionDetection[] }>("/api/vision/detections?limit=12"), refetchInterval: 4000,
+  });
+  const s = status.data;
+  if (s && !s.enabled)
+    return (
+      <div className="py-6 text-center text-sm text-ink2">
+        <p className="font-medium text-ink">Vision is not enabled in this run.</p>
+        <p className="mx-auto mt-1 max-w-md">{s.reason} The sensor pipeline does not depend on it.</p>
+      </div>
+    );
+  const d = defects.data;
+  const ev = s?.evaluation;
+  return (
+    <div className="space-y-5">
+      <p className="text-xs text-ink3">
+        Three cameras ({(s?.stations ?? []).map((x) => `${x.station} at ${x.ground_position_m.toFixed(0)} m`).join(", ") || "none yet"}) photograph
+        the carry side. The belt loops, so the same spot passes every camera once per lap. Each detection is placed at the belt coordinate
+        under the camera, and detections within {s?.settings.merge_m ?? 2} m of each other are one location, however many laps and cameras
+        saw it. A location is confirmed once it has been seen on {s?.confirm_laps ?? 2} laps. {count(s?.counts.captures)} captures so far,
+        {" "}{count(s?.counts.with_detections)} with a detection.
+      </p>
+
+      <section>
+        <h3 className="mb-1 text-sm font-semibold">Crack locations, confirmed ({d?.defects.length ?? 0})</h3>
+        {(d?.defects.length ?? 0) === 0 ? (
+          <p className="rounded-lg border border-line py-6 text-center text-sm text-ink3">
+            None confirmed yet.{d && d.unconfirmed > 0 ? ` ${d.unconfirmed} location${d.unconfirmed === 1 ? " has" : "s have"} been seen on one lap and will be confirmed if seen again.` : ""}
+          </p>
+        ) : (
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{d!.defects.map((x) => <DefectCard key={x.defect_id} d={x} origin={origin} />)}</ul>
+        )}
+        {d && d.defects.length > 0 && d.unconfirmed > 0 && (
+          <p className="mt-1 text-xs text-ink3">{d.unconfirmed} more location{d.unconfirmed === 1 ? "" : "s"} seen on one lap only, not listed until seen again.</p>
+        )}
+      </section>
+
+      <section>
+        <h3 className="mb-1 text-sm font-semibold">At a splice: inspect ({d?.at_splice.length ?? 0})</h3>
+        <p className="mb-2 text-xs text-ink3">
+          Anything within {s?.settings.splice_m ?? 1.5} m of a splice (joints every {s?.settings.splice_spacing_m ?? 500} m) is listed here for a person
+          to look at, confirmed or not, and never dropped: a joint can look like a crack to the model, and a real crack can sit next to a joint.
+        </p>
+        {(d?.at_splice.length ?? 0) === 0 ? <p className="text-sm text-ink3">Nothing at a splice so far.</p> : (
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{d!.at_splice.map((x) => <DefectCard key={x.defect_id} d={x} origin={origin} />)}</ul>
+        )}
+      </section>
+
+      <section>
+        <h3 className="mb-1 text-sm font-semibold">Latest detections</h3>
+        {(feed.data?.items.length ?? 0) === 0 ? <p className="text-sm text-ink3">None yet.</p> : (
+          <table className="w-full text-sm">
+            <thead className="text-left text-xs text-ink3"><tr><th className="py-1 font-normal">When</th><th className="font-normal">Camera</th>
+              <th className="font-normal">Belt coordinate</th><th className="font-normal">Boxes</th><th className="font-normal">Top score</th><th className="font-normal">Listed as</th></tr></thead>
+            <tbody>
+              {feed.data!.items.map((x) => (
+                <tr key={x.capture_id} className="tabular border-t border-line">
+                  <td className="py-1.5">{simTime(x.ts, origin)}</td><td>{x.station}</td><td>{metres(x.belt_coordinate_m)}</td>
+                  <td>{x.boxes.length}</td><td>{x.max_score?.toFixed(2) ?? "–"}</td>
+                  <td className="text-ink2">{x.at_splice ? "at a splice" : x.confirmed ? "confirmed location" : "seen on one lap"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </section>
+
+      <section className="rounded-lg border border-line p-3 text-xs text-ink2">
+        <div className="mb-1 font-semibold text-ink">Public dataset, not linked to the sensors</div>
+        {ev ? (
+          <p>
+            {ev.credit} On the {ev.split} split ({count(ev.images)} frames) it scores mAP50 {pct(ev.map50)}; at the
+            threshold used here ({ev.threshold}), {pct(ev.precision)} of its detections are cracks and it finds {pct(ev.recall)} of crack boxes, per frame.
+            The images come from {ev.dataset}, placed at simulated belt coordinates. They have nothing to do with the sensor readings, and no
+            sensor alert uses them.
+          </p>
+        ) : <p>The detector's evaluation file is missing.</p>}
+      </section>
     </div>
   );
 }

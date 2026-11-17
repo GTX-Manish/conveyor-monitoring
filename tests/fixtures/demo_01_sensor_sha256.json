@@ -1,0 +1,9 @@
+{
+ "note": "sha256 of the demo_01 sensor files before vision was added (commit 27c5613); they must never change",
+ "files": {
+  "belt_wide.parquet": "b238422c01f879a6679c3cf43c70af08503993f7fa5991d70d27a7ff353a59e2",
+  "layout.parquet": "0a85e906fef8817fee2c62957d4fe78904a73c762fe1dc1a46960c186fd48ab1",
+  "manifest.json": "c5b26b5e04bffc7ebce9ab28a42917622e8dcd4fcced489c13928285800a3ba1",
+  "zones.parquet": "6df16413fe3e2ab72e25b8871ae7e2bdda47852e5dbba96ae62463beb0f12853"
+ }
+}

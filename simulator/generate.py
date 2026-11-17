@@ -24,10 +24,12 @@ from .healthy import BELT_SIGNALS, ZONE_SIGNALS, generate_healthy_belt, generate
 from .labels import build_labels
 from .layout import build_layout
 from .messiness import inject_messiness, schedule_sensor_faults, sensor_faults_frame
+from .vision import load_catalog
+from .vision import simulate as simulate_captures
 
 RUN_STATES = ["stopped", "ramp", "running"]
 # New streams are only ever appended: stream i depends on i alone, so existing streams keep their draws.
-STREAMS = ["layout", "conditions", "faults", "hard_negatives", "signals", "messiness", "noise", "drift"]
+STREAMS = ["layout", "conditions", "faults", "hard_negatives", "signals", "messiness", "noise", "drift", "vision"]
 
 
 @dataclass
@@ -46,6 +48,10 @@ class Scenario:
     labels: pd.DataFrame
     sensor_faults: pd.DataFrame
     sensor_fault_events: list  # SensorFault objects behind `sensor_faults`
+    # vision: public camera captures, and (truth) which belt location each capture shows
+    captures: pd.DataFrame = None
+    vision_truth: pd.DataFrame = None
+    vision_locations: list = None
 
 
 def make_streams(seed: int) -> dict:
@@ -128,8 +134,12 @@ def generate(cfg: Config) -> Scenario:
     }
     conditions = cond.to_frame()
     conditions["belt_distance_m"] = D
+    # Camera captures last, on their own stream: nothing above depends on them.
+    captures, vision_truth, vision_locations = simulate_captures(
+        cond.timestamp, D, state_codes == 2, cfg.layout.belt_length_m, rng["vision"], load_catalog(), cfg.step_seconds)
     return Scenario(zones, belt_wide, layout, layout_truth, conditions, meta,
                     faults=faults_frame(events, cond.timestamp), events=events,
                     hard_negatives=hard_negatives_frame(hard_negs, cond.timestamp), labels=labels,
                     sensor_faults=sensor_faults_frame(sensor_faults, cond.timestamp),
-                    sensor_fault_events=sensor_faults)
+                    sensor_fault_events=sensor_faults, captures=captures, vision_truth=vision_truth,
+                    vision_locations=vision_locations)

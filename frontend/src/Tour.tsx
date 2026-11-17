@@ -11,13 +11,15 @@ export const STEPS: Step[] = [
   { tab: "Overview", target: "clock", title: "Time and playback",
     text: "This is the simulated time. Use Pause and Play to stop and resume the replay, and 1× or 3× to change its speed." },
   { tab: "Overview", target: "tabs", title: "One tab per question",
-    text: "Overview: is anything wrong? Alerts: what exactly? Predictions: what will fail, and when? Track record: were the predictions right? Zone details: show me one zone. Data health: can I trust the sensors?" },
+    text: "Overview: is anything wrong? Alerts: what exactly? Predictions: what will fail, and when? Track record: were the predictions right? Zone details: show me one zone. Data health: can I trust the sensors? Vision: what do the belt cameras see?" },
   { tab: "Overview", target: "map", title: "The belt map",
     text: "Each block is a 50 m stretch of belt with its own sensors (a zone). The top row carries material from loading to unloading; the bottom row is the belt returning. Click any block to open that zone." },
   { tab: "Overview", target: "legend", title: "Four statuses",
     text: "Green is normal. Amber with a dot means the model sees unusual behaviour. Red with ! means a failure is predicted within 72 hours. Grey stripes with ? mean the sensors are silent or stuck, so the status is unknown, not normal." },
   { tab: "Overview", target: "accuracy", title: "Is the model any good?",
     text: "The model's record in this run so far: of the parts that failed, how many it had warned about (recall), and of its alerts, how many were real (precision). It fills in as failures happen and are repaired. The line below it gives the result of a fresh test, on scenarios never used for training, tuning or diagnosis." },
+  { tab: "Overview", target: "cameras", title: "Belt surface cameras",
+    text: "How many crack locations the belt cameras have confirmed, and how many places at a splice a person should inspect. The Vision tab has the details." },
   { tab: "Overview", target: "attention", title: "What needs attention",
     text: "The few things worth looking at right now, most serious first. Click one to open its zone. When this list is empty, the belt is healthy." },
   { tab: "Alerts", target: "panel", title: "Alerts",
@@ -31,7 +33,7 @@ export const STEPS: Step[] = [
   { tab: "Data health", target: "panel", title: "Data health",
     text: "Real sensor data is messy. This tab counts the bad input that was caught (missing, impossible or duplicate values) and lists sensors that are silent or stuck." },
   { tab: "Vision", target: "panel", title: "Vision",
-    text: "A camera-based check of the belt surface will appear here. It is not part of this run. You can reopen this tour any time with the “Tour” button at the top." },
+    text: "Cameras photograph the belt and a pretrained crack detector marks cracks. The belt loops, so the same crack comes back every lap: detections at the same belt coordinate become one location, confirmed once seen on two laps. Anything at a splice goes to a separate list for a person to inspect. The images come from a public dataset and are not linked to the sensors. You can reopen this tour any time with the “Tour” button at the top." },
 ];
 
 const CARD_W = 360;

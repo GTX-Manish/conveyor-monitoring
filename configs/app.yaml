@@ -44,6 +44,17 @@ inject:
   unknown_zone_rows_per_day: 1
   swap_every_batches: 200
 
+# Vision: the crack detector on camera captures, and de-duplication by belt coordinate (vision/defects.py).
+vision:
+  model: vision/artifacts/best.onnx
+  eval: vision/artifacts/vision_eval.json     # holds the frozen threshold, chosen on BeltCrack9kd val
+  images_dir: data/vision_demo                 # capture image paths are relative to this folder
+  belt_length_m: 6000.0
+  splice_spacing_m: 500.0                      # splice joints at belt coordinates 0, 500, ... (a plant knows these)
+  merge_m: 2.0                                 # detections within this distance on the belt are one location
+  splice_m: 1.5                                # a location this close to a splice goes to the inspect list
+  threads: 2
+
 # Scoring past predictions against repair records (which arrive only after a repair).
 outcomes:
   relabel_days: 14                  # (assumption) a lapsed alert counts as an early warning if the part fails within this

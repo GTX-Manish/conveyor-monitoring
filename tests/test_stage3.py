@@ -186,13 +186,13 @@ def test_labels_by_hand():
 
 
 def test_labels_and_hard_negatives_are_truth_only(tmp_path):
-    from simulator.io import PUBLIC_COLUMNS, load_public, write_scenario
+    from simulator.io import PUBLIC_COLUMNS, VISION_PUBLIC_COLUMNS, load_public, write_scenario
     scn = only(HEAVY_LOAD)
     root = write_scenario(scn, config_from_dict({"scenario": "s3"}), tmp_path)
     truth = {p.name for p in (root / "truth").iterdir()}
     assert {"labels.parquet", "hard_negatives.parquet", "faults.parquet"} <= truth
     public = {p.name for p in (root / "public").iterdir()}
-    assert public == {f"{n}.parquet" for n in PUBLIC_COLUMNS} | {"manifest.json"}
+    assert public == {f"{n}.parquet" for n in [*PUBLIC_COLUMNS, *VISION_PUBLIC_COLUMNS]} | {"manifest.json"}
     for name, df in load_public(root).items():
         if name != "manifest":
             assert not {"stage", "severity", "hours_to_failure", "fails_within_24h", "fault_id",

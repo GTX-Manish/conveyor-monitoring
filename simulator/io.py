@@ -28,6 +28,10 @@ PUBLIC_COLUMNS = {
                "is_unloading_zone", "is_curve", "curve_radius_m", "incline_deg"],
 }
 
+# Camera captures (simulator/vision.py): public, but not a sensor table, so they are kept out of the manifest's
+# file list and out of load_public. Which belt location a capture shows is truth (truth/vision_truth.parquet).
+VISION_PUBLIC_COLUMNS = {"captures": ["capture_id", "ts", "station", "ground_position_m", "belt_coordinate_m", "image"]}
+
 # Substrings that must never appear in a public column name.
 FORBIDDEN_TOKENS = ["fault", "label", "stage", "severity", "failure", "truth", "hard_negative", "bias",
                     "vib_scale", "ambient", "dust", "load", "speed_frac", "repair", "onset"]
@@ -40,7 +44,7 @@ class LeakageError(RuntimeError):
 
 
 def check_public_columns(name: str, df: pd.DataFrame) -> None:
-    allowed = PUBLIC_COLUMNS[name]
+    allowed = {**PUBLIC_COLUMNS, **VISION_PUBLIC_COLUMNS}[name]
     if list(df.columns) != allowed:
         raise LeakageError(f"public table {name!r} columns {list(df.columns)} != allowlist {allowed}")
     for col in df.columns:
@@ -66,6 +70,9 @@ def write_scenario(scn, cfg: Config, out_root, manifest_extra=None) -> Path:
                 "n_timestamps": scn.meta["n_timestamps"], "n_zones": scn.meta["n_zones"],
                 "files": sorted(f"{n}.parquet" for n in PUBLIC_COLUMNS), **(manifest_extra or {})}
     (pub / "manifest.json").write_text(json.dumps(manifest, indent=2))
+    if scn.captures is not None:
+        check_public_columns("captures", scn.captures)
+        scn.captures.to_parquet(pub / "captures.parquet", index=False)
 
     # Truth: hidden simulator parameters, conditions (analysis only), exact config and run metadata.
     # config_used/run_meta live here because from stage 2 on they carry fault rates and counts.
@@ -75,9 +82,22 @@ def write_scenario(scn, cfg: Config, out_root, manifest_extra=None) -> Path:
     scn.hard_negatives.to_parquet(tru / "hard_negatives.parquet", index=False)
     scn.labels.to_parquet(tru / "labels.parquet", index=False)
     scn.sensor_faults.to_parquet(tru / "sensor_faults.parquet", index=False)
+    if scn.vision_truth is not None:
+        scn.vision_truth.to_parquet(tru / "vision_truth.parquet", index=False)
+        (tru / "vision_locations.json").write_text(json.dumps(scn.vision_locations, indent=2))
     dump_config(cfg, tru / "config_used.yaml")
     (tru / "run_meta.json").write_text(json.dumps(scn.meta, indent=2))
     return root
+
+
+def load_captures(scenario_dir) -> pd.DataFrame | None:
+    """Public camera captures, or None for a scenario built without them. Never opens `truth/`."""
+    path = Path(scenario_dir) / PUBLIC_DIR / "captures.parquet"
+    if not path.exists():
+        return None
+    df = pd.read_parquet(path)
+    check_public_columns("captures", df)
+    return df
 
 
 def load_public(scenario_dir) -> dict:

@@ -31,6 +31,8 @@ from model.alerting import (
 from model.explain import reasons
 from model.features import HISTORY_WINDOWS, WINDOW_MIN, append_windows, rolling_features, window_aggregates
 
+from .vision import VisionService
+
 log = logging.getLogger("engine")
 SCHEMA = Path(__file__).with_name("schema.sql")
 STEP = 60
@@ -139,6 +141,7 @@ class Engine:
             self.thr_abnormal = np.array([z["abnormal"]] * N_ZONES + [d["abnormal"]])
             self.thr_fail = np.array([z["predicted_failure"]] * N_ZONES + [d["predicted_failure"]])
         self.replay = {"state": "idle", "speed": float(settings["replay"]["default_speed"])}
+        self.vision = VisionService(settings, Path(__file__).resolve().parents[1])
 
         self._init_db()
 
@@ -182,7 +185,7 @@ class Engine:
             self._commit()
             self.con.close()
 
-    def submit(self, kind: str, payload) -> None:
+    def submit(self, kind: str, payload):
         """Process one item now, holding the writer lock. Every change to the database goes through here.
 
         Why not a queue and a worker thread: measured on the 2-core development machine, a worker thread
@@ -193,9 +196,10 @@ class Engine:
         t0 = time.perf_counter()
         with self.lock:
             try:
-                self.handle(kind, payload)
+                result = self.handle(kind, payload)
                 if self.pending_commits >= self.commit_every or kind != "ingest":
                     self._commit()
+                return result
             except Exception:  # one bad batch must not stop the system
                 log.exception("failed to process a %s item", kind)
             finally:
@@ -206,8 +210,10 @@ class Engine:
         with self.lock:
             self._commit()
 
-    def handle(self, kind: str, payload) -> None:
+    def handle(self, kind: str, payload):
         """Process one item now (the engine thread calls this; tests may call it directly)."""
+        if kind == "captures":
+            return self.vision.ingest(self.con, payload)
         if kind == "ingest":
             self.ingest(payload)
         elif kind == "replay":

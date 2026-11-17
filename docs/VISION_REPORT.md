@@ -5,8 +5,7 @@
 The crack detector is a YOLOv8 model trained on BeltCrack by Julián Neira Nova
 (github.com/JSNN15/conveyor_crack_detection_2026, AGPL-3.0). We integrated it, evaluated it on the official
 BeltCrack9kd test split, and chose the operating threshold on validation. The looping-belt layer on top of it (belt
-coordinates, cross-lap de-duplication, splice handling and the dashboard) is the next step and is not built at this
-commit.
+coordinates, cross-lap de-duplication, splice handling and the dashboard) is described at the end.
 
 The model file is `vision/artifacts/best.onnx`, taken unchanged from the author's repo at commit `73cc79f`. Next to it:
 `NOTICE.md`, the AGPL-3.0 text (`LICENSE-AGPL-3.0.txt`), and `model_source.json` (source files, git blob hashes,
@@ -106,12 +105,87 @@ detections are real cracks, and about 28% of crack boxes are found per frame. Co
 filtering. The author's README also notes chevron-pattern belts were "almost absent from training", and 9kd has
 several chevron sequences.
 
-## Not done yet
+## The looping belt: one record per crack, not one per lap
 
-The looping-belt layer and the Vision tab are not built at this commit:
-- simulated captures with belt coordinates;
-- cross-lap de-duplication;
-- the "at splice, inspect" list;
-- backend ingest and the dashboard.
+The belt is a 6 km loop, so a crack passes every camera once per lap. The layer on top of the detector turns
+detections into belt locations. Code: `simulator/vision.py` (captures), `vision/defects.py` (rules, shared by the
+backend and the scorer), `backend/vision.py` (live), `scripts/score_vision.py` (scoring).
 
-`/api/vision/*` still returns `enabled: false`.
+### Simulated captures
+
+- **Cameras:** three carry-side stations at 0, 1500 and 3000 m (`CAM1` to `CAM3`). The belt coordinate under a
+  station is (station − belt travel) mod 6000. Travel only grows while the belt runs. Each capture's coordinate has
+  0.5 m Gaussian noise.
+- **Locations:**
+  - 3 or 4 cracks, each pinned to one BeltCrack9kd test sequence. Every lap shows that sequence's frame advanced by
+    a seeded stride of 15 to 30 frames.
+  - 12 splices, every 500 m, each showing one fixed clean image (a joint looks the same every lap).
+  - 4 clean locations, each capture drawing a clean image at random.
+  - One crack is placed within 1.5 m of a splice.
+- **Clean images:** the dataset has no crack-free frames. Clean images are box-free regions of test frames, reduced
+  by the same factor as the crack frames and centred on the detector's grey padding, so they look like a narrower
+  view. Shown full size instead (zoomed 1.6×), the model fired on 10 of 16 of them, against 1 of 16 at the frames'
+  own scale.
+- **Assumption, one recorded lap per running day:** recording every lap would need thousands of committed dataset
+  frames. On that lap each location passes CAM1, CAM2 and CAM3 in turn. The demo has 14 laps, 840 captures and 72
+  images (2.6 MB in `data/vision_demo/`, CC BY-SA 4.0, see `ATTRIBUTION.md`).
+- **Public and truth:** public captures hold only ts, station, ground position, belt coordinate and image path
+  (hashed names). Which location a capture shows is in `truth/vision_truth.parquet`, under the leakage guard.
+  Adding the `vision` random stream last left the demo's sensor files byte-identical (tested against their hashes).
+
+Rebuild the demo images with `python -m simulator.vision build-demo` (needs `BeltCrack9kd_prep/`), and the scores
+with `python -m scripts.score_vision` after `make demo-data`.
+
+### Rules (`vision/defects.py`)
+
+- **Joining:** every detection in a capture joins the location at that capture's belt coordinate. Captures within
+  2 m are one location, and locations that drift within 2 m are merged.
+- **Confirmation:** a location is confirmed once seen on 2 laps (captures less than 1125 s apart are one lap).
+- **Splices:** a location within 1.5 m of a splice goes to a separate "at a splice, inspect" list, confirmed or not,
+  and is never dropped.
+- **Looks:** a capture with no detection that falls on a location counts as a look, so the dashboard can say
+  "seen on 8 of 14 laps".
+
+### Results on the demo (`vision/artifacts/dedup_eval.json`)
+
+| | Result |
+|---|---|
+| Crack locations found | **3 of 4**, 0 duplicates |
+| Crack placed 0.7 m from the splice at 500 m | found and flagged (in the inspect list, seen on 11 of 14 laps) |
+| Laps to confirm (found cracks) | 2, 3 and 4 |
+| Missed crack (sequence `data39`) | 0 detections in 42 captures |
+| False confirmed defects (clean locations) | 4, seen on 3 to 5 of 7 to 14 laps |
+| False entries in the inspect list | 1 (the splice at 3500 m, whose image fires on every lap) |
+| Single-frame false detections | 60, in 60 of 672 clean captures; confirmation removed none |
+
+The live backend gives the same locations as the scorer (checked by posting all 840 captures through the API).
+
+**What this shows:**
+- **De-duplication works:** each found crack is one location however many laps and cameras saw it, and the near-splice
+  crack is listed for inspection rather than dropped.
+- **The missed crack:** `data39` is a chevron-pattern belt with a large tear, and the model's author notes chevron
+  belts were "almost absent from training".
+- **"Seen on 2 laps" is a weak filter over a long run:** a location the model fires on now and then reaches 2 laps
+  eventually. Over 14 laps every intermittent false hit did, so confirmation removed none here. The look count
+  separates them: the real cracks were seen on 8 to 11 of 13 or 14 laps, the false locations on 3 to 5. A stricter rule
+  (for example, seen on most laps looked) would help, but it is not built, because the brief's rule is 2 laps.
+- **Few clean images:** the clean images come from a pool of 16, so a crop the model fires on comes back at more than
+  one clean location. Three of the four false defects show the same crop, and the fourth and the splice at 3500 m show
+  machinery at the frame's edge.
+- **Flattering assumptions:** each crack lap shows a different frame of a real video and each clean capture an
+  independently drawn crop. Persistent stains that fool the model would repeat every lap, so confirmation looks
+  kinder here than it would on a real belt. The fixed splice images are the persistent case.
+- **Limits:** splices are handled by coordinate only (the dataset has no splice images), and the images are a real
+  dataset placed on a simulated belt. They are not linked to the sensors, and no sensor alert uses them.
+
+### Backend and dashboard
+
+- **`POST /api/captures`:** runs the detector on each capture (cached per image, since the model is deterministic)
+  and updates `captures`, `vision_detections` and `vision_defects`.
+- **Read endpoints:** `/api/vision/status`, `/api/vision/detections`, `/api/vision/defects` (two lists, `defects`
+  and `at_splice`) and `/api/vision/image/{id}`. All return `enabled: false` with the reason if the model,
+  onnxruntime or the image folder is missing.
+- **Replayer:** posts captures as the minutes they were taken in are sent.
+- **Vision tab:** confirmed locations (laps seen, cameras, best capture with boxes), the inspect list, the latest
+  detections, and the detector's test numbers marked "public dataset, not linked to the sensors".
+- **Overview:** shows both counts.

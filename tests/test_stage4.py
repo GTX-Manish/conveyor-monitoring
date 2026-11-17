@@ -128,7 +128,7 @@ def test_ground_truth_is_not_touched_by_messiness(messy, clean):
 
 
 def test_sensor_faults_frame_and_truth_only(messy, tmp_path):
-    from simulator.io import PUBLIC_COLUMNS, load_public, write_scenario
+    from simulator.io import PUBLIC_COLUMNS, VISION_PUBLIC_COLUMNS, load_public, write_scenario
     sf = messy.sensor_faults
     assert list(sf.columns) == ["sensor_fault_id", "type", "zone", "signal", "start_time", "end_time", "stuck_value"]
     assert len(sf) == 5 and sf["sensor_fault_id"].is_unique
@@ -140,7 +140,8 @@ def test_sensor_faults_frame_and_truth_only(messy, tmp_path):
 
     root = write_scenario(messy, config_from_dict({"scenario": "s4"}), tmp_path)
     assert (root / "truth" / "sensor_faults.parquet").exists()
-    assert {p.name for p in (root / "public").iterdir()} == {f"{n}.parquet" for n in PUBLIC_COLUMNS} | {"manifest.json"}
+    allowed = {f"{n}.parquet" for n in [*PUBLIC_COLUMNS, *VISION_PUBLIC_COLUMNS]} | {"manifest.json"}
+    assert {p.name for p in (root / "public").iterdir()} == allowed
     public = load_public(root)
     assert "missing_rate" not in str(public["manifest"]) and "sensor_fault" not in str(public["manifest"])
     # the public data really is the messy version: NaNs survive the parquet round trip

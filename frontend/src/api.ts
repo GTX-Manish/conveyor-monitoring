@@ -165,3 +165,25 @@ export interface OfflineEvaluation {
   split: string; call_horizon_hours: number; faults: number; caught: number; open_at_failure: number; false_alerts: number;
   calls: number; calls_came_true: number; faults_called: number;
 }
+
+// ---- vision -------------------------------------------------------------------------------------------
+export interface Box { x1: number; y1: number; x2: number; y2: number; score: number }
+export interface CaptureView {
+  capture_id: number; ts: number; station: string; ground_position_m: number; belt_coordinate_m: number;
+  image_w: number | null; image_h: number | null; boxes: Box[]; image_url: string;
+}
+export interface VisionDefect {
+  defect_id: number; belt_coordinate_m: number; laps: number; laps_looked: number; n_captures: number; n_detections: number;
+  first_ts: number; last_ts: number; confirmed_ts: number | null; best_score: number; stations: string[]; confirmed: boolean;
+  at_splice: boolean; splice_m: number | null; splice_distance_m: number | null; best_capture: CaptureView | null;
+}
+export interface VisionDefects { enabled: boolean; reason?: string; defects: VisionDefect[]; at_splice: VisionDefect[]; unconfirmed: number }
+export interface VisionDetection extends CaptureView { defect_id: number | null; at_splice: boolean; confirmed: boolean; max_score: number | null }
+export interface VisionStatus {
+  enabled: boolean; reason: string | null; threshold: number | null; confirm_laps: number;
+  counts: { captures: number; with_detections: number; detections: number; image_missing: number; defects: number; at_splice: number; unconfirmed: number };
+  stations: { station: string; ground_position_m: number; captures: number }[];
+  evaluation: { split: string; images: number; map50: number; precision: number; recall: number; threshold: number;
+                credit: string; license: string; source_repo: string; dataset: string } | null;
+  settings: { merge_m: number; splice_m: number; splice_spacing_m: number; belt_length_m: number };
+}

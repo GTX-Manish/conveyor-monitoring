@@ -2,7 +2,8 @@
 
     python -m replayer.run --scenario demo_01 --inject-faults
 
-It first posts the first 24 simulated hours as fast as the backend takes them (the model needs a day of
+Camera captures (public/captures.parquet) are posted to /api/captures as the minutes they were taken in are
+sent. It first posts the first 24 simulated hours as fast as the backend takes them (the model needs a day of
 history), then replays at the speed set through /api/replay. With --inject-faults it also adds the kinds of bad
 input the simulator does not produce: duplicate rows, out-of-range values, rows for unknown zones and batches
 out of order. What it added is written to data/<scenario>/replayer_injected.json, so the backend's ingest
@@ -72,6 +73,17 @@ class Injector:
         return rows
 
 
+def load_captures(scenario_dir: Path) -> list:
+    """Public camera captures in time order (empty for a scenario built without them)."""
+    path = Path(scenario_dir) / "public" / "captures.parquet"
+    if not path.exists():
+        return []
+    df = pd.read_parquet(path).sort_values(["ts", "capture_id"])
+    return [{"capture_id": int(r.capture_id), "ts": int(r.ts), "station": str(r.station),
+             "ground_position_m": float(r.ground_position_m), "belt_coordinate_m": float(r.belt_coordinate_m),
+             "image": str(r.image)} for r in df.itertuples()]
+
+
 def as_json_lists(a) -> list:
     """Float array -> nested lists rounded to 4 decimals with None for NaN (what goes on the wire)."""
     obj = np.round(a, 4).astype(object)
@@ -114,6 +126,10 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
     injector = Injector(settings["inject"], inject)
     feed = WorkOrderFeed(load_work_orders(scenario_dir) if work_orders else [])
     orders_sent = 0
+    captures = load_captures(scenario_dir)
+    if max_minutes:
+        captures = [c for c in captures if c["ts"] < int(ts[-1]) + 60]
+    next_capture, captures_sent, newest = 0, 0, None
     preload = int(settings["replay"]["preload_hours"] * 60)
     own = client is None
     client = client or httpx.Client(base_url=base_url, timeout=30.0)
@@ -144,6 +160,14 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
                 t_wall, t_sim = time.time(), sim_ts
             state = {**state, **reply}
             sent += 1
+            newest = sim_ts if newest is None else max(newest, sim_ts)
+            k = next_capture                     # camera captures taken during the minutes sent so far
+            while k < len(captures) and captures[k]["ts"] < newest + 60:
+                k += 1
+            if k > next_capture:
+                client.post("/api/captures", json={"captures": captures[next_capture:k]})
+                captures_sent += k - next_capture
+                next_capture = k
             due = feed.due(sim_ts)               # repair records, only once their repair has ended
             if due:
                 client.post("/api/work_orders", json={"orders": due})
@@ -153,7 +177,7 @@ def run(scenario: str, base_url: str, data_dir: Path, settings: dict, inject: bo
         if own:
             client.close()
     summary = {"scenario": scenario, "batches_sent": sent, "inject_faults": inject, **injector.counts,
-               "work_orders_sent": orders_sent}
+               "work_orders_sent": orders_sent, "captures_sent": captures_sent}
     (scenario_dir / "replayer_injected.json").write_text(json.dumps(summary, indent=2))
     log(f"replay finished: {sent} batches in {time.time() - started:.0f} s; {injector.counts}")
     return summary

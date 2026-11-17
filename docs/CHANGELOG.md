@@ -336,3 +336,21 @@
   `13de532`: `vision/prepare_dataset.py` and its test, because `vision.evaluate` reads its 960 px val output; its
   training-only parts (box-free tiles, Colab zip) are gone and its val output is byte-identical to before.
   `docs/VISION_REPORT.md` gains the dataset licence (CC BY-SA 4.0) and a "Reproducing the evaluation" section.
+- **Vision: the looping-belt layer.**
+  - **Simulated captures** (`simulator/vision.py`):
+    - three cameras at 0, 1500 and 3000 m, belt coordinate = (station − travel) mod 6000 with 0.5 m noise;
+    - 3 or 4 cracks pinned to BeltCrack9kd test sequences (stride of 15 to 30 frames per lap), one of them within
+      1.5 m of a splice; 12 splices with fixed clean images; 4 clean locations;
+    - one recorded lap per running day (assumption).
+  - **Data:** the `vision` stream is appended last, and the demo_01 sensor files stay byte-identical (tested against
+    their hashes). Public `captures.parquet` (hashed image names); the truth goes in `truth/vision_truth.parquet`,
+    covered by the leakage guard. Demo images (72, 2.6 MB, CC BY-SA 4.0 with attribution) are in
+    `data/vision_demo/`; `.gitignore` now ignores `data/*` except that folder.
+  - **Rules** (`vision/defects.py`): merge within ±2 m, confirm on 2 laps, separate list at splices (±1.5 m).
+  - **`scripts/score_vision.py` → `dedup_eval.json`:** 3 of 4 cracks found, 0 duplicates, the near-splice crack found
+    and flagged; 4 false confirmed defects and 1 false splice entry. "Seen on 2 laps" removed no intermittent false
+    hit over 14 laps.
+  - **Backend:** `vision_defects` table, `POST /api/captures`, `/api/vision/{status,detections,defects,image/{id}}`,
+    and `enabled: false` with the reason when the model or images are missing. The replayer posts captures.
+  - **Dashboard:** the Vision tab, a camera count on the Overview, two tour steps, rebuilt `frontend/dist`. The console
+    check was shown to catch an injected `console.error`.

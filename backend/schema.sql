@@ -33,13 +33,21 @@ CREATE TABLE ingest_log (batch_id INTEGER PRIMARY KEY AUTOINCREMENT, received_wa
 CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 -- keys: scenario, replay_state, replay_position_ts, replay_speed, model_version, thresholds (JSON), schema_version
 
--- Vision placeholders: the camera pipeline is not built yet (the image dataset is still downloading). These
--- tables stay empty so adding vision later needs no schema change.
+-- Vision: camera captures, the detector's boxes, and one row per belt location (backend/vision.py, vision/defects.py).
+-- status: 'ok' | 'image_missing'. defect_id links a capture's detections to its location. bbox: JSON x1, y1, x2, y2,
+-- score in image pixels. stations: JSON list. A location within splice_m of a splice has at_splice = 1.
 CREATE TABLE captures (capture_id INTEGER PRIMARY KEY, ts INTEGER NOT NULL, station TEXT NOT NULL,
-  ground_position_m REAL NOT NULL, belt_coordinate_m REAL, image_path TEXT);
+  ground_position_m REAL NOT NULL, belt_coordinate_m REAL, image_path TEXT, image_w INTEGER, image_h INTEGER,
+  status TEXT NOT NULL, n_detections INTEGER NOT NULL, defect_id INTEGER);
+CREATE INDEX captures_ts ON captures(ts);
 CREATE TABLE vision_detections (detection_id INTEGER PRIMARY KEY AUTOINCREMENT, capture_id INTEGER NOT NULL,
   ts INTEGER NOT NULL, label TEXT NOT NULL, score REAL NOT NULL, belt_coordinate_m REAL, ground_position_m REAL,
   bbox TEXT, defect_id INTEGER);
+CREATE INDEX vision_detections_capture ON vision_detections(capture_id);
+CREATE TABLE vision_defects (defect_id INTEGER PRIMARY KEY, belt_coordinate_m REAL NOT NULL, laps INTEGER NOT NULL,
+  laps_looked INTEGER NOT NULL, stations TEXT NOT NULL, n_captures INTEGER NOT NULL, n_detections INTEGER NOT NULL,
+  first_ts INTEGER NOT NULL, last_ts INTEGER NOT NULL, confirmed INTEGER NOT NULL, confirmed_ts INTEGER,
+  best_capture_id INTEGER, best_score REAL, at_splice INTEGER NOT NULL, splice_m REAL, splice_distance_m REAL);
 
 -- Repair records arrive after a repair (in a plant: closed work orders). They are used only to score past
 -- predictions; the model never reads them.

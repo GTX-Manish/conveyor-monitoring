@@ -98,7 +98,7 @@ def is_current(root: Path, digest: str) -> bool:
         return False
     if json.loads(manifest.read_text()).get("config_hash") != digest:
         return False
-    return all((root / "public" / f"{n}.parquet").exists() for n in PUBLIC_COLUMNS)
+    return all((root / "public" / f"{n}.parquet").exists() for n in [*PUBLIC_COLUMNS, "captures"])
 
 
 def _build_one(config_path: str, split: str, out_root: str) -> dict:

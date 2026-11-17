@@ -8,14 +8,22 @@ import pytest
 
 from simulator.config import Config
 from simulator.generate import generate
-from simulator.io import PUBLIC_COLUMNS, LeakageError, check_public_columns, load_public, write_scenario
+from simulator.io import (
+    PUBLIC_COLUMNS,
+    VISION_PUBLIC_COLUMNS,
+    LeakageError,
+    check_public_columns,
+    load_public,
+    write_scenario,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 # Live-path and model code. Folders that do not exist yet are skipped.
 PIPELINE_DIRS = ["backend", "replayer", "frontend/src", "common", "model", "vision", "scripts"]
 # The only files outside simulator/ that may read ground truth (BUILD_PLAN.md section 2).
 TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py", "scripts/robustness.py",
-                 "replayer/work_orders.py"}   # repair records, released only after each repair (see its docstring)
+                 "replayer/work_orders.py",   # repair records, released only after each repair (see its docstring)
+                 "scripts/score_vision.py"}   # scores the looping-belt layer against truth/vision_truth.parquet
 OTHER_TRUTH_FILES = ["layout_truth", "faults.parquet", "hard_negatives.parquet", "sensor_faults.parquet",
                      "conditions.parquet"]
 
@@ -31,7 +39,18 @@ def written(tmp_path_factory):
 def test_public_folder_holds_only_allowlisted_files(written):
     _, root = written
     files = sorted(p.name for p in (root / "public").iterdir())
-    assert files == sorted([f"{n}.parquet" for n in PUBLIC_COLUMNS] + ["manifest.json"])
+    assert files == sorted([f"{n}.parquet" for n in [*PUBLIC_COLUMNS, *VISION_PUBLIC_COLUMNS]] + ["manifest.json"])
+
+
+def test_vision_truth_stays_in_truth(written):
+    scn, root = written
+    assert {"vision_truth.parquet", "vision_locations.json"} <= {p.name for p in (root / "truth").iterdir()}
+    captures = pd.read_parquet(root / "public" / "captures.parquet")
+    assert list(captures.columns) == VISION_PUBLIC_COLUMNS["captures"]
+    assert not set(captures.columns) & set(scn.vision_truth.columns) - {"capture_id"}
+    bad = captures.assign(kind="crack")
+    with pytest.raises(LeakageError):
+        check_public_columns("captures", bad)
 
 
 def test_truth_files_are_not_public(written):
@@ -77,7 +96,7 @@ def test_load_public_never_needs_truth(written, tmp_path):
 def test_pipeline_code_never_touches_truth():
     """Static guard: live-path and model code may not reference truth files or simulator internals."""
     pattern = re.compile(r"""truth|layout_truth|labels\.parquet|faults\.parquet|hard_negatives\.parquet|"""
-                         r"""sensor_faults\.parquet|conditions\.parquet|simulator\.generate""")
+                         r"""sensor_faults\.parquet|conditions\.parquet|simulator\.generate|catalog\.json""")
     offenders = []
     for d in PIPELINE_DIRS:
         if not (REPO / d).is_dir():
