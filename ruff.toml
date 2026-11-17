@@ -5,8 +5,3 @@ exclude = [".venv", "frontend", "data"]
 [lint]
 select = ["E", "F", "W", "I"]
 ignore = ["E731"]   # small lambdas are used on purpose for one-line reshapes
-
-[lint.per-file-ignores]
-# The dataset-preparation cell must stay identical to vision/prepare_beltcrack9kd.py, imports included,
-# so it re-imports modules the setup cell already imported.
-"vision/beltcrackdet_9kd_colab.ipynb" = ["F811"]

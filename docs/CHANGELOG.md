@@ -329,3 +329,10 @@
   on 9kd val (0.363, max F1) and scored 9kd test once: mAP50 26.9, mAP50-95 13.7, P 45.9 / R 28.2 at the threshold.
   Val (73.3 mAP50) is likely in the author's training data. See `docs/VISION_REPORT.md`. New pins: onnxruntime,
   pillow. The looping-belt layer and the Vision tab are not built yet.
+- **Vision: training leftovers removed.** The repo now keeps only what the shipped ONNX detector needs and what
+  reproduces `vision_eval.json`. Removed: `vision/beltcrackdet_9kd_colab.ipynb` (BeltCrackDet, never trained) and
+  `vision/train_beltcrack.ipynb` (YOLO11s, never finished); the notebook's F811 exception in `ruff.toml`; the Colab
+  zip step in `vision/prepare_beltcrack9kd.py`; `.gitignore` lines for files nothing produces any more. Restored from
+  `13de532`: `vision/prepare_dataset.py` and its test, because `vision.evaluate` reads its 960 px val output; its
+  training-only parts (box-free tiles, Colab zip) are gone and its val output is byte-identical to before.
+  `docs/VISION_REPORT.md` gains the dataset licence (CC BY-SA 4.0) and a "Reproducing the evaluation" section.

@@ -1,12 +1,11 @@
 # ---------------------------------------------------------------------------------------
-# BeltCrack9kd preparation for the authors' BeltCrackDet code.
+# BeltCrack9kd preparation, following the BeltCrack authors' own pipeline.
 #
-# Train frames are stored at exactly the size the authors' loader resizes them to
-# (letterbox scale to 512, int() sizes, bicubic), so their loader's own resize becomes a
-# no-op and training sees the same pixels as on full-resolution files (apart from JPEG
-# re-encoding at quality 95). Box coordinates use the same int() truncation as the loader.
-# Test frames are kept at 1024 on the long side, because the authors' test script
-# stretches each frame to 512x512 without letterbox.
+# The shipped detector's evaluation (vision/evaluate.py) reads the test part of the output:
+# annotations/test_coco.json and the test frames, kept at 1024 on the long side.
+# The script also writes the train frames the way the authors' BeltCrackDet loader expects
+# (letterbox scale to 512, int() sizes, bicubic, JPEG quality 95, int()-truncated boxes);
+# those are not used by the evaluation.
 # ---------------------------------------------------------------------------------------
 import json
 import os
@@ -76,7 +75,7 @@ def extract_archive(archive, out, password):
         return
     else:
         raise RuntimeError(f"No extractor for {archive.name}: install unrar or 7-Zip "
-                           "(Colab/Ubuntu: apt-get install -y unrar p7zip-full).")
+                           "(Ubuntu: apt-get install -y unrar p7zip-full).")
     r = subprocess.run(cmd, capture_output=True, text=True)
     if r.returncode not in ok:
         raise RuntimeError(f"Extracting {archive.name} failed (exit {r.returncode}). Check the password and "
@@ -518,20 +517,9 @@ def prepare(root, out, workers=None, log=print):
     return info
 
 
-def make_zip(folder, zip_path):
-    folder, zip_path = Path(folder), Path(zip_path)
-    tmp = zip_path.with_suffix(".zip.tmp")
-    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_STORED) as z:
-        for p in sorted(folder.rglob("*")):
-            if p.is_file():
-                z.write(p, Path(folder.name) / p.relative_to(folder))
-    os.replace(tmp, zip_path)
-    return zip_path
-
-
 if __name__ == "__main__":
     import argparse
-    ap = argparse.ArgumentParser(description="Prepare BeltCrack9kd for the BeltCrackDet Colab notebook.")
+    ap = argparse.ArgumentParser(description="Prepare BeltCrack9kd (test frames and test_coco.json for vision.evaluate).")
     ap.add_argument("src", help="folder holding the downloaded 9kd archive(s), or the extracted dataset")
     ap.add_argument("--out", default="BeltCrack9kd_prep", help="output folder (default: BeltCrack9kd_prep)")
     ap.add_argument("--password", default="cv205")
@@ -554,7 +542,6 @@ if __name__ == "__main__":
     print("dataset root:", root)
     info = prepare(root, out, workers=a.workers)
     print(check_dataset(info))
-    z = make_zip(out, out.parent / "BeltCrack9kd_prep.zip")
-    print(f"\nDone. Upload {z} to your Google Drive dataset folder and run the notebook.")
+    print(f"\nDone: {out}")
     if raw.exists():
         print(f"You can delete the extracted copy: {raw}")

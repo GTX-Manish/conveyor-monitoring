@@ -11,14 +11,10 @@ commit.
 The model file is `vision/artifacts/best.onnx`, taken unchanged from the author's repo at commit `73cc79f`. Next to it:
 `NOTICE.md`, the AGPL-3.0 text (`LICENSE-AGPL-3.0.txt`), and `model_source.json` (source files, git blob hashes,
 sha256 `236f930a…529c`). The dataset is BeltCrack by Huang, Ji, Ma and Ye (*Pattern Recognition*, 2026;
-doi:10.57760/sciencedb.31181).
+doi:10.57760/sciencedb.31181), licensed CC BY-SA 4.0.
 
-## Why a pretrained detector
-
-Detection quality on BeltCrack is set by the model and the GPU-hours behind it. The looping-belt logic is what this
-project adds. Our replication of the paper's BeltCrackDet needed about 74 GPU-hours on a T4, against a budget of 4,
-and a published YOLOv8 trained on the same dataset was available. Using it costs no training time and still gets
-a measurement on the official test split. So we spent the budget on integrating it, measuring it on the official split, and the looping-belt layer.
+We evaluated training our own model, but the paper's BeltCrackDet needed about 74 GPU-hours on a T4, so we chose this
+pretrained detector instead.
 
 ## Integration
 
@@ -37,8 +33,8 @@ One deliberate difference: the canvas offset is a whole pixel, while the browser
 undo their own offset, so boxes stay in place. `tests/test_vision_detector.py` checks the letterbox geometry, decoding
 and NMS. It also compares ONNX outputs against a fixture in two ways:
 - **Generated frame:** raw outputs, which runs in CI.
-- **Four BeltCrack9kd val frames:** IoU ≥ 0.99 and score within 0.01. This runs only where the dataset is present,
-  because dataset images stay out of the repo until the licence is confirmed.
+- **Four BeltCrack9kd val frames:** IoU ≥ 0.99 and score within 0.01. This runs only where `beltcrack_yolo960/` is
+  present, because dataset images are kept out of the repo.
 
 ## Evaluation protocol
 
@@ -53,6 +49,19 @@ and NMS. It also compares ONNX outputs against a fixture in two ways:
    side. The script refuses to score test a second time.
    - mAP50 and mAP50-95: COCO-style, 101-point interpolation, IoU 0.50:0.95.
    - P / R / F1 at conf 0.3 and at the frozen threshold.
+
+### Reproducing the evaluation
+
+The dataset is not in the repo. From the downloaded archive (8 RAR parts, password `cv205`):
+
+```bash
+python -m vision.prepare_beltcrack9kd dataset --out BeltCrack9kd_prep   # extracts to BeltCrack9kd_prep_raw/; test frames and test_coco.json
+python -m vision.prepare_dataset --root BeltCrack9kd_prep_raw --out beltcrack_yolo960   # 960 px val frames and YOLO labels
+python -m vision.evaluate --val beltcrack_yolo960 --test BeltCrack9kd_prep
+```
+
+`vision.evaluate` refuses to score test again while `vision_eval.json` holds a test result. Tests:
+`tests/test_beltcrack9kd_prep.py` and `tests/test_vision_prepare.py` cover the two converters on synthetic data.
 
 ## Results
 
