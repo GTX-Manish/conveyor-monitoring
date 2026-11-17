@@ -1,6 +1,8 @@
 # How I used AI on this project
 
-I built this take-home with Claude Code (Anthropic) from 14 to 17 November 2026.
+I built this take-home with Claude Code (Anthropic) from 14 to 17 November 2026. The full chat logs are in
+[chat_logs/](chat_logs/), one file per day: my messages, Claude's replies and one line per tool call. Tool outputs,
+the model's internal reasoning and automated notices are left out, and my email address is redacted.
 
 - **Me:** I set the scope and the quality bar, answered open questions, pushed back when results looked too good, and
   made every keep-or-drop call.
