@@ -14,7 +14,7 @@ from simulator.config import Config, load_config
 from simulator.generate import STREAMS, generate, make_streams
 from simulator.io import VISION_PUBLIC_COLUMNS, write_scenario
 from simulator.scenario_set import config_hash
-from vision.defects import DefectTracker, circ_dist
+from vision.defects import CONFIRM_LAPS, CONFIRM_RATIO, DefectTracker, circ_dist
 
 REPO = Path(__file__).resolve().parents[1]
 DEMO_CONFIG = REPO / "configs" / "scenarios" / "demo_01.yaml"
@@ -218,6 +218,36 @@ def test_dedup_eval_is_from_the_committed_demo():
     ev = json.loads((REPO / "vision" / "artifacts" / "dedup_eval.json").read_text())
     assert ev["scenario"] == "demo_01" and ev["duplicates"] == 0
     assert ev["near_splice_crack"]["found_and_flagged"] is True
+    old, new = ev["side_by_side"]
+    assert old["rule"].startswith("old") and new["rule"].startswith("new")
+    assert ev["rule_in_use"] == {**ev["rule_in_use"], "confirm_laps": CONFIRM_LAPS, "confirm_ratio": CONFIRM_RATIO}
+    assert new["crack_locations_found"] == old["crack_locations_found"]
+    assert new["false_confirmed_defects"] <= old["false_confirmed_defects"]
+
+
+def test_the_rule_in_use_is_the_one_chosen_away_from_the_demo():
+    tuning = json.loads((REPO / "vision" / "artifacts" / "dedup_tuning.json").read_text())
+    assert tuning["scenario"]["seed"] != load_config(DEMO_CONFIG).seed
+    assert tuning["scenario"]["seed"] not in {load_config(p).seed for p in (REPO / "configs" / "scenarios").glob("*.yaml")}
+    assert (tuning["choice"]["confirm_laps"], tuning["choice"]["confirm_ratio"]) == (CONFIRM_LAPS, CONFIRM_RATIO)
+
+
+def test_ratio_rule_drops_a_location_seen_on_too_few_of_its_laps():
+    def run(ratio):
+        tr = DefectTracker(confirm_laps=2, confirm_ratio=ratio)
+        for lap in range(6):
+            tr.add(lap + 1, lap * 86400, "CAM1", 2100.0, [0.5] if lap < 2 else [])   # hits on laps 1-2, then nothing
+        (loc,) = tr.locations.values()
+        return loc
+    loc = run(0.5)
+    assert (loc.laps, loc.laps_looked) == (2, 6) and not loc.confirmed           # 2 of 6 laps: no longer confirmed
+    assert loc.confirmed_ts == 86400                                               # but it was, after lap 2
+    assert run(0.0).confirmed                                                      # the old rule keeps it for good
+    tr = DefectTracker(confirm_laps=2, confirm_ratio=0.5)
+    for lap in range(6):                                                           # a crack seen on 4 of 6 laps
+        tr.add(lap + 1, lap * 86400, "CAM1", 2100.0, [0.5] if lap % 3 else [])
+    (loc,) = tr.locations.values()
+    assert (loc.laps, loc.laps_looked) == (4, 5) and loc.confirmed               # laps looked count from first seen
 
 
 # ------------------------------------------------------------------ backend

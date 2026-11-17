@@ -23,7 +23,8 @@ PIPELINE_DIRS = ["backend", "replayer", "frontend/src", "common", "model", "visi
 # The only files outside simulator/ that may read ground truth (BUILD_PLAN.md section 2).
 TRUTH_READERS = {"scripts/find_demo_seed.py", "scripts/score.py", "scripts/make_model_data.py", "scripts/robustness.py",
                  "replayer/work_orders.py",   # repair records, released only after each repair (see its docstring)
-                 "scripts/score_vision.py"}   # scores the looping-belt layer against truth/vision_truth.parquet
+                 "scripts/score_vision.py",   # scores the looping-belt layer against truth/vision_truth.parquet
+                 "scripts/tune_dedup.py"}     # chooses the confirmation rule on its own simulated run (not the demo)
 OTHER_TRUTH_FILES = ["layout_truth", "faults.parquet", "hard_negatives.parquet", "sensor_faults.parquet",
                      "conditions.parquet"]
 

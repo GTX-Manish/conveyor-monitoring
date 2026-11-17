@@ -354,3 +354,13 @@
     and `enabled: false` with the reason when the model or images are missing. The replayer posts captures.
   - **Dashboard:** the Vision tab, a camera count on the Overview, two tour steps, rebuilt `frontend/dist`. The console
     check was shown to catch an injected `console.error`.
+- **Vision: lap-ratio confirmation.**
+  - **Rule:** a location is confirmed while seen on at least K laps and on at least R of the laps it was looked at.
+  - **Choice:** K = 2, R = 0.5, chosen by `scripts/tune_dedup.py` on a separate run (seed 2027, the demo's config
+    otherwise). The selection procedure was fixed before the run; the result is in `vision/artifacts/dedup_tuning.json`.
+  - **Demo, rescored once** (`dedup_eval.json` has both rules side by side): 3 of 4 cracks found, 0 duplicates, the
+    near-splice crack flagged, and false confirmed defects down from 4 to 0. The 4 false locations are confirmed for a
+    while before their ratio drops.
+  - **Thin margin:** R = 0.5 was the only grid value that worked on the tuning run.
+  - **Report:** VISION_REPORT lists `data39` (chevron belt, missed) and the splice at 3500 m (fires every lap, which is
+    what the inspect list is for) under known limitations.

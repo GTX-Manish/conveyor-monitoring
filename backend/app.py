@@ -19,7 +19,7 @@ from pydantic import BaseModel, Field
 
 from common.ids import ASSETS, BELT_SIGNALS, ZONE_SIGNALS, asset_zone
 from model.alerting import CALL_HORIZON_HOURS
-from vision.defects import CONFIRM_LAPS
+from vision.defects import CONFIRM_LAPS, CONFIRM_RATIO
 
 from .engine import Engine, connect
 
@@ -315,7 +315,7 @@ def create_app(settings: Optional[dict] = None, engine: Optional[Engine] = None)
         return {"enabled": v.enabled, "reason": v.reason, "threshold": v.threshold() if v.enabled else None,
                 "counts": {**counts, **loc}, "stations": stations, "evaluation": v.evaluation(),
                 "settings": {k: v.cfg.get(k) for k in ("merge_m", "splice_m", "splice_spacing_m", "belt_length_m")},
-                "confirm_laps": CONFIRM_LAPS}
+                "confirm_laps": CONFIRM_LAPS, "confirm_ratio": CONFIRM_RATIO}
 
     @app.get("/api/vision/detections")
     def vision_detections(limit: int = 20):

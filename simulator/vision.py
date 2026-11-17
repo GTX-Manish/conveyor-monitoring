@@ -238,8 +238,24 @@ Built by `python -m simulator.vision build-demo`. The demo scenario's captures (
 """
 
 
-def build_demo(prep: Path, out: Path = DEMO_DIR, scenario_config: Path = REPO / "configs" / "scenarios" / "demo_01.yaml"):
+def crack_frame_jpeg(src: Path) -> bytes:
+    """A test frame as the cameras show it: reduced to FRAME_SIZE and JPEG-encoded (used for data/vision_demo/ and
+    for the tuning run in scripts/tune_dedup.py, so both see the same pixels)."""
+    import io
+
     from PIL import Image
+    buf = io.BytesIO()
+    with Image.open(src) as im:
+        im.convert("RGB").resize(FRAME_SIZE, Image.Resampling.LANCZOS).save(buf, "JPEG", quality=JPEG_QUALITY)
+    return buf.getvalue()
+
+
+def dataset_frame_paths(prep: Path) -> dict:
+    """(sequence, frame number) -> path of the 1024 px test frame in the output of vision/prepare_beltcrack9kd.py."""
+    return {k: v[0] for k, v in _test_frames(Path(prep))[1].items()}
+
+
+def build_demo(prep: Path, out: Path = DEMO_DIR, scenario_config: Path = REPO / "configs" / "scenarios" / "demo_01.yaml"):
 
     from .config import load_config
     from .generate import generate
@@ -259,8 +275,7 @@ def build_demo(prep: Path, out: Path = DEMO_DIR, scenario_config: Path = REPO / 
         _, seq, name = source.split("/")
         n = int(name[:-4])
         file = frame_file(seq, n)
-        with Image.open(info[(seq, n)][0]) as im:
-            im.convert("RGB").resize(FRAME_SIZE, Image.Resampling.LANCZOS).save(out / file, quality=JPEG_QUALITY)
+        (out / file).write_bytes(crack_frame_jpeg(info[(seq, n)][0]))
         catalog["frames"].append({"file": file, "source": source})
     (out / CATALOG_NAME).write_text(json.dumps(catalog, indent=1))
     (out / "ATTRIBUTION.md").write_text(ATTRIBUTION)

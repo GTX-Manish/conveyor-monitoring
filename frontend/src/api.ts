@@ -180,7 +180,7 @@ export interface VisionDefect {
 export interface VisionDefects { enabled: boolean; reason?: string; defects: VisionDefect[]; at_splice: VisionDefect[]; unconfirmed: number }
 export interface VisionDetection extends CaptureView { defect_id: number | null; at_splice: boolean; confirmed: boolean; max_score: number | null }
 export interface VisionStatus {
-  enabled: boolean; reason: string | null; threshold: number | null; confirm_laps: number;
+  enabled: boolean; reason: string | null; threshold: number | null; confirm_laps: number; confirm_ratio: number;
   counts: { captures: number; with_detections: number; detections: number; image_missing: number; defects: number; at_splice: number; unconfirmed: number };
   stations: { station: string; ground_position_m: number; captures: number }[];
   evaluation: { split: string; images: number; map50: number; precision: number; recall: number; threshold: number;

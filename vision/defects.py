@@ -7,11 +7,14 @@ turns per-capture detections into one record per belt location:
   scale, so all boxes in one capture count as one place on the belt);
 - a capture joins the nearest location within MERGE_M (circular distance on the loop); otherwise it starts a new
   one. Two locations that drift within MERGE_M of each other are merged, so a crack is never listed twice;
-- a location is confirmed once it has been seen on CONFIRM_LAPS laps. Captures of one location less than
-  SAME_LAP_S apart belong to the same lap (the three stations see a point within 750 s at 4 m/s; the next lap
-  comes 1500 s later);
-- a capture with no detection does not move or create a location, but if it falls on one it counts as a look:
-  "seen on 3 of 12 laps" tells a crack that shows most laps from an occasional false hit;
+- a capture with no detection does not move or create a location, but if it falls on one it counts as a look.
+  "Seen on X of Y laps": X laps with a detection, Y laps on which a camera looked at the location since it was
+  first seen (with or without a detection). Captures of one location less than SAME_LAP_S apart belong to the same
+  lap (the three stations see a point within 750 s at 4 m/s; the next lap comes 1500 s later);
+- a location is confirmed while X >= CONFIRM_LAPS and X / Y >= CONFIRM_RATIO. The rule is judged on the evidence
+  so far, so a location whose ratio falls is no longer confirmed; the first time it was confirmed is kept.
+  K and R were chosen on a separate simulator run, not on the demo (scripts/tune_dedup.py,
+  vision/artifacts/dedup_tuning.json). The earlier rule, "seen on 2 laps", is CONFIRM_LAPS = 2, CONFIRM_RATIO = 0;
 - a location within SPLICE_M of a splice is put in a separate "at splice, inspect" list and is never dropped: a
   splice joint can look like a crack to the model, and a real crack can sit next to a splice.
 
@@ -26,7 +29,8 @@ BELT_LENGTH_M = 6000.0
 SPLICE_SPACING_M = 500.0
 MERGE_M = 2.0
 SPLICE_M = 1.5
-CONFIRM_LAPS = 2
+CONFIRM_LAPS = 2            # K: frozen from vision/artifacts/dedup_tuning.json (a test checks they agree)
+CONFIRM_RATIO = 0.5          # R
 SAME_LAP_S = 1125.0          # 0.75 of a lap at the nominal 4 m/s
 
 
@@ -47,6 +51,9 @@ class Location:
     best_score: float = -1.0
     splice_m: float | None = None            # the nearest splice, if within SPLICE_M
     splice_distance_m: float | None = None
+    confirm_laps: int = CONFIRM_LAPS
+    confirm_ratio: float = CONFIRM_RATIO
+    first_confirmed_ts: float | None = None
 
     @property
     def coordinate(self) -> float:
@@ -81,12 +88,13 @@ class Location:
 
     @property
     def confirmed(self) -> bool:
-        return self.laps >= CONFIRM_LAPS
+        laps = self.laps
+        return laps >= self.confirm_laps and laps >= self.confirm_ratio * self.laps_looked
 
     @property
     def confirmed_ts(self) -> float | None:
-        starts = self.lap_starts()
-        return starts[CONFIRM_LAPS - 1] if len(starts) >= CONFIRM_LAPS else None
+        """When the location was first confirmed (it may have dropped out since)."""
+        return self.first_confirmed_ts
 
     @property
     def at_splice(self) -> bool:
@@ -121,8 +129,10 @@ class Location:
 
 class DefectTracker:
     def __init__(self, belt_length_m: float = BELT_LENGTH_M, splice_spacing_m: float = SPLICE_SPACING_M,
-                 merge_m: float = MERGE_M, splice_m: float = SPLICE_M):
+                 merge_m: float = MERGE_M, splice_m: float = SPLICE_M, confirm_laps: int = CONFIRM_LAPS,
+                 confirm_ratio: float = CONFIRM_RATIO):
         self.length, self.merge_m, self.splice_m = float(belt_length_m), float(merge_m), float(splice_m)
+        self.confirm_laps, self.confirm_ratio = int(confirm_laps), float(confirm_ratio)
         n = int(round(self.length / splice_spacing_m))
         self.splices = [k * float(splice_spacing_m) for k in range(n)]
         self.locations: dict[int, Location] = {}
@@ -149,10 +159,12 @@ class DefectTracker:
             here = self._nearest(coord)
             if here is not None:
                 here.looks.append(ts)
+                self._note_confirmation(here, ts)
             return None, []
         loc = self._nearest(coord)
         if loc is None:
-            loc = self.locations[self.next_id] = Location(self.next_id, self.length)
+            loc = self.locations[self.next_id] = Location(self.next_id, self.length, confirm_laps=self.confirm_laps,
+                                                          confirm_ratio=self.confirm_ratio)
             self.next_id += 1
         loc.add(capture_id, ts, station, coord, scores)
         merged = []
@@ -163,11 +175,19 @@ class DefectTracker:
             keep.looks += gone.looks
             if gone.best_score > keep.best_score:
                 keep.best_score, keep.best_capture_id = gone.best_score, gone.best_capture_id
+            firsts = [x for x in (keep.first_confirmed_ts, gone.first_confirmed_ts) if x is not None]
+            keep.first_confirmed_ts = min(firsts) if firsts else None
             del self.locations[gone.location_id]
             merged.append(gone.location_id)
             loc = keep
         self._mark_splice(loc)
+        self._note_confirmation(loc, ts)
         return loc, merged
+
+    @staticmethod
+    def _note_confirmation(loc: Location, ts: float) -> None:
+        if loc.first_confirmed_ts is None and loc.confirmed:
+            loc.first_confirmed_ts = ts
 
     def defects(self) -> list[Location]:
         """Confirmed locations away from splices, most laps first."""

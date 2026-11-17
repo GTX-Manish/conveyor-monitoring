@@ -133,50 +133,84 @@ backend and the scorer), `backend/vision.py` (live), `scripts/score_vision.py` (
   (hashed names). Which location a capture shows is in `truth/vision_truth.parquet`, under the leakage guard.
   Adding the `vision` random stream last left the demo's sensor files byte-identical (tested against their hashes).
 
-Rebuild the demo images with `python -m simulator.vision build-demo` (needs `BeltCrack9kd_prep/`), and the scores
-with `python -m scripts.score_vision` after `make demo-data`.
+Rebuild the demo images with `python -m simulator.vision build-demo` (needs `BeltCrack9kd_prep/`), the rule choice
+with `python -m scripts.tune_dedup` (same), and the demo scores with `python -m scripts.score_vision` after
+`make demo-data`.
 
 ### Rules (`vision/defects.py`)
 
 - **Joining:** every detection in a capture joins the location at that capture's belt coordinate. Captures within
   2 m are one location, and locations that drift within 2 m are merged.
-- **Confirmation:** a location is confirmed once seen on 2 laps (captures less than 1125 s apart are one lap).
+- **Seen on X of Y laps:** X is the number of laps with a detection; Y is the number of laps a camera looked at the
+  location since it was first seen, with or without a detection. Captures less than 1125 s apart are one lap.
+- **Confirmation:** a location is confirmed while it has been seen on at least **K = 2** laps and on at least
+  **R = 50%** of the laps it was looked at. The rule is judged on the evidence so far: a location whose ratio falls
+  drops out of the list, and the time it was first confirmed is kept.
 - **Splices:** a location within 1.5 m of a splice goes to a separate "at a splice, inspect" list, confirmed or not,
-  and is never dropped.
-- **Looks:** a capture with no detection that falls on a location counts as a look, so the dashboard can say
-  "seen on 8 of 14 laps".
+  and is never dropped. The confirmation rule does not change this list.
 
-### Results on the demo (`vision/artifacts/dedup_eval.json`)
+### Choosing K and R away from the demo (`scripts/tune_dedup.py`, `vision/artifacts/dedup_tuning.json`)
 
-| | Result |
-|---|---|
-| Crack locations found | **3 of 4**, 0 duplicates |
-| Crack placed 0.7 m from the splice at 500 m | found and flagged (in the inspect list, seen on 11 of 14 laps) |
-| Laps to confirm (found cracks) | 2, 3 and 4 |
-| Missed crack (sequence `data39`) | 0 detections in 42 captures |
-| False confirmed defects (clean locations) | 4, seen on 3 to 5 of 7 to 14 laps |
-| False entries in the inspect list | 1 (the splice at 3500 m, whose image fires on every lap) |
-| Single-frame false detections | 60, in 60 of 672 clean captures; confirmation removed none |
+**The tuning run:** the demo's generator and config with another seed (2027, used by no other scenario), so its
+cracks, splice images, clean locations, frames and noise are its own. demo_01 was not read.
 
-The live backend gives the same locations as the scorer (checked by posting all 840 captures through the API).
+**Selection, fixed in the script before the run:**
+1. A crack is detectable if the model fires on it on at least 2 laps.
+2. Keep the rules (K = 2 to 4, R = 0 to 0.95 in steps of 0.05) that find every detectable crack.
+3. Of those, keep the rules with the fewest false confirmed defects.
+4. Take the smallest K, and the middle of the tied R values.
+
+**Result:** K = 2, R = 0.5.
+- **Detectable cracks:** 2 of the 3 tuning cracks; the third is again the `data39` chevron belt, with no detection.
+- **False confirmed defects:** the new rule drops them from 4 (old rule) to 0, and both detectable cracks are still
+  found.
+- **The margin is thin.** R = 0.5 is the only grid value that works. The weaker crack was seen on 7 of 13 laps (0.54);
+  the worst false location on 6 of 13 (0.46). One tuning run with two detectable cracks is a small sample, so R should
+  be revisited with more runs or real data.
+
+The demo's results under the old rule were reported before this rule was written. The procedure was fixed in code
+before the tuning run, and K and R were frozen before the demo was scored once with them.
+
+### Results on the demo (`vision/artifacts/dedup_eval.json`), both rules
+
+| | Old rule: seen on 2 laps | **Rule in use: K = 2, R = 50%** |
+|---|---|---|
+| Crack locations found | 3 of 4 | **3 of 4** |
+| Duplicates | 0 | **0** |
+| Crack placed 0.7 m from the splice at 500 m | found and flagged | **found and flagged** |
+| Laps to confirm (found cracks) | 2, 3, 4 | **2, 3, 4** |
+| False confirmed defects at the end | 4 | **0** |
+| False entries in the inspect list | 1 | **1** |
+| Single-frame false detections at clean locations that never reached the list | 0 of 18 | **18 of 18** |
+
+- **Same locations live and offline:** the backend gives the same locations as the scorer.
+- **Not confirmed in the end:** 60 of the 672 clean captures had a false detection; the 42 at splices stay in the
+  inspect list by design.
+- **Transient false defects:** under the new rule, all 4 false locations were confirmed for a while. Each was seen on
+  its first 2 laps (2 of 2) before its ratio fell below 50%, so the live dashboard shows them early in the demo and
+  then drops them.
 
 **What this shows:**
 - **De-duplication works:** each found crack is one location however many laps and cameras saw it, and the near-splice
   crack is listed for inspection rather than dropped.
-- **The missed crack:** `data39` is a chevron-pattern belt with a large tear, and the model's author notes chevron
-  belts were "almost absent from training".
-- **"Seen on 2 laps" is a weak filter over a long run:** a location the model fires on now and then reaches 2 laps
-  eventually. Over 14 laps every intermittent false hit did, so confirmation removed none here. The look count
-  separates them: the real cracks were seen on 8 to 11 of 13 or 14 laps, the false locations on 3 to 5. A stricter rule
-  (for example, seen on most laps looked) would help, but it is not built, because the brief's rule is 2 laps.
+- **Ratio against laps:** "seen on 2 laps" alone confirms any spot the model fires on now and then, given enough laps.
+  The ratio separates them here: real cracks seen on 8 to 11 of 13 or 14 laps, false locations on 3 to 5.
 - **Few clean images:** the clean images come from a pool of 16, so a crop the model fires on comes back at more than
-  one clean location. Three of the four false defects show the same crop, and the fourth and the splice at 3500 m show
-  machinery at the frame's edge.
+  one clean location. Three of the four false locations show the same crop.
 - **Flattering assumptions:** each crack lap shows a different frame of a real video and each clean capture an
-  independently drawn crop. Persistent stains that fool the model would repeat every lap, so confirmation looks
-  kinder here than it would on a real belt. The fixed splice images are the persistent case.
-- **Limits:** splices are handled by coordinate only (the dataset has no splice images), and the images are a real
-  dataset placed on a simulated belt. They are not linked to the sensors, and no sensor alert uses them.
+  independently drawn crop. Persistent stains that fool the model would repeat every lap and pass the ratio test, so
+  confirmation looks kinder here than it would on a real belt. The fixed splice images are the persistent case.
+
+### Known limitations
+
+- **Chevron belts are missed.** The demo's crack on sequence `data39`, a chevron-pattern belt with a large tear, got
+  no detection in any of its 42 captures (the tuning run's `data39` crack too). The model's author notes that
+  chevron-pattern belts were "almost absent from training". It stays in the demo as a missed crack.
+- **The splice at 3500 m fires on every lap** (seen on 14 of 14 laps). Its image shows machinery at the frame's edge,
+  and the model fires on it every time. No confirmation rule can remove a false hit that repeats every lap. This is
+  what the inspect list is for: anything at a splice is shown to a person rather than reported as a crack or dropped.
+- **Splices are handled by coordinate only** (the dataset has no splice images), and the images are a real dataset
+  placed on a simulated belt. They are not linked to the sensors, and no sensor alert uses them.
 
 ### Backend and dashboard
 

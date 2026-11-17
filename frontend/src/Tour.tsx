@@ -33,7 +33,7 @@ export const STEPS: Step[] = [
   { tab: "Data health", target: "panel", title: "Data health",
     text: "Real sensor data is messy. This tab counts the bad input that was caught (missing, impossible or duplicate values) and lists sensors that are silent or stuck." },
   { tab: "Vision", target: "panel", title: "Vision",
-    text: "Cameras photograph the belt and a pretrained crack detector marks cracks. The belt loops, so the same crack comes back every lap: detections at the same belt coordinate become one location, confirmed once seen on two laps. Anything at a splice goes to a separate list for a person to inspect. The images come from a public dataset and are not linked to the sensors. You can reopen this tour any time with the “Tour” button at the top." },
+    text: "Cameras photograph the belt and a pretrained crack detector marks cracks. The belt loops, so the same crack comes back every lap: detections at the same belt coordinate become one location, confirmed once seen on at least two laps and on at least half of the laps a camera looked at it. Anything at a splice goes to a separate list for a person to inspect. The images come from a public dataset and are not linked to the sensors. You can reopen this tour any time with the “Tour” button at the top." },
 ];
 
 const CARD_W = 360;

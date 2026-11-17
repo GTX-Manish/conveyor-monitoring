@@ -206,7 +206,7 @@ function DefectCard({ d, origin }: { d: VisionDefect; origin: number | null }) {
       </div>
       {d.at_splice && (
         <p className="mt-0.5 text-ink2">
-          {metres(d.splice_distance_m)} from the splice at {metres(d.splice_m)}{d.confirmed ? "" : " · seen on one lap so far"}
+          {metres(d.splice_distance_m)} from the splice at {metres(d.splice_m)}{d.confirmed ? "" : " · not confirmed"}
         </p>
       )}
       <p className="mt-0.5 text-xs text-ink3">
@@ -240,7 +240,8 @@ export function VisionTab({ origin }: { origin: number | null }) {
         Three cameras ({(s?.stations ?? []).map((x) => `${x.station} at ${x.ground_position_m.toFixed(0)} m`).join(", ") || "none yet"}) photograph
         the carry side. The belt loops, so the same spot passes every camera once per lap. Each detection is placed at the belt coordinate
         under the camera, and detections within {s?.settings.merge_m ?? 2} m of each other are one location, however many laps and cameras
-        saw it. A location is confirmed once it has been seen on {s?.confirm_laps ?? 2} laps. {count(s?.counts.captures)} captures so far,
+        saw it. A location is confirmed while it has been seen on at least {s?.confirm_laps ?? 2} laps and on at least {pct(s?.confirm_ratio ?? 0.5)} of
+        the laps a camera looked at it, so a spot the model fires on now and then drops out. {count(s?.counts.captures)} captures so far,
         {" "}{count(s?.counts.with_detections)} with a detection.
       </p>
 
@@ -248,13 +249,13 @@ export function VisionTab({ origin }: { origin: number | null }) {
         <h3 className="mb-1 text-sm font-semibold">Crack locations, confirmed ({d?.defects.length ?? 0})</h3>
         {(d?.defects.length ?? 0) === 0 ? (
           <p className="rounded-lg border border-line py-6 text-center text-sm text-ink3">
-            None confirmed yet.{d && d.unconfirmed > 0 ? ` ${d.unconfirmed} location${d.unconfirmed === 1 ? " has" : "s have"} been seen on one lap and will be confirmed if seen again.` : ""}
+            None confirmed yet.{d && d.unconfirmed > 0 ? ` ${d.unconfirmed} location${d.unconfirmed === 1 ? " has" : "s have"} detections but too few to confirm.` : ""}
           </p>
         ) : (
           <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">{d!.defects.map((x) => <DefectCard key={x.defect_id} d={x} origin={origin} />)}</ul>
         )}
         {d && d.defects.length > 0 && d.unconfirmed > 0 && (
-          <p className="mt-1 text-xs text-ink3">{d.unconfirmed} more location{d.unconfirmed === 1 ? "" : "s"} seen on one lap only, not listed until seen again.</p>
+          <p className="mt-1 text-xs text-ink3">{d.unconfirmed} more location{d.unconfirmed === 1 ? " has" : "s have"} detections but not enough laps to confirm, so {d.unconfirmed === 1 ? "it is" : "they are"} not listed.</p>
         )}
       </section>
 
@@ -280,7 +281,7 @@ export function VisionTab({ origin }: { origin: number | null }) {
                 <tr key={x.capture_id} className="tabular border-t border-line">
                   <td className="py-1.5">{simTime(x.ts, origin)}</td><td>{x.station}</td><td>{metres(x.belt_coordinate_m)}</td>
                   <td>{x.boxes.length}</td><td>{x.max_score?.toFixed(2) ?? "–"}</td>
-                  <td className="text-ink2">{x.at_splice ? "at a splice" : x.confirmed ? "confirmed location" : "seen on one lap"}</td>
+                  <td className="text-ink2">{x.at_splice ? "at a splice" : x.confirmed ? "confirmed location" : "not confirmed"}</td>
                 </tr>
               ))}
             </tbody>

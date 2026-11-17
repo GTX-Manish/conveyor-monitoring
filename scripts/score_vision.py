@@ -14,7 +14,8 @@ Rules:
   when it is in the at-splice list; it is not missed and not false.
 - Duplicates: reported locations matching a crack, beyond the first (target 0).
 - False locations: reported locations matching no crack. A detection at a clean splice is a false hit at a splice.
-- Laps to confirm: the number of laps the crack had been captured on when its location was confirmed.
+- Laps to confirm: the number of laps the crack had been captured on when its location was first confirmed.
+- Both rules are scored: the old "seen on 2 laps" and the lap-ratio rule in use (vision/defects.py), side by side.
 - Single-frame false detections: detections in captures showing a clean image (a splice or a clean location).
   "Removed by confirmation": those whose location ended unconfirmed and away from a splice, so never reported.
 """
@@ -27,16 +28,17 @@ from pathlib import Path
 import pandas as pd
 
 from simulator.io import load_captures
-from vision.defects import DefectTracker
+from vision.defects import CONFIRM_LAPS, CONFIRM_RATIO, DefectTracker
 
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "vision" / "artifacts" / "dedup_eval.json"
 DEMO_IMAGES = REPO / "data" / "vision_demo"
 
 
-def run_tracker(captures: pd.DataFrame, scores_of) -> tuple[DefectTracker, dict]:
+def run_tracker(captures: pd.DataFrame, scores_of, confirm_laps: int = CONFIRM_LAPS,
+                confirm_ratio: float = CONFIRM_RATIO) -> tuple[DefectTracker, dict]:
     """scores_of(image) -> detection scores. Returns the tracker and {capture_id: location_id or None}."""
-    tracker = DefectTracker()
+    tracker = DefectTracker(confirm_laps=confirm_laps, confirm_ratio=confirm_ratio)
     joined: dict[int, int | None] = {}
     for c in captures.sort_values(["ts", "capture_id"]).itertuples():
         loc, merged = tracker.add(int(c.capture_id), float(c.ts), c.station, float(c.belt_coordinate_m),
@@ -49,8 +51,9 @@ def run_tracker(captures: pd.DataFrame, scores_of) -> tuple[DefectTracker, dict]
     return tracker, joined
 
 
-def score(captures: pd.DataFrame, truth: pd.DataFrame, locations: list, scores_of) -> dict:
-    tracker, joined = run_tracker(captures, scores_of)
+def score(captures: pd.DataFrame, truth: pd.DataFrame, locations: list, scores_of, confirm_laps: int = CONFIRM_LAPS,
+          confirm_ratio: float = CONFIRM_RATIO) -> dict:
+    tracker, joined = run_tracker(captures, scores_of, confirm_laps, confirm_ratio)
     t = truth.set_index("capture_id")
     crack_ids = [x["location_id"] for x in locations if x["kind"] == "crack"]
     near = {x["location_id"] for x in locations if x["kind"] == "crack" and x.get("near_splice")}
@@ -89,6 +92,7 @@ def score(captures: pd.DataFrame, truth: pd.DataFrame, locations: list, scores_o
         return not loc.confirmed and not loc.at_splice
     by_kind = {k: int(sum(n_false[int(c)] for c in clean.index[clean["kind"] == k])) for k in ("splice", "clean")}
     return {
+        "rule": {"confirm_laps": confirm_laps, "confirm_ratio": confirm_ratio},
         "scenario_captures": int(len(captures)), "laps": int(truth["lap"].max()) if len(truth) else 0,
         "crack_locations": len(crack_ids),
         "crack_locations_found": sum(c["found"] for c in cracks),
@@ -98,6 +102,11 @@ def score(captures: pd.DataFrame, truth: pd.DataFrame, locations: list, scores_o
         "false_locations": len(false_locs),
         "false_locations_at_splice": len(false_at_splice),
         "false_confirmed_defects": len(false_locs) - len(false_at_splice),
+        # judged on the evidence so far, a false location can be confirmed for a while and then drop out
+        "false_defects_confirmed_for_a_while": sum(
+            1 for lid, loc in tracker.locations.items()
+            if not loc.at_splice and not members[lid] & crack_caps and loc.first_confirmed_ts is not None
+            and not loc.confirmed),
         "laps_to_confirm": [c.get("laps_to_confirm") for c in cracks],
         "single_frame_false_detections": {
             "captures_with_a_false_detection": len(false_caps), "clean_captures": int(len(clean)),
@@ -138,9 +147,22 @@ def main(argv=None):
             cache[image] = [d.score for d in det.detect(DEMO_IMAGES / image)]
         return cache[image]
 
-    result = {"scenario": args.scenario, "threshold": det.conf, **score(captures, truth, locations, scores_of)}
+    old = score(captures, truth, locations, scores_of, confirm_laps=2, confirm_ratio=0.0)
+    new = score(captures, truth, locations, scores_of)
+    keys = ("crack_locations", "crack_locations_found", "near_splice_crack", "duplicates", "false_locations",
+            "false_confirmed_defects", "false_defects_confirmed_for_a_while", "false_locations_at_splice",
+            "laps_to_confirm")
+    result = {"scenario": args.scenario, "threshold": det.conf,
+              "rule_in_use": {"confirm_laps": CONFIRM_LAPS, "confirm_ratio": CONFIRM_RATIO,
+                              "chosen_on": "vision/artifacts/dedup_tuning.json (a separate run, seed 2027), "
+                                           "frozen before this demo run"},
+              "side_by_side": [{"rule": "old: seen on 2 laps", **{k: old[k] for k in keys}},
+                               {"rule": f"new: seen on at least {CONFIRM_LAPS} laps and on at least "
+                                        f"{CONFIRM_RATIO:.0%} of the laps looked at", **{k: new[k] for k in keys}}],
+              **new,
+              "old_rule": {k: old[k] for k in ("reported", "cracks", "single_frame_false_detections")}}
     OUT.write_text(json.dumps(result, indent=1) + "\n")
-    print(json.dumps({k: v for k, v in result.items() if k not in ("reported", "cracks", "notes")}, indent=1))
+    print(json.dumps(result["side_by_side"], indent=1))
 
 
 if __name__ == "__main__":

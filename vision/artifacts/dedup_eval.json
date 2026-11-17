@@ -1,6 +1,57 @@
 {
  "scenario": "demo_01",
  "threshold": 0.363,
+ "rule_in_use": {
+  "confirm_laps": 2,
+  "confirm_ratio": 0.5,
+  "chosen_on": "vision/artifacts/dedup_tuning.json (a separate run, seed 2027), frozen before this demo run"
+ },
+ "side_by_side": [
+  {
+   "rule": "old: seen on 2 laps",
+   "crack_locations": 4,
+   "crack_locations_found": 3,
+   "near_splice_crack": {
+    "found_and_flagged": true,
+    "location_id": 13
+   },
+   "duplicates": 0,
+   "false_locations": 5,
+   "false_confirmed_defects": 4,
+   "false_defects_confirmed_for_a_while": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3,
+    4
+   ]
+  },
+  {
+   "rule": "new: seen on at least 2 laps and on at least 50% of the laps looked at",
+   "crack_locations": 4,
+   "crack_locations_found": 3,
+   "near_splice_crack": {
+    "found_and_flagged": true,
+    "location_id": 13
+   },
+   "duplicates": 0,
+   "false_locations": 1,
+   "false_confirmed_defects": 0,
+   "false_defects_confirmed_for_a_while": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3,
+    4
+   ]
+  }
+ ],
+ "rule": {
+  "confirm_laps": 2,
+  "confirm_ratio": 0.5
+ },
  "scenario_captures": 840,
  "laps": 14,
  "crack_locations": 4,
@@ -10,9 +61,10 @@
   "location_id": 13
  },
  "duplicates": 0,
- "false_locations": 5,
+ "false_locations": 1,
  "false_locations_at_splice": 1,
- "false_confirmed_defects": 4,
+ "false_confirmed_defects": 0,
+ "false_defects_confirmed_for_a_while": 4,
  "laps_to_confirm": [
   2,
   null,
@@ -25,8 +77,8 @@
   "detections": 60,
   "at_splices": 42,
   "at_clean_locations": 18,
-  "removed_by_confirmation": 0,
-  "captures_removed_by_confirmation": 0
+  "removed_by_confirmation": 18,
+  "captures_removed_by_confirmation": 18
  },
  "reported": {
   "defects": [
@@ -70,93 +122,6 @@
     "confirmed_ts": 1767528005,
     "best_capture_id": 628,
     "best_score": 0.5844,
-    "at_splice": false,
-    "splice_m": null,
-    "splice_distance_m": null
-   },
-   {
-    "defect_id": 4,
-    "belt_coordinate_m": 2334.97,
-    "laps": 5,
-    "laps_looked": 14,
-    "stations": [
-     "CAM1",
-     "CAM2",
-     "CAM3"
-    ],
-    "n_captures": 6,
-    "n_detections": 6,
-    "first_ts": 1767270551,
-    "last_ts": 1768306612,
-    "confirmed": true,
-    "confirmed_ts": 1767355775,
-    "best_capture_id": 71,
-    "best_score": 0.4672,
-    "at_splice": false,
-    "splice_m": null,
-    "splice_distance_m": null
-   },
-   {
-    "defect_id": 6,
-    "belt_coordinate_m": 5472.39,
-    "laps": 5,
-    "laps_looked": 13,
-    "stations": [
-     "CAM2",
-     "CAM3"
-    ],
-    "n_captures": 5,
-    "n_detections": 5,
-    "first_ts": 1767356495,
-    "last_ts": 1768220874,
-    "confirmed": true,
-    "confirmed_ts": 1767443025,
-    "best_capture_id": 100,
-    "best_score": 0.4672,
-    "at_splice": false,
-    "splice_m": null,
-    "splice_distance_m": null
-   },
-   {
-    "defect_id": 7,
-    "belt_coordinate_m": 4274.61,
-    "laps": 4,
-    "laps_looked": 13,
-    "stations": [
-     "CAM1",
-     "CAM2",
-     "CAM3"
-    ],
-    "n_captures": 4,
-    "n_detections": 4,
-    "first_ts": 1767357173,
-    "last_ts": 1768307257,
-    "confirmed": true,
-    "confirmed_ts": 1767614715,
-    "best_capture_id": 512,
-    "best_score": 0.4672,
-    "at_splice": false,
-    "splice_m": null,
-    "splice_distance_m": null
-   },
-   {
-    "defect_id": 8,
-    "belt_coordinate_m": 1703.73,
-    "laps": 3,
-    "laps_looked": 7,
-    "stations": [
-     "CAM1",
-     "CAM2",
-     "CAM3"
-    ],
-    "n_captures": 3,
-    "n_detections": 3,
-    "first_ts": 1767875464,
-    "last_ts": 1768306016,
-    "confirmed": true,
-    "confirmed_ts": 1768047263,
-    "best_capture_id": 474,
-    "best_score": 0.3724,
     "at_splice": false,
     "splice_m": null,
     "splice_distance_m": null
@@ -208,7 +173,7 @@
     "splice_distance_m": 0.67
    }
   ],
-  "unconfirmed": 0
+  "unconfirmed": 4
  },
  "cracks": [
   {
@@ -279,5 +244,264 @@
  "notes": [
   "Each crack lap shows a different frame of a real crack video and each clean capture a randomly drawn clean crop, so frames are close to independent from lap to lap. A persistent stain or a joint that fools the model would repeat every lap and survive confirmation, so confirmation looks kinder here than it would on a real belt. Splices show one fixed image each, which is the persistent case.",
   "One lap is recorded per running day (an assumption of the simulator), seen by all three stations."
- ]
+ ],
+ "old_rule": {
+  "reported": {
+   "defects": [
+    {
+     "defect_id": 5,
+     "belt_coordinate_m": 5262.37,
+     "laps": 11,
+     "laps_looked": 13,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 33,
+     "n_detections": 48,
+     "first_ts": 1767356171,
+     "last_ts": 1768393743,
+     "confirmed": true,
+     "confirmed_ts": 1767442702,
+     "best_capture_id": 556,
+     "best_score": 0.6987,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 2,
+     "belt_coordinate_m": 4851.53,
+     "laps": 8,
+     "laps_looked": 14,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 24,
+     "n_detections": 24,
+     "first_ts": 1767269550,
+     "last_ts": 1768393845,
+     "confirmed": true,
+     "confirmed_ts": 1767528005,
+     "best_capture_id": 628,
+     "best_score": 0.5844,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 4,
+     "belt_coordinate_m": 2334.97,
+     "laps": 5,
+     "laps_looked": 14,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 6,
+     "n_detections": 6,
+     "first_ts": 1767270551,
+     "last_ts": 1768306612,
+     "confirmed": true,
+     "confirmed_ts": 1767355775,
+     "best_capture_id": 71,
+     "best_score": 0.4672,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 6,
+     "belt_coordinate_m": 5472.39,
+     "laps": 5,
+     "laps_looked": 13,
+     "stations": [
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 5,
+     "n_detections": 5,
+     "first_ts": 1767356495,
+     "last_ts": 1768220874,
+     "confirmed": true,
+     "confirmed_ts": 1767443025,
+     "best_capture_id": 100,
+     "best_score": 0.4672,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 7,
+     "belt_coordinate_m": 4274.61,
+     "laps": 4,
+     "laps_looked": 13,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 4,
+     "n_detections": 4,
+     "first_ts": 1767357173,
+     "last_ts": 1768307257,
+     "confirmed": true,
+     "confirmed_ts": 1767614715,
+     "best_capture_id": 512,
+     "best_score": 0.4672,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    },
+    {
+     "defect_id": 8,
+     "belt_coordinate_m": 1703.73,
+     "laps": 3,
+     "laps_looked": 7,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 3,
+     "n_detections": 3,
+     "first_ts": 1767875464,
+     "last_ts": 1768306016,
+     "confirmed": true,
+     "confirmed_ts": 1768047263,
+     "best_capture_id": 474,
+     "best_score": 0.3724,
+     "at_splice": false,
+     "splice_m": null,
+     "splice_distance_m": null
+    }
+   ],
+   "at_splice": [
+    {
+     "defect_id": 3,
+     "belt_coordinate_m": 3499.98,
+     "laps": 14,
+     "laps_looked": 14,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 42,
+     "n_detections": 42,
+     "first_ts": 1767269887,
+     "last_ts": 1768394183,
+     "confirmed": true,
+     "confirmed_ts": 1767356614,
+     "best_capture_id": 27,
+     "best_score": 0.3724,
+     "at_splice": true,
+     "splice_m": 3500.0,
+     "splice_distance_m": 0.02
+    },
+    {
+     "defect_id": 1,
+     "belt_coordinate_m": 499.33,
+     "laps": 11,
+     "laps_looked": 14,
+     "stations": [
+      "CAM1",
+      "CAM2",
+      "CAM3"
+     ],
+     "n_captures": 33,
+     "n_detections": 36,
+     "first_ts": 1767269139,
+     "last_ts": 1768393433,
+     "confirmed": true,
+     "confirmed_ts": 1767355860,
+     "best_capture_id": 209,
+     "best_score": 0.7504,
+     "at_splice": true,
+     "splice_m": 500.0,
+     "splice_distance_m": 0.67
+    }
+   ],
+   "unconfirmed": 0
+  },
+  "cracks": [
+   {
+    "location_id": 13,
+    "near_splice": true,
+    "true_coordinate_m": 499.33,
+    "captures": 42,
+    "captures_with_detection": 33,
+    "laps_captured": 14,
+    "found": true,
+    "reported_as": [
+     1
+    ],
+    "reported_coordinate_m": 499.33,
+    "laps_seen": 11,
+    "laps_looked": 14,
+    "listed": "at_splice",
+    "confirmed": true,
+    "laps_to_confirm": 2
+   },
+   {
+    "location_id": 14,
+    "near_splice": false,
+    "true_coordinate_m": 1905.89,
+    "captures": 42,
+    "captures_with_detection": 0,
+    "laps_captured": 14,
+    "found": false,
+    "reported_as": []
+   },
+   {
+    "location_id": 15,
+    "near_splice": false,
+    "true_coordinate_m": 5262.36,
+    "captures": 42,
+    "captures_with_detection": 33,
+    "laps_captured": 14,
+    "found": true,
+    "reported_as": [
+     5
+    ],
+    "reported_coordinate_m": 5262.37,
+    "laps_seen": 11,
+    "laps_looked": 13,
+    "listed": "defects",
+    "confirmed": true,
+    "laps_to_confirm": 3
+   },
+   {
+    "location_id": 16,
+    "near_splice": false,
+    "true_coordinate_m": 4851.52,
+    "captures": 42,
+    "captures_with_detection": 24,
+    "laps_captured": 14,
+    "found": true,
+    "reported_as": [
+     2
+    ],
+    "reported_coordinate_m": 4851.53,
+    "laps_seen": 8,
+    "laps_looked": 14,
+    "listed": "defects",
+    "confirmed": true,
+    "laps_to_confirm": 4
+   }
+  ],
+  "single_frame_false_detections": {
+   "captures_with_a_false_detection": 60,
+   "clean_captures": 672,
+   "detections": 60,
+   "at_splices": 42,
+   "at_clean_locations": 18,
+   "removed_by_confirmation": 0,
+   "captures_removed_by_confirmation": 0
+  }
+ }
 }

@@ -1,0 +1,957 @@
+{
+ "purpose": "choose K and R for the lap-ratio confirmation rule in vision/defects.py, away from the demo",
+ "scenario": {
+  "name": "dedup_tuning",
+  "seed": 2027,
+  "days": 14,
+  "config": "configs/scenarios/demo_01.yaml with only the seed and name changed",
+  "captures": 798,
+  "laps": 14
+ },
+ "selection_procedure": [
+  "1. A crack is detectable if the detector fires on its captures on at least 2 laps (no rule with K >= 2 can confirm",
+  "anything less).",
+  "2. Keep the rules that find every detectable crack: a reported location (confirmed defect or \"at a splice\" entry)",
+  "contains a capture of it.",
+  "3. Among those, keep the rules with the fewest false confirmed defects (reported away from a splice, showing no",
+  "crack). The splice inspect list does not depend on the rule.",
+  "4. Simplest: the smallest K; then, among the R values tied for that K, the middle of the tied range (rounded down to",
+  "the 0.05 grid), so R is not on the edge of what works."
+ ],
+ "cracks": [
+  {
+   "location_id": 13,
+   "near_splice": true,
+   "sequence": "data40",
+   "laps_with_a_detection": 11,
+   "detectable": true,
+   "laps_seen_of_looked_at_old_rule": [
+    11,
+    14
+   ]
+  },
+  {
+   "location_id": 14,
+   "near_splice": false,
+   "sequence": "data39",
+   "laps_with_a_detection": 0,
+   "detectable": false,
+   "laps_seen_of_looked_at_old_rule": [
+    null,
+    null
+   ]
+  },
+  {
+   "location_id": 15,
+   "near_splice": false,
+   "sequence": "data37",
+   "laps_with_a_detection": 7,
+   "detectable": true,
+   "laps_seen_of_looked_at_old_rule": [
+    7,
+    13
+   ]
+  }
+ ],
+ "false_locations_old_rule": [
+  {
+   "belt_coordinate_m": 4922.76,
+   "laps": 6,
+   "laps_looked": 14
+  },
+  {
+   "belt_coordinate_m": 2148.2,
+   "laps": 6,
+   "laps_looked": 13
+  },
+  {
+   "belt_coordinate_m": 4974.7,
+   "laps": 4,
+   "laps_looked": 14
+  },
+  {
+   "belt_coordinate_m": 2726.1,
+   "laps": 4,
+   "laps_looked": 13
+  }
+ ],
+ "choice": {
+  "confirm_laps": 2,
+  "confirm_ratio": 0.5,
+  "tied_r_range": [
+   0.5,
+   0.5
+  ],
+  "false_confirmed_defects": 0,
+  "why": "smallest K that finds all 2 detectable cracks with the fewest false confirmed defects (0); R = middle of the tied range 0.50 to 0.50"
+ },
+ "old_rule_on_this_run": {
+  "crack_locations_found": 2,
+  "found_detectable": 2,
+  "duplicates": 0,
+  "false_confirmed_defects": 4,
+  "false_locations_at_splice": 1,
+  "laps_to_confirm": [
+   2,
+   null,
+   3
+  ]
+ },
+ "chosen_rule_on_this_run": {
+  "crack_locations_found": 2,
+  "duplicates": 0,
+  "false_confirmed_defects": 0,
+  "false_locations_at_splice": 1,
+  "laps_to_confirm": [
+   2,
+   null,
+   3
+  ]
+ },
+ "grid": [
+  {
+   "k": 2,
+   "r": 0.0,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.05,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.1,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.15,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.2,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.25,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.3,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 3,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.35,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.4,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.45,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 1,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.5,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    3
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.55,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.6,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.65,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.7,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.75,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.8,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.85,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.9,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 2,
+   "r": 0.95,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    2,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.0,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.05,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.1,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.15,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.2,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.25,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.3,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 3,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.35,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.4,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.45,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 1,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.5,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    4
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.55,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.6,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.65,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.7,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.75,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.8,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.85,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.9,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 3,
+   "r": 0.95,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    3,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.0,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.05,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.1,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.15,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.2,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.25,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 4,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.3,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 3,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.35,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.4,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 2,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.45,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 1,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.5,
+   "crack_locations_found": 2,
+   "found_detectable": 2,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    5
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.55,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.6,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.65,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.7,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.75,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.8,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.85,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.9,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  },
+  {
+   "k": 4,
+   "r": 0.95,
+   "crack_locations_found": 1,
+   "found_detectable": 1,
+   "duplicates": 0,
+   "false_confirmed_defects": 0,
+   "false_locations_at_splice": 1,
+   "laps_to_confirm": [
+    4,
+    null,
+    null
+   ]
+  }
+ ],
+ "notes": [
+  "The tuning run shares the 16 clean crops and the 9 test sequences with the demo (there are no others); its locations, frames, strides and noise are its own.",
+  "The demo's results under the old rule had already been reported before this rule was written. The procedure above was fixed in this script before the tuning run, and demo_01 is not read here."
+ ]
+}
